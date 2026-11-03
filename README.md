@@ -3,9 +3,10 @@
 A planned RuneScape plugin for warning when supplies such as runes or ammunition
 are running low, potentially when entering a boss arena or loading a preset.
 
-The current plugin is a temporary data-source diagnostic. See
-[DATA-SOURCES.md](DATA-SOURCES.md) for documented findings and the in-client
-verification procedure. It does not yet display supply counts or warnings.
+Open the ribbon panel to see loose backpack and equipped supplies separately.
+Totals are shown only when both sources are available. Pouch, quiver and other
+container contents are excluded. There are no warnings yet. See
+[DATA-SOURCES.md](DATA-SOURCES.md) for data-source and panel verification findings.
 
 `inventory-reader.lua` provides separate backpack and equipment snapshots for
 future features. Each source has `available`; when true, `counts` maps item IDs

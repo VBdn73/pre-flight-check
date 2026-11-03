@@ -2,6 +2,6 @@
     "name": "Supply Check",
     "version": "0.0.1",
     "hasSettingsIcon": false,
-    "hasRibbonIcon": false,
+    "hasRibbonIcon": true,
     "contactEmailAddress": "vincent.rs.plugins@gmail.com"
 }
