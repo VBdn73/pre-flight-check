@@ -5,7 +5,7 @@ PersistentDB = {
 }
 local settings = require("warnings/settings")
 local rules = settings.load()
-assert(#rules == 23 and rules[1].low == 100 and not rules[1].warnAtZero)
+assert(#rules == 28 and rules[1].low == 100 and not rules[1].warnAtZero)
 assert(not rules[4].enabled and rules[1].enabled)
 rules[1].enabled = false
 rules[2].low, rules[2].critical = 70, 10

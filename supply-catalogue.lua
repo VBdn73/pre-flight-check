@@ -22,5 +22,10 @@ return {
     [9075] = { name = "Astral rune", category = "rune", combatVar = "COMBATV2_RUNECOUNT_ASTRAL" },
     [21773] = { name = "Armadyl rune", category = "rune", combatVar = "COMBATV2_RUNECOUNT_ARMADYL" },
     [58450] = { name = "Time rune", category = "rune", combatVar = "COMBATV2_RUNECOUNT_TIME" },
+    [55336] = { name = "Ectoplasm", category = "necromancy", nexus = true },
+    [55337] = { name = "Spirit rune", category = "necromancy", nexus = true },
+    [55338] = { name = "Bone rune", category = "necromancy", nexus = true },
+    [55339] = { name = "Flesh rune", category = "necromancy", nexus = true },
+    [55340] = { name = "Miasma rune", category = "necromancy", nexus = true },
     [52299] = { name = "Deathspore arrows", category = "ammunition" },
 }

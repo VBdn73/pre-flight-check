@@ -27,7 +27,8 @@ Make-X rune-count variables remained zero in that test.
 Inventory 953 (`NECROMANCY_NEXUS`) exposed ectoplasm and all four necrotic
 runes through the inventory API, updating after additions and spell consumption.
 Availability and freshness across logout and switching multiple nexuses still
-need verification. Nexus contents are not yet included in warnings or totals.
+need verification. Nexus contents are included in necromancy warnings, but not
+in the loose-item panel totals.
 
 ## Quiver diagnostic
 
@@ -47,8 +48,8 @@ The settings panel uses the required PrettyUI dependency for scrolling. After
 changing the plugin manifest, run `prf` before enabling or reloading the plugin.
 
 The settings icon provides individual warning controls for elemental, catalytic
-and combination runes, plus Deathspore arrows. Law runes, blood runes and
-Deathspore arrows start enabled; newly added rune warnings start disabled.
+and combination runes, all four necrotic runes, ectoplasm, and Deathspore arrows. Law runes, blood runes and
+Deathspore arrows start enabled; newly added warnings start disabled.
 Each has a default low threshold of 100,
 critical threshold of 25, low repeat of 300 seconds, critical repeat of 60
 seconds, and zero warnings off. Thresholds mean strictly below. Set a repeat
@@ -58,7 +59,11 @@ shared across characters on this client type.
 Rune warnings use the client combat rune counts, without adding loose counts;
 law and blood counts were tested with pouches, but the other variables and
 effects of combination runes or infinite-rune equipment require in-client tests.
-An unavailable rune variable suppresses its warning. Deathspore warnings count
+An unavailable rune variable suppresses its warning. Necromancy warnings add
+loose backpack and equipped supplies to inventory 953 when exactly one nexus
+is carried. Multiple nexuses or an unavailable inventory suppress these warnings;
+with no nexus they count loose supplies only. Switching nexuses and inventory
+freshness need further in-client testing. Deathspore warnings count
 loose backpack plus equipment only, excluding quivers. Monitoring continues
 while the ribbon is closed; unavailable relevant sources suppress warnings.
 Entering the critical range can alert immediately even during a low cooldown.

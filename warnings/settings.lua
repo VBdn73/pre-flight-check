@@ -4,7 +4,9 @@ local ids = { 563, 565, 52299 }
 local catalogue = require("supply-catalogue")
 local additional = {}
 for itemId, item in pairs(catalogue) do
-    if item.combatVar and itemId ~= 563 and itemId ~= 565 then additional[#additional + 1] = itemId end
+    if (item.combatVar and itemId ~= 563 and itemId ~= 565) or item.nexus then
+        additional[#additional + 1] = itemId
+    end
 end
 table.sort(additional)
 for _, itemId in ipairs(additional) do ids[#ids + 1] = itemId end

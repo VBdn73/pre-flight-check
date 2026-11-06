@@ -23,8 +23,24 @@ assert(second.backpack.counts[565] == 32 and first.backpack.counts[565] == 30)
 assert(second.runeCounts[563] == 12 and first.runeCounts[563] == 123)
 assert(first.backpack.counts ~= second.backpack.counts)
 
+local nexusSlots = { item(55336, 11953), item(55338, 20136) }
+sources[953] = { isValid = true, slotCount = 2, GetSlots = function() return nexusSlots end }
+slots = { item(59360, 1), item(55338, 5), empty() }
+local withNexus = reader.read()
+assert(withNexus.nexus.available and withNexus.nexus.counts[55338] == 20136)
+assert(withNexus.backpack.counts[55338] == 5)
+nexusSlots[2].count = 20135
+assert(reader.read().nexus.counts[55338] == 20135 and withNexus.nexus.counts[55338] == 20136)
+sources[953].isValid = false
+assert(not reader.read().nexus.available)
+sources[953].isValid = true
+worn = { item(56142, 1), empty() }
+assert(not reader.read().nexus.available, "multiple nexuses cannot be attributed")
+worn = { empty(), item(52299, 6872) }
+
 slots = { empty(), empty(), empty() }
 assert(reader.read().backpack.available and next(reader.read().backpack.counts) == nil)
+assert(reader.read().nexus.available and next(reader.read().nexus.counts) == nil)
 slots = { empty(), item(565, 1) }
 assert(not reader.read().backpack.available) -- missing slot
 slots = { empty(), item(565, -1), empty() }

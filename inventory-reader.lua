@@ -9,10 +9,16 @@ end
 
 local function readSource(name)
     local ok, result = pcall(function()
-        if not Inventory or not config or not config.Inv or not config.Inv[name] then
+        if not Inventory then return nil end
+        local binding = name
+        if type(name) == "string" then
+            if not config or not config.Inv or not config.Inv[name] then return nil end
+            binding = config.Inv[name]
+        end
+        if not binding then
             return nil
         end
-        local inventory = Inventory.Find(config.Inv[name])
+        local inventory = Inventory.Find(binding)
         if not inventory or not inventory.isValid then return nil end
         local size = inventory.slotCount
         local slots = inventory:GetSlots()
@@ -51,7 +57,21 @@ function reader.read()
             if ok and integer(count, 0) then runes[itemId] = count end
         end
     end
-    return { backpack = readSource("INV"), equipment = readSource("WORN"), runeCounts = runes }
+    local backpack, equipment = readSource("INV"), readSource("WORN")
+    local nexus = { available = false }
+    if backpack.available and equipment.available then
+        local count = 0
+        -- Include uncharged variants conservatively; their contents are not assumed empty.
+        for _, id in ipairs({ 56141, 56142, 56143, 59358, 59359, 59360 }) do
+            count = count + (backpack.counts[id] or 0) + (equipment.counts[id] or 0)
+        end
+        if count == 0 then
+            nexus = { available = true, counts = {} }
+        elseif count == 1 then
+            nexus = readSource(953)
+        end
+    end
+    return { backpack = backpack, equipment = equipment, runeCounts = runes, nexus = nexus }
 end
 
 return reader

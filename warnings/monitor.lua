@@ -17,9 +17,11 @@ function monitor.new(rules)
             local count
             if item.combatVar then
                 count = snapshot.runeCounts and snapshot.runeCounts[rule.itemId]
-            elseif snapshot.backpack.available and snapshot.equipment.available then
+            elseif snapshot.backpack.available and snapshot.equipment.available
+                and (not item.nexus or (snapshot.nexus and snapshot.nexus.available)) then
                 count = (snapshot.backpack.counts[rule.itemId] or 0)
                     + (snapshot.equipment.counts[rule.itemId] or 0)
+                if item.nexus then count = count + (snapshot.nexus.counts[rule.itemId] or 0) end
             end
             if rule.enabled and count ~= nil then
                 local state = states[rule.itemId] or {}

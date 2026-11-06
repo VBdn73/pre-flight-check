@@ -34,4 +34,13 @@ snapshot.backpack.counts[565] = 10000
 assert(check(10, 504)[1].count == 10, "combat count must not be added to loose runes")
 snapshot.runeCounts[565] = nil
 assert(#instance.update(snapshot, 505) == 0, "missing combat count must not be treated as zero")
+local necro = monitor.new({ { itemId = 55338, enabled = true, low = 100, critical = 25,
+    lowCooldown = 300, criticalCooldown = 60, warnAtZero = true } })
+snapshot.backpack.counts[55338] = 5
+snapshot.nexus = { available = true, counts = { [55338] = 30 } }
+assert(necro.update(snapshot, 1)[1].count == 35)
+snapshot.nexus.available = false
+assert(#necro.update(snapshot, 2) == 0)
+snapshot.nexus = { available = true, counts = {} }
+assert(necro.update(snapshot, 3)[1].count == 5)
 print("Warning monitor tests passed.")
