@@ -17,6 +17,23 @@ future features. Each source has `available`; when true, `counts` maps item IDs
 to quantities. Missing or malformed slot data makes that source unavailable.
 Run the mock tests with `lua tests/inventory-reader.lua`.
 
+## Temporary rune-count diagnostic
+
+After `prl supply-check`, the console prints `[supply-check] Supply diagnostic`
+when readings change. It compares `GetTotal` for the backpack and worn inventory
+with the law and blood combat client variables and Make-X player variables; it
+also reports loose Deathspore arrows. These experimental variables are not used
+for warnings and may be stale or have a different meaning. Unavailable is not zero.
+
+For a controlled test, use one pouch with a known number of law runes and no
+other pouches. Record readings with no loose law runes, add a known loose stack,
+move runes into and out of the pouch, and consume some. Repeat with the magic
+interface closed and open, and note the action alongside each console reading.
+Try equipping the pouch and changing characters or logging out and back in too.
+For arrows, compare loose/equipped counts before and after putting arrows in a
+quiver; this diagnostic does not read a quiver-specific variable. Mock test:
+`lua tests/rune-diagnostic.lua`.
+
 `supply-catalogue.lua` lists exact item IDs and names. Deathspore arrows, blood
 runes and law runes have been checked in-client. No container contents are
 included.
