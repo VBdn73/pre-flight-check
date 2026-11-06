@@ -17,17 +17,39 @@ function popup.show(alerts, now)
         root.stylesheetID = id.StyleSheet.DEFAULT
         root:SetHeaderLayout(0, 0, 0, 0, 0)
         root:SetPos(-170, 45, 0.5, 0)
-        root:SetSize(340, 75 + #alerts * 24)
+        root:SetSize(340, 42 + #alerts * 36)
         root.clickthrough = true
-        local body = ui.Text.new(root)
-        body:SetPos(10, 8); body:SetSize(-20, -16, 1, 1)
-        body.font = id.Font.MUSEO_SANS_15PT_REGULAR
-        body.clickthrough = true
-        local lines = { "Supply Check: low supplies" }
-        for _, alert in ipairs(alerts) do
-            lines[#lines + 1] = alert.name .. ": " .. alert.count .. " (" .. alert.level .. ")"
+        local title = ui.Text.new(root)
+        title:SetPos(10, 6); title:SetSize(320, 24)
+        title.font = id.Font.MUSEO_SANS_15PT_REGULAR
+        title.clickthrough = true
+        title.content = "Supply Check"
+        for i, alert in ipairs(alerts) do
+            local critical = alert.level == "critical"
+            local y = 32 + (i - 1) * 36
+            local box = ui.Rectangle.new(root)
+            box:SetPos(5, y); box:SetSize(324, 32)
+            box.fill = true
+            box.colour = critical and Vector4.new(0.34, 0.08, 0.08, 1)
+                or Vector4.new(0.38, 0.20, 0.06, 1)
+            box.clickthrough = true
+            local accent = ui.Rectangle.new(root)
+            accent:SetPos(5, y); accent:SetSize(4, 32)
+            accent.fill = true
+            accent.colour = critical and Vector4.new(0.95, 0.25, 0.20, 1)
+                or Vector4.new(1, 0.58, 0.16, 1)
+            accent.clickthrough = true
+            local label = ui.Text.new(root)
+            label:SetPos(17, y + 5); label:SetSize(220, 22)
+            label.font = id.Font.MUSEO_SANS_15PT_REGULAR
+            label.clickthrough = true
+            label.content = alert.name .. ": " .. alert.count
+            local severity = ui.Text.new(root)
+            severity:SetPos(247, y + 5); severity:SetSize(75, 22)
+            severity.font = id.Font.MUSEO_SANS_11PT_REGULAR
+            severity.clickthrough = true
+            severity.content = critical and "CRITICAL" or "LOW"
         end
-        body.content = table.concat(lines, "<br>")
         expires = now + 8
     end)
     if not ok then

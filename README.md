@@ -67,7 +67,8 @@ freshness need further in-client testing. Deathspore warnings count
 loose backpack plus equipment only, excluding quivers. Monitoring continues
 without a ribbon panel; unavailable relevant sources suppress warnings.
 Entering the critical range can alert immediately even during a low cooldown.
-The popup disappears after eight seconds. Cooldowns use client logic ticks and
+The popup shows critical alerts in red and low warnings in orange, and disappears
+after eight seconds. Cooldowns use client logic ticks and
 reset when the game leaves GAME, settings are saved, or the plugin is reloaded.
 The tester reports that warnings work in-client; individual settings and timing
 cases have not been documented separately. Warning modules live in `warnings/`.
