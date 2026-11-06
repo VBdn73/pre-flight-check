@@ -34,6 +34,13 @@ For arrows, compare loose/equipped counts before and after putting arrows in a
 quiver; this diagnostic does not read a quiver-specific variable. Mock test:
 `lua tests/rune-diagnostic.lua`.
 
+The separate `[supply-check] Quiver field probe` looks for Pernix's quiver in
+the backpack and worn inventory and attempts to read undocumented slot fields
+`legacyvarobj` and `objvar_1` directly or through `slot.vars`. `not exposed`
+means the binding did not yield a number, not that the quiver is empty. Compare
+with `!listinv inv` or `!listinv worn` on the development server. These fields
+are experimental and never used for counts. Mock test: `lua tests/quiver-diagnostic.lua`.
+
 `supply-catalogue.lua` lists exact item IDs and names. Deathspore arrows, blood
 runes and law runes have been checked in-client. No container contents are
 included.

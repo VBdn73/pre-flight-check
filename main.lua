@@ -5,6 +5,7 @@ local settingsView = require("warnings/settings-view")
 local warningMonitor = require("warnings/monitor")
 local popup = require("warnings/popup")
 local diagnostic = require("rune-diagnostic")
+local quiverDiagnostic = require("quiver-diagnostic")
 local prettyUILibrary = prettyui
 local rules = warningSettings.load()
 local monitor = warningMonitor.new(rules)
@@ -15,7 +16,10 @@ local now
 local retryAfter = 0
 
 local function refresh()
-    if canRead then diagnostic.update() end
+    if canRead then
+        diagnostic.update()
+        quiverDiagnostic.update()
+    end
     local snapshot = canRead and reader.read() or {
         backpack = { available = false }, equipment = { available = false },
     }
@@ -74,6 +78,7 @@ Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
     canRead = event.newState == 30 -- GameState.GAME
     if not canRead then
         diagnostic.reset()
+        quiverDiagnostic.reset()
         monitor.reset()
         popup.clear()
     end
