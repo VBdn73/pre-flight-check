@@ -5,6 +5,7 @@ local view = {}
 local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
 local combination = { [4694] = true, [4695] = true, [4696] = true,
     [4697] = true, [4698] = true, [4699] = true }
+local rowHeight = 105
 
 local function text(parent, x, y, width, value)
     local label = ui.Text.new(parent)
@@ -32,6 +33,13 @@ local function input(parent, x, y, value)
     return field
 end
 
+local function icon(parent, x, y, itemId)
+    local sprite = ui.Sprite.new(parent)
+    sprite:SetPos(x, y); sprite:SetSize(36, 32)
+    sprite:SetAssociatedObject(itemId)
+    return sprite
+end
+
 function view.build(host, rules, onChange, prettyui)
     assert(prettyui and prettyui.Tabs and prettyui.Tabs.new,
         "PrettyUI Tabs is required for warning settings")
@@ -55,10 +63,11 @@ function view.build(host, rules, onChange, prettyui)
         end)
         return control
     end
-    local originalText, originalButton, originalInput = text, button, input
+    local originalText, originalButton, originalInput, originalIcon = text, button, input, icon
     local function text(...) return track(originalText(...)) end
     local function button(...) return track(originalButton(...)) end
     local function input(...) return track(originalInput(...)) end
+    local function icon(...) return track(originalIcon(...)) end
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
     local sections = { {}, {}, {}, {} }
     local function addSection(page, name)
@@ -89,27 +98,28 @@ function view.build(host, rules, onChange, prettyui)
         end
         local group = sections[pageIndex][name]
         currentSection = group.section
-        local parent, y = currentSection.content, group.count * 145
+        local parent, y = currentSection.content, group.count * rowHeight
         group.count = group.count + 1
-        text(parent, 10, y, 300, item.name)
+        icon(parent, 10, y, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId)
+        text(parent, 48, y + 5, 100, item.name)
         local enabled, zero = rule.enabled, rule.warnAtZero
         local enabledButton, zeroButton
-        enabledButton = button(parent, 10, y + 23, 150, enabled and "Enabled" or "Disabled", function()
+        enabledButton = button(parent, 150, y + 3, 72, enabled and "Enabled" or "Disabled", function()
             enabled = not enabled
             enabledButton.label = enabled and "Enabled" or "Disabled"
         end)
-        zeroButton = button(parent, 170, y + 23, 150, zero and "Warn at zero: on" or "Warn at zero: off", function()
+        zeroButton = button(parent, 227, y + 3, 80, zero and "Zero: on" or "Zero: off", function()
             zero = not zero
-            zeroButton.label = zero and "Warn at zero: on" or "Warn at zero: off"
+            zeroButton.label = zero and "Zero: on" or "Zero: off"
         end)
-        text(parent, 10, y + 53, 140, "Low / critical below")
-        local low = input(parent, 10, y + 75, rule.low)
-        local critical = input(parent, 80, y + 75, rule.critical)
-        text(parent, 155, y + 53, 180, "Low / critical repeat (sec)")
-        local lowCooldown = input(parent, 155, y + 75, rule.lowCooldown)
-        local criticalCooldown = input(parent, 225, y + 75, rule.criticalCooldown)
-        local status = text(parent, 110, y + 108, 330, "")
-        button(parent, 10, y + 106, 90, "Save", function()
+        text(parent, 10, y + 32, 140, "Low / critical below")
+        local low = input(parent, 10, y + 51, rule.low)
+        local critical = input(parent, 80, y + 51, rule.critical)
+        text(parent, 155, y + 32, 180, "Low / critical repeat (sec)")
+        local lowCooldown = input(parent, 155, y + 51, rule.lowCooldown)
+        local criticalCooldown = input(parent, 225, y + 51, rule.criticalCooldown)
+        local status = text(parent, 10, y + 79, 380, "")
+        button(parent, 312, y + 3, 52, "Save", function()
             local candidate = { itemId = rule.itemId, enabled = enabled, warnAtZero = zero,
                 low = tonumber(low.content), critical = tonumber(critical.content),
                 lowCooldown = tonumber(lowCooldown.content), criticalCooldown = tonumber(criticalCooldown.content) }
@@ -131,7 +141,7 @@ function view.build(host, rules, onChange, prettyui)
     end
     for _, pageSections in ipairs(sections) do
         for _, group in pairs(pageSections) do
-            group.section:_SetContentHeight(group.count * 145)
+            group.section:_SetContentHeight(group.count * rowHeight)
         end
     end
     local width, height, scrollPositions, activeIndex

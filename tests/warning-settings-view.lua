@@ -8,10 +8,15 @@ local function control(kind, parent)
         self.hooks[hook] = callback
     end
     function c:Setup() end
+    function c:SetAssociatedObject(itemId, ...)
+        assert(select("#", ...) == 0, "SetAssociatedObject takes one argument")
+        self.itemId = itemId
+    end
     controls[#controls + 1] = c
     return c
 end
 ui = { Text = { new = function(parent) return control("text", parent) end },
+    Sprite = { new = function(parent) return control("sprite", parent) end },
     Button = { new = function(parent) return control("button", parent) end },
     InputField = { new = function(parent) return control("input", parent) end },
     Hook = { ONBUTTONPRESSED = "press", ONSCROLLWHEEL = "wheel" },
@@ -66,9 +71,9 @@ assert(tabs.entries[1].text == "Magic" and tabs.entries[2].text == "Necromancy")
 assert(tabs.entries[3].text == "Ranged" and tabs.entries[4].text == "Melee")
 assert(#magic.sections == 3 and magic.sections[1].name == "Elemental"
     and magic.sections[2].name == "Catalytic" and magic.sections[3].name == "Combination")
-assert(magic.sections[1].contentHeight == 4 * 145)
-assert(magic.sections[2].contentHeight == 12 * 145)
-assert(magic.sections[3].contentHeight == 6 * 145)
+assert(magic.sections[1].contentHeight == 4 * 105)
+assert(magic.sections[2].contentHeight == 12 * 105)
+assert(magic.sections[3].contentHeight == 6 * 105)
 local fire, law, lava
 for _, c in ipairs(controls) do
     if c.content == "Fire rune" then fire = c end
@@ -81,15 +86,18 @@ assert(fire.hidden and law.hidden and lava.hidden)
 magic.sections[1]:SetExpanded(true)
 refresh()
 assert(not fire.hidden and law.hidden and lava.hidden and magic.scrollbarVisible)
-local fireToggle, fireSave
+local fireToggle, fireSave, fireIcon
 for _, c in ipairs(controls) do
-    if c.parent == fire.parent and c.kind == "button" and c.y == fire.y + 23 and c.x == 10 then fireToggle = c end
-    if c.parent == fire.parent and c.kind == "button" and c.y == fire.y + 106 then fireSave = c end
+    if c.parent == fire.parent and c.kind == "sprite" and c.itemId == 554 then fireIcon = c end
+    if c.parent == fire.parent and c.kind == "button" and c.y == fire.y - 2 and c.x == 150 then fireToggle = c end
+    if c.parent == fire.parent and c.kind == "button" and c.y == fire.y - 2 and c.x == 312 then fireSave = c end
 end
+assert(fireIcon and not fireIcon.hidden)
 fireToggle.hooks.press()
 magic.sections[1]:SetExpanded(false)
 refresh()
 assert(fire.hidden)
+assert(fireIcon.hidden)
 magic.sections[1]:SetExpanded(true)
 refresh()
 assert(fireToggle.label == "Enabled", "unsaved edits should survive collapsing")
@@ -97,7 +105,7 @@ fireSave.hooks.press()
 assert(saved["554"].enabled, "saving a grouped rune should update its original rule")
 assert(#necro.sections == 2 and necro.sections[1].name == "Necrotic Runes"
     and necro.sections[2].name == "Ectoplasm")
-assert(necro.sections[1].contentHeight == 4 * 145 and necro.sections[2].contentHeight == 145)
+assert(necro.sections[1].contentHeight == 4 * 105 and necro.sections[2].contentHeight == 105)
 local spirit, ectoplasm
 for _, c in ipairs(controls) do
     if c.content == "Spirit rune" then spirit = c end
@@ -108,12 +116,13 @@ assert(spirit.hidden and ectoplasm.hidden)
 assert(controls[1].parent == magic.content and controls[2].parent == necro.content)
 local melee = tabs.pages[4]
 assert(#melee.sections == 1 and melee.sections[1].name == "Armour Spikes"
-    and melee.sections[1].contentHeight == 145)
+    and melee.sections[1].contentHeight == 105)
 local spikeLabels, spikeSave, spikeToggle = 0
 for _, c in ipairs(controls) do
     assert(c.parent ~= tabs.pages[3].content)
     assert(c.content ~= "Deathspore arrows")
     if c.parent == melee.sections[1].content then
+        if c.kind == "sprite" then assert(c.itemId == 59925) end
         if c.content == "Armour spikes" then spikeLabels = spikeLabels + 1 end
         if c.kind == "button" and c.label == "Save" then spikeSave = c end
         if c.kind == "button" and c.label == "Disabled" then spikeToggle = c end
@@ -128,7 +137,9 @@ spikeSave.hooks.press()
 assert(saved["armour-spikes"].enabled and saved["armour-spikes"].low == 1000
     and saved["armour-spikes"].critical == 250)
 local lastNecro
-for _, c in ipairs(controls) do if c.parent == necro.sections[1].content then lastNecro = c end end
+for _, c in ipairs(controls) do
+    if c.parent == necro.sections[1].content and c.kind == "text" and c.y == 3 * 105 + 79 then lastNecro = c end
+end
 assert(lastNecro.hidden, "off-screen controls should be hidden")
 tabs.active = 2
 necro.sections[1]:SetExpanded(true)
