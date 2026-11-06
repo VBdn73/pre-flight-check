@@ -19,10 +19,14 @@ rules.styles.Magic.low = 5000
 rules[1].custom, rules[1].low, rules[1].critical = true, 70, 10
 rules[2].enabled = false
 assert(settings.save(rules))
+saved.styles.Magic.lowCooldown, saved.styles.Magic.criticalCooldown = 300, 60
+saved[tostring(rules[1].itemId)].lowCooldown = 300
 local loaded = settings.load()
 assert(loaded.checkOnBankClose and loaded.checkOnPreset)
 assert(settings.effective(loaded, loaded[1]).low == 70)
 assert(settings.effective(loaded, loaded[2]).low == 5000 and not loaded[2].enabled)
+assert(settings.save(loaded))
+assert(saved.styles.Magic.lowCooldown == nil and saved[tostring(rules[1].itemId)].lowCooldown == nil)
 loaded[1].custom = false
 assert(settings.effective(loaded, loaded[1]).low == 5000 and loaded[1].low == 70)
 loaded[1].custom = true

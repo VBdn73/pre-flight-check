@@ -16,8 +16,7 @@ local key = "supplyWarnings.v2"
 local styles = { "Magic", "Necromancy", "Ranged", "Melee" }
 
 local function defaults()
-    return { enabled = true, warnAtZero = false, low = 1000, critical = 250,
-        lowCooldown = 300, criticalCooldown = 60 }
+    return { enabled = true, warnAtZero = false, low = 1000, critical = 250 }
 end
 
 function settings.style(itemId)
@@ -44,8 +43,6 @@ function settings.valid(rule)
         and type(rule.warnAtZero) == "boolean"
         and validInteger(rule.low, 1, 2147483647)
         and validInteger(rule.critical, 1, rule.low)
-        and validInteger(rule.lowCooldown, 1, 86400)
-        and validInteger(rule.criticalCooldown, 1, 86400)
 end
 
 function settings.load()
@@ -66,7 +63,6 @@ function settings.load()
         end
         rules[#rules + 1] = { itemId = itemId, enabled = rule.enabled,
             warnAtZero = rule.warnAtZero, low = rule.low, critical = rule.critical,
-            lowCooldown = rule.lowCooldown, criticalCooldown = rule.criticalCooldown,
             custom = rule.custom == true }
     end
     return rules
@@ -79,14 +75,12 @@ function settings.save(rules)
         if not rules.styles or not settings.valid(rules.styles[style]) then return false end
         local value = rules.styles[style]
         data.styles[style] = { enabled = true, warnAtZero = value.warnAtZero,
-            low = value.low, critical = value.critical, lowCooldown = value.lowCooldown,
-            criticalCooldown = value.criticalCooldown }
+            low = value.low, critical = value.critical }
     end
     for _, rule in ipairs(rules) do
         if not settings.valid(rule) then return false end
         data[tostring(rule.itemId)] = { enabled = rule.enabled, warnAtZero = rule.warnAtZero,
-            low = rule.low, critical = rule.critical, lowCooldown = rule.lowCooldown,
-            criticalCooldown = rule.criticalCooldown, custom = rule.custom == true }
+            low = rule.low, critical = rule.critical, custom = rule.custom == true }
     end
     local ok, result = pcall(function() return PersistentDB:SetStructuredData(key, data) end)
     return ok and result == true

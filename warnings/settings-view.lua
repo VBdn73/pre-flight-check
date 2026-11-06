@@ -130,14 +130,10 @@ function view.build(host, rules, onChange, prettyui)
         text(parent, 10, 68, 140, "Low / critical below")
         local low = input(parent, 10, 87, rule.low)
         local critical = input(parent, 80, 87, rule.critical)
-        text(parent, 155, 68, 180, "Low / critical repeat (sec)")
-        local lowCooldown = input(parent, 155, 87, rule.lowCooldown)
-        local criticalCooldown = input(parent, 225, 87, rule.criticalCooldown)
         local status = text(parent, 300, 88, 85, "")
         saveButton(parent, 312, 39, function()
             local candidate = { enabled = true, warnAtZero = zero, low = tonumber(low.content),
-                critical = tonumber(critical.content), lowCooldown = tonumber(lowCooldown.content),
-                criticalCooldown = tonumber(criticalCooldown.content) }
+                critical = tonumber(critical.content) }
             if not settings.valid(candidate) then
                 status.content = "Invalid"
                 return
@@ -199,13 +195,11 @@ function view.build(host, rules, onChange, prettyui)
         icon(parent, 8, y + 3, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId)
         text(parent, 48, y + 8, 100, item.name)
         local enabled, zero, custom = rule.enabled, rule.warnAtZero, rule.custom
-        local draft = { tostring(rule.low), tostring(rule.critical),
-            tostring(rule.lowCooldown), tostring(rule.criticalCooldown) }
+        local draft = { tostring(rule.low), tostring(rule.critical) }
         local fields, zeroButton, mode
         local function updateRow()
             local shared = rules.styles[settings.style(rule.itemId)]
-            local values = custom and draft or { shared.low, shared.critical,
-                shared.lowCooldown, shared.criticalCooldown }
+            local values = custom and draft or { shared.low, shared.critical }
             for i, field in ipairs(fields) do
                 if not custom then field.content = tostring(values[i]) end
                 field.enabled = custom and enabled
@@ -237,16 +231,12 @@ function view.build(host, rules, onChange, prettyui)
         text(parent, 10, y + 35, 140, "Low / critical below")
         local low = input(parent, 10, y + 54, rule.low)
         local critical = input(parent, 80, y + 54, rule.critical)
-        text(parent, 155, y + 35, 155, "Repeat (sec)")
-        local lowCooldown = input(parent, 155, y + 54, rule.lowCooldown)
-        local criticalCooldown = input(parent, 225, y + 54, rule.criticalCooldown)
-        fields = { low, critical, lowCooldown, criticalCooldown }
+        fields = { low, critical }
         local status = text(parent, 300, y + 55, 85, "")
         saveButton(parent, 350, y + 5, function()
             if custom then for i, field in ipairs(fields) do draft[i] = field.content end end
             local candidate = { itemId = rule.itemId, enabled = enabled, custom = custom, warnAtZero = zero,
-                low = tonumber(draft[1]), critical = tonumber(draft[2]),
-                lowCooldown = tonumber(draft[3]), criticalCooldown = tonumber(draft[4]) }
+                low = tonumber(draft[1]), critical = tonumber(draft[2]) }
             if not settings.valid(candidate) then
                 status.content = "Invalid"
                 return

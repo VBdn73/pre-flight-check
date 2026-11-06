@@ -1,6 +1,5 @@
 local monitor = require("warnings/monitor")
-local rule = { itemId = 565, enabled = true, low = 100, critical = 25,
-    lowCooldown = 300, criticalCooldown = 60, warnAtZero = false }
+local rule = { itemId = 565, enabled = true, low = 100, critical = 25, warnAtZero = false }
 local instance = monitor.new({ rule })
 local snapshot = { backpack = { available = true, counts = {} },
     equipment = { available = true, counts = {} }, runeCounts = {} }
@@ -11,13 +10,10 @@ end
 assert(#check(0, 0) == 0)
 assert(#check(200, 1) == 0)
 assert(check(99, 2)[1].level == "low")
-assert(#check(50, 301) == 0)
-assert(#instance.update(snapshot, 301, true) == 1, "triggered checks bypass cooldown")
-assert(#check(50, 302) == 0, "forced check starts a new cooldown")
-instance.reset()
+assert(#check(50, 301) == 1, "each check reports low supplies")
 assert(check(50, 302)[1].level == "low")
 assert(check(24, 303)[1].level == "critical")
-assert(#check(24, 362) == 0)
+assert(#check(24, 362) == 1)
 assert(check(24, 363)[1].level == "critical")
 assert(#check(0, 364) == 0)
 assert(check(24, 365)[1].level == "critical")
@@ -30,15 +26,13 @@ rule.enabled = false
 assert(#check(10, 501) == 0)
 rule.enabled, rule.warnAtZero = true, true
 assert(check(0, 502)[1].count == 0)
-instance.reset()
 assert(check(0, 503)[1].level == "critical")
-instance.reset()
 snapshot.backpack.counts[565] = 10000
 assert(check(10, 504)[1].count == 10, "combat count must not be added to loose runes")
 snapshot.runeCounts[565] = nil
 assert(#instance.update(snapshot, 505) == 0, "missing combat count must not be treated as zero")
 local necro = monitor.new({ { itemId = 55338, enabled = true, low = 100, critical = 25,
-    lowCooldown = 300, criticalCooldown = 60, warnAtZero = true } })
+    warnAtZero = true } })
 snapshot.backpack.counts[55338] = 5
 snapshot.nexus = { available = true, counts = { [55338] = 30 } }
 assert(necro.update(snapshot, 1)[1].count == 35)
@@ -47,17 +41,15 @@ assert(#necro.update(snapshot, 2) == 0)
 snapshot.nexus = { available = true, counts = {} }
 assert(necro.update(snapshot, 3)[1].count == 5)
 local spikes = monitor.new({ { itemId = "armour-spikes", enabled = true, low = 1000, critical = 250,
-    lowCooldown = 300, criticalCooldown = 60, warnAtZero = true } })
+    warnAtZero = true } })
 snapshot.backpack.counts = { [47071] = 100, [47872] = 20, [52938] = 10 }
 snapshot.equipment.counts = { [52939] = 5, [57389] = 4 }
 snapshot.spikeHarness = { available = true, counts = { [57390] = 100 } }
 local alert = spikes.update(snapshot, 1)[1]
 assert(alert.name == "Armour spikes" and alert.count == 239 and alert.level == "critical")
 snapshot.spikeHarness.counts[57390] = 111
-spikes.reset()
 assert(spikes.update(snapshot, 2)[1].level == "low", "250 is not below critical")
 snapshot.spikeHarness.counts[57390] = 861
-spikes.reset()
 assert(#spikes.update(snapshot, 3) == 0, "1000 is not below low")
 snapshot.spikeHarness.available = false
 assert(#spikes.update(snapshot, 100) == 0)
@@ -66,17 +58,15 @@ snapshot.backpack.available = false
 assert(#spikes.update(snapshot, 200) == 0)
 snapshot.backpack.available = true
 snapshot.backpack.counts, snapshot.equipment.counts = {}, {}
-spikes.reset()
 assert(spikes.update(snapshot, 201)[1].count == 0)
 local sharedRules = { styles = { Magic = { enabled = true, low = 5000, critical = 1000,
-    lowCooldown = 300, criticalCooldown = 60, warnAtZero = true } },
+    warnAtZero = true } },
     { itemId = 554, enabled = true, custom = false, low = 100, critical = 25,
-        lowCooldown = 20, criticalCooldown = 10, warnAtZero = false } }
+        warnAtZero = false } }
 local sharedMonitor = monitor.new(sharedRules)
 snapshot.runeCounts[554] = 2000
 assert(sharedMonitor.update(snapshot, 1)[1].level == "low")
 sharedRules[1].custom = true
-sharedMonitor.reset()
 assert(#sharedMonitor.update(snapshot, 2) == 0)
 snapshot.runeCounts[554] = 0
 assert(#sharedMonitor.update(snapshot, 3) == 0)

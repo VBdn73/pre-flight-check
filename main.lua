@@ -12,7 +12,6 @@ local monitor = warningMonitor.new(rules)
 local refreshSettings, destroySettings
 local canRead = true
 local now
-local retryAfter = 0
 local checkAfter, checkDeadline
 
 -- Wait for server updates following the action before taking a fresh snapshot.
@@ -27,22 +26,14 @@ local function refresh()
         backpack = { available = false }, equipment = { available = false },
     }
     if not snapshot.backpack.available or not snapshot.equipment.available then popup.clear() end
-    if not canRead or not now or now < retryAfter then return end
-    local force = false
-    if checkAfter then
-        if now < checkAfter then return end
-        if not snapshot.backpack.available or not snapshot.equipment.available then
-            if now >= checkDeadline then checkAfter, checkDeadline = nil, nil end
-            return
-        end
-        force = true
-        checkAfter, checkDeadline = nil, nil
+    if not canRead or not now or not checkAfter or now < checkAfter then return end
+    if not snapshot.backpack.available or not snapshot.equipment.available then
+        if now >= checkDeadline then checkAfter, checkDeadline = nil, nil end
+        return
     end
-    local alerts = monitor.update(snapshot, now, force)
-    if #alerts > 0 and not popup.show(alerts, now) then
-        monitor.reset()
-        retryAfter = now + 10
-    end
+    checkAfter, checkDeadline = nil, nil
+    local alerts = monitor.update(snapshot)
+    if #alerts > 0 then popup.show(alerts, now) end
 end
 
 Event.ServerLogic.Subscribe("supplyCheck.refresh", refresh)
@@ -74,9 +65,7 @@ Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
     if destroySettings then pcall(destroySettings) end
     refreshSettings, destroySettings = nil, nil
     local ok, result, destroy = pcall(settingsView.build, event.component, rules, function()
-        monitor.reset()
         popup.clear()
-        retryAfter = 0
     end, prettyUILibrary)
     if ok then
         refreshSettings, destroySettings = result, destroy
@@ -91,7 +80,6 @@ Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
     canRead = event.newState == 30 -- GameState.GAME
     if not canRead then
         quiverDiagnostic.reset()
-        monitor.reset()
         popup.clear()
         bankState.reset()
         checkAfter, checkDeadline = nil, nil

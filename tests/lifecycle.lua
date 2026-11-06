@@ -12,8 +12,7 @@ Event = { ServerLogic = event("server"), GameStateChanged = event("state"),
 package.loaded["warnings/settings"] = { load = function() return {} end }
 package.loaded["warnings/settings-view"] = { build = function() end }
 package.loaded["warnings/monitor"] = { new = function() return {
-    update = function(snapshot) snapshots[#snapshots + 1] = snapshot; return {} end,
-    reset = function() end } end }
+    update = function(snapshot) snapshots[#snapshots + 1] = snapshot; return {} end } end }
 package.loaded["warnings/popup"] = { clear = function() end, update = function() end }
 package.loaded["inventory-reader"] = { read = function()
     reads = reads + 1
@@ -22,16 +21,16 @@ end }
 dofile("main.lua")
 callbacks.logic({ logicTick = 50 })
 callbacks.server()
-assert(snapshots[1].backpack.available)
+assert(#snapshots == 0, "server updates alone do not check warnings")
 callbacks.state({ newState = 40 })
 local readsBefore = reads
 callbacks.server()
 assert(reads == readsBefore, "must not read sources outside the game")
-assert(#snapshots == 1, "must not monitor sources outside the game")
+assert(#snapshots == 0, "must not monitor sources outside the game")
 callbacks.state({ newState = 30 })
-assert(snapshots[2].backpack.available)
+assert(#snapshots == 0, "entering the game does not check warnings")
 callbacks.server()
-assert(#snapshots == 3, "warnings continue without a ribbon panel")
+assert(#snapshots == 0, "warnings only run after an enabled action")
 PluginShutdown()
 assert(unsubscribed.server == "supplyCheck.refresh")
 assert(unsubscribed.state == "supplyCheck.state")

@@ -43,10 +43,9 @@ The settings panel uses the required PrettyUI dependency for tabs and scrolling.
 changing the plugin manifest, run `prf` before enabling or reloading the plugin.
 
 The **General** tab has separate, immediately saved switches for checking on
-**preset load** and **bank close**. Both default off. When enabled, these add a
-check of configured supply rules after the action, even during a repeat cooldown;
-normal continuous monitoring continues independently. No popup is shown when
-no enabled supply is below its threshold. A triggered alert starts a new cooldown.
+**preset load** and **bank close**. Both default off. When enabled, these check
+configured supply rules after the action. No popup is shown when no enabled supply
+is below its threshold.
 
 Preset checks cover bank menu actions, the selected preset's Load button, the
 bank chest's Load Last Preset action, and the bank's numbered and beast-of-burden
@@ -63,16 +62,15 @@ Magic tab groups runes into collapsible Elemental, Catalytic and Combination sec
 The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
 The Melee tab provides one Armour Spikes warning for all six variants combined,
 and the Ranged tab provides a Deathspore arrow warning. Each tab has always-visible
-style defaults above the item sections for thresholds, repeat intervals and zero warnings. Every item
+style defaults above the item sections for thresholds and zero warnings. Every item
 starts enabled and uses its style defaults. Use the eye icon to control that
 warning independently, or the pencil icon to switch between Style and Custom.
 Inherited fields show the style values but cannot be edited. Switching back
 retains the custom values for later use. Use the Save button after changing either
 the style defaults or an individual item; hover over icons for their functions.
 
-Each style starts with a low threshold of 1000, critical threshold of 250, low
-repeat of 300 seconds, critical repeat of 60 seconds, and zero warnings off.
-Thresholds mean strictly below. Set a repeat interval from 1 to 86400 seconds.
+Each style starts with a low threshold of 1000, critical threshold of 250, and zero
+warnings off. Thresholds mean strictly below.
 Settings are shared across characters on this client type. The new settings format
 does not import the previous experimental per-item settings.
 
@@ -84,12 +82,10 @@ loose backpack and equipped supplies to inventory 953 when exactly one nexus
 is carried. Multiple nexuses or an unavailable inventory suppress these warnings;
 with no nexus they count loose supplies only. Switching nexuses and inventory
 freshness need further in-client testing. Deathspore warnings count
-loose backpack plus equipment only, excluding quivers. Monitoring continues
-without a ribbon panel; unavailable relevant sources suppress warnings.
-Entering the critical range can alert immediately even during a low cooldown.
+loose backpack plus equipment only, excluding quivers. Unavailable relevant sources
+suppress warnings.
 The popup shows critical alerts in red and low warnings in orange, and disappears
-after four seconds. Cooldowns use client logic ticks and
-reset when the game leaves GAME, settings are saved, or the plugin is reloaded.
+after four seconds.
 The tester reports that warnings work in-client; individual settings and timing
 cases have not been documented separately. Warning modules live in `warnings/`.
 
