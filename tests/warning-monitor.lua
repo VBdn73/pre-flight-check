@@ -43,4 +43,26 @@ snapshot.nexus.available = false
 assert(#necro.update(snapshot, 2) == 0)
 snapshot.nexus = { available = true, counts = {} }
 assert(necro.update(snapshot, 3)[1].count == 5)
+local spikes = monitor.new({ { itemId = "armour-spikes", enabled = true, low = 1000, critical = 250,
+    lowCooldown = 300, criticalCooldown = 60, warnAtZero = true } })
+snapshot.backpack.counts = { [47071] = 100, [47872] = 20, [52938] = 10 }
+snapshot.equipment.counts = { [52939] = 5, [57389] = 4 }
+snapshot.spikeHarness = { available = true, counts = { [57390] = 100 } }
+local alert = spikes.update(snapshot, 1)[1]
+assert(alert.name == "Armour spikes" and alert.count == 239 and alert.level == "critical")
+snapshot.spikeHarness.counts[57390] = 111
+spikes.reset()
+assert(spikes.update(snapshot, 2)[1].level == "low", "250 is not below critical")
+snapshot.spikeHarness.counts[57390] = 861
+spikes.reset()
+assert(#spikes.update(snapshot, 3) == 0, "1000 is not below low")
+snapshot.spikeHarness.available = false
+assert(#spikes.update(snapshot, 100) == 0)
+snapshot.spikeHarness = { available = true, counts = {} }
+snapshot.backpack.available = false
+assert(#spikes.update(snapshot, 200) == 0)
+snapshot.backpack.available = true
+snapshot.backpack.counts, snapshot.equipment.counts = {}, {}
+spikes.reset()
+assert(spikes.update(snapshot, 201)[1].count == 0)
 print("Warning monitor tests passed.")

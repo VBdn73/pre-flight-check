@@ -1,5 +1,6 @@
 -- Time is supplied in seconds by the caller so cooldowns can be tested independently.
 local catalogue = require("supply-catalogue")
+local spikes = require("armour-spikes")
 local monitor = {}
 
 function monitor.new(rules)
@@ -13,9 +14,19 @@ function monitor.new(rules)
     function instance.update(snapshot, now)
         local alerts = {}
         for _, rule in ipairs(rules) do
-            local item = catalogue[rule.itemId]
+            local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
             local count
-            if item.combatVar then
+            if rule.itemId == spikes.ruleId then
+                if snapshot.backpack.available and snapshot.equipment.available
+                    and snapshot.spikeHarness and snapshot.spikeHarness.available then
+                    count = 0
+                    for _, itemId in ipairs(spikes.itemIds) do
+                        count = count + (snapshot.backpack.counts[itemId] or 0)
+                            + (snapshot.equipment.counts[itemId] or 0)
+                            + (snapshot.spikeHarness.counts[itemId] or 0)
+                    end
+                end
+            elseif item.combatVar then
                 count = snapshot.runeCounts and snapshot.runeCounts[rule.itemId]
             elseif snapshot.backpack.available and snapshot.equipment.available
                 and (not item.nexus or (snapshot.nexus and snapshot.nexus.available)) then
@@ -36,7 +47,7 @@ function monitor.new(rules)
                     local escalated = level == "critical" and state.level ~= "critical"
                     if escalated or not state.lastAlert or now - state.lastAlert >= cooldown then
                         alerts[#alerts + 1] = { itemId = rule.itemId,
-                            name = catalogue[rule.itemId].name, count = count, level = level }
+                            name = item.name, count = count, level = level }
                         state.lastAlert = now
                     end
                 end

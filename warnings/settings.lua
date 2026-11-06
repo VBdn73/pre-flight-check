@@ -2,6 +2,7 @@
 local settings = {}
 local ids = { 563, 565, 52299 }
 local catalogue = require("supply-catalogue")
+local spikes = require("armour-spikes")
 local additional = {}
 for itemId, item in pairs(catalogue) do
     if (item.combatVar and itemId ~= 563 and itemId ~= 565) or item.nexus then
@@ -10,6 +11,7 @@ for itemId, item in pairs(catalogue) do
 end
 table.sort(additional)
 for _, itemId in ipairs(additional) do ids[#ids + 1] = itemId end
+ids[#ids + 1] = spikes.ruleId
 local key = "supplyWarnings.v1"
 
 local function validInteger(n, min, max)
@@ -33,7 +35,8 @@ function settings.load()
         local rule = saved[tostring(itemId)]
         if not settings.valid(rule) then
             rule = { enabled = itemId == 563 or itemId == 565 or itemId == 52299,
-                warnAtZero = false, low = 100, critical = 25,
+                warnAtZero = false, low = itemId == spikes.ruleId and 1000 or 100,
+                critical = itemId == spikes.ruleId and 250 or 25,
                 lowCooldown = 300, criticalCooldown = 60 }
         end
         rules[#rules + 1] = { itemId = itemId, enabled = rule.enabled,

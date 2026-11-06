@@ -41,6 +41,22 @@ worn = { empty(), item(52299, 6872) }
 slots = { empty(), empty(), empty() }
 assert(reader.read().backpack.available and next(reader.read().backpack.counts) == nil)
 assert(reader.read().nexus.available and next(reader.read().nexus.counts) == nil)
+assert(reader.read().spikeHarness.available and next(reader.read().spikeHarness.counts) == nil)
+local harnessSlots = { item(57390, 1000) }
+sources[974] = { isValid = true, slotCount = 1, GetSlots = function() return harnessSlots end }
+slots = { item(59925, 1), item(47071, 5), empty() }
+assert(reader.read().spikeHarness.counts[57390] == 1000)
+harnessSlots[1].count = 999
+assert(reader.read().spikeHarness.counts[57390] == 999)
+worn = { item(59925, 1), empty() }
+assert(not reader.read().spikeHarness.available, "multiple harnesses cannot be attributed")
+worn = { item(59925, 1), empty() }
+slots = { item(47071, 5), empty(), empty() }
+assert(reader.read().spikeHarness.counts[57390] == 999)
+sources[974].isValid = false
+assert(not reader.read().spikeHarness.available)
+sources[974].isValid = true
+worn = { empty(), item(52299, 6872) }
 slots = { empty(), item(565, 1) }
 assert(not reader.read().backpack.available) -- missing slot
 slots = { empty(), item(565, -1), empty() }

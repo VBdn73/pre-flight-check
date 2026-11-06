@@ -27,7 +27,6 @@ function popup.show(alerts, now)
         for _, alert in ipairs(alerts) do
             lines[#lines + 1] = alert.name .. ": " .. alert.count .. " (" .. alert.level .. ")"
         end
-        lines[#lines + 1] = "Backpack + equipment only; containers excluded."
         body.content = table.concat(lines, "<br>")
         expires = now + 8
     end)

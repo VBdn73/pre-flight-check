@@ -1,6 +1,7 @@
 -- Read independent, fresh snapshots; never retain an Inventory proxy across calls.
 local reader = {}
 local catalogue = require("supply-catalogue")
+local spikes = require("armour-spikes")
 
 local function integer(value, minimum)
     return type(value) == "number" and value >= minimum
@@ -58,7 +59,7 @@ function reader.read()
         end
     end
     local backpack, equipment = readSource("INV"), readSource("WORN")
-    local nexus = { available = false }
+    local nexus, spikeHarness = { available = false }, { available = false }
     if backpack.available and equipment.available then
         local count = 0
         -- Include uncharged variants conservatively; their contents are not assumed empty.
@@ -70,8 +71,16 @@ function reader.read()
         elseif count == 1 then
             nexus = readSource(953)
         end
+        local harnessCount = (backpack.counts[spikes.harnessId] or 0)
+            + (equipment.counts[spikes.harnessId] or 0)
+        if harnessCount == 0 then
+            spikeHarness = { available = true, counts = {} }
+        elseif harnessCount == 1 then
+            spikeHarness = readSource(974)
+        end
     end
-    return { backpack = backpack, equipment = equipment, runeCounts = runes, nexus = nexus }
+    return { backpack = backpack, equipment = equipment, runeCounts = runes, nexus = nexus,
+        spikeHarness = spikeHarness }
 end
 
 return reader

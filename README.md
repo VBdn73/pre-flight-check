@@ -51,11 +51,12 @@ The Magic and Necromancy tabs provide individual warning controls for elemental,
 catalytic and combination runes, all four necrotic runes and ectoplasm.
 Magic tab groups runes into collapsible Elemental, Catalytic and Combination sections.
 The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
-The Ranged and Melee tabs are empty for now; existing Deathspore arrow warnings still
+The Melee tab provides one Armour Spikes warning for all six variants combined.
+The Ranged tab is empty for now; existing Deathspore arrow warnings still
 run using their saved settings. Law runes, blood runes and
 Deathspore arrows start enabled; newly added warnings start disabled.
-Each has a default low threshold of 100,
-critical threshold of 25, low repeat of 300 seconds, critical repeat of 60
+Most have a default low threshold of 100 and critical threshold of 25; armour
+spikes default to 1000 and 250. All use a low repeat of 300 seconds, critical repeat of 60
 seconds, and zero warnings off. Thresholds mean strictly below. Set a repeat
 interval from 1 to 86400 seconds, and press Save for each item. Settings are
 shared across characters on this client type.
@@ -75,3 +76,9 @@ The popup disappears after eight seconds. Cooldowns use client logic ticks and
 reset when the game leaves GAME, settings are saved, or the plugin is reloaded.
 The tester reports that warnings work in-client; individual settings and timing
 cases have not been documented separately. Warning modules live in `warnings/`.
+
+Armour spike warnings total all variants in the backpack and equipment, plus
+inventory 974 when exactly one Nodon spike harness is carried. No harness means
+only loose spikes are counted; multiple harnesses or unavailable sources suppress
+the warning. Inventory 974 was observed updating in combat with one worn harness,
+and showing its contents in the backpack. Multiple harnesses remain untested.

@@ -106,10 +106,27 @@ end
 assert(spirit.parent == necro.sections[1].content and ectoplasm.parent == necro.sections[2].content)
 assert(spirit.hidden and ectoplasm.hidden)
 assert(controls[1].parent == magic.content and controls[2].parent == necro.content)
+local melee = tabs.pages[4]
+assert(#melee.sections == 1 and melee.sections[1].name == "Armour Spikes"
+    and melee.sections[1].contentHeight == 145)
+local spikeLabels, spikeSave, spikeToggle = 0
 for _, c in ipairs(controls) do
-    assert(c.parent ~= tabs.pages[3].content and c.parent ~= tabs.pages[4].content)
+    assert(c.parent ~= tabs.pages[3].content)
     assert(c.content ~= "Deathspore arrows")
+    if c.parent == melee.sections[1].content then
+        if c.content == "Armour spikes" then spikeLabels = spikeLabels + 1 end
+        if c.kind == "button" and c.label == "Save" then spikeSave = c end
+        if c.kind == "button" and c.label == "Disabled" then spikeToggle = c end
+    end
 end
+assert(spikeLabels == 1 and spikeSave and spikeToggle)
+tabs.active = 4
+melee.sections[1]:SetExpanded(true)
+refresh()
+spikeToggle.hooks.press()
+spikeSave.hooks.press()
+assert(saved["armour-spikes"].enabled and saved["armour-spikes"].low == 1000
+    and saved["armour-spikes"].critical == 250)
 local lastNecro
 for _, c in ipairs(controls) do if c.parent == necro.sections[1].content then lastNecro = c end end
 assert(lastNecro.hidden, "off-screen controls should be hidden")

@@ -1,5 +1,6 @@
 local catalogue = require("supply-catalogue")
 local settings = require("warnings/settings")
+local spikes = require("armour-spikes")
 local view = {}
 local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
 local combination = { [4694] = true, [4695] = true, [4696] = true,
@@ -39,8 +40,8 @@ function view.build(host, rules, onChange, prettyui)
         { text = "Ranged" }, { text = "Melee" },
     }, { width = 0, height = 0, widthAnchor = 1, heightAnchor = 1,
         contentLayout = { startY = 36 } })
-    local pages = { tabs:GetPage(1), tabs:GetPage(2) }
-    local controls = { {}, {} }
+    local pages = { tabs:GetPage(1), tabs:GetPage(2), tabs:GetPage(3), tabs:GetPage(4) }
+    local controls = { {}, {}, {}, {} }
     local pageIndex, currentSection = 1, nil
     local layoutChanged = true
     local function track(control)
@@ -59,7 +60,7 @@ function view.build(host, rules, onChange, prettyui)
     local function button(...) return track(originalButton(...)) end
     local function input(...) return track(originalInput(...)) end
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
-    local sections = { {}, {} }
+    local sections = { {}, {}, {}, {} }
     local function addSection(page, name)
         sections[page][name] = { count = 0, section = pages[page]:AddCollapseButton(name, {
             expanded = false, onToggle = function() layoutChanged = true end,
@@ -69,22 +70,28 @@ function view.build(host, rules, onChange, prettyui)
     pageIndex = 2
     text(pages[2].content, 10, 8, 400, "Counts include loose supplies and the nexus.")
     for _, name in ipairs({ "Necrotic Runes", "Ectoplasm" }) do addSection(2, name) end
+    pageIndex = 4
+    text(pages[4].content, 10, 8, 400, "Counts include loose spikes and one harness.")
+    addSection(4, "Armour Spikes")
     for index, rule in ipairs(rules) do
-        local item = catalogue[rule.itemId]
-        pageIndex = item.category == "rune" and 1 or item.category == "necromancy" and 2 or nil
+        local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
+        pageIndex = rule.itemId == spikes.ruleId and 4
+            or item.category == "rune" and 1 or item.category == "necromancy" and 2 or nil
         if pageIndex then
         local name
         if pageIndex == 1 then
             name = elemental[rule.itemId] and "Elemental"
                 or combination[rule.itemId] and "Combination" or "Catalytic"
-        else
+        elseif pageIndex == 2 then
             name = rule.itemId == 55336 and "Ectoplasm" or "Necrotic Runes"
+        else
+            name = "Armour Spikes"
         end
         local group = sections[pageIndex][name]
         currentSection = group.section
         local parent, y = currentSection.content, group.count * 145
         group.count = group.count + 1
-        text(parent, 10, y, 300, catalogue[rule.itemId].name)
+        text(parent, 10, y, 300, item.name)
         local enabled, zero = rule.enabled, rule.warnAtZero
         local enabledButton, zeroButton
         enabledButton = button(parent, 10, y + 23, 150, enabled and "Enabled" or "Disabled", function()
