@@ -17,22 +17,19 @@ future features. Each source has `available`; when true, `counts` maps item IDs
 to quantities. Missing or malformed slot data makes that source unavailable.
 Run the mock tests with `lua tests/inventory-reader.lua`.
 
-## Temporary rune-count diagnostic
+## Container data findings
 
-After `prl supply-check`, the console prints `[supply-check] Supply diagnostic`
-when readings change. It compares `GetTotal` for the backpack and worn inventory
-with the law and blood combat client variables and Make-X player variables; it
-also reports loose Deathspore arrows. These experimental variables are not used
-for warnings and may be stale or have a different meaning. Unavailable is not zero.
+In-client testing found that `COMBATV2_RUNECOUNT_LAW` and
+`COMBATV2_RUNECOUNT_BLOOD` tracked loose and pouched runes together when runes
+were moved or consumed. Their exact semantics and freshness are not documented.
+Make-X rune-count variables remained zero in that test.
 
-For a controlled test, use one pouch with a known number of law runes and no
-other pouches. Record readings with no loose law runes, add a known loose stack,
-move runes into and out of the pouch, and consume some. Repeat with the magic
-interface closed and open, and note the action alongside each console reading.
-Try equipping the pouch and changing characters or logging out and back in too.
-For arrows, compare loose/equipped counts before and after putting arrows in a
-quiver; this diagnostic does not read a quiver-specific variable. Mock test:
-`lua tests/rune-diagnostic.lua`.
+Inventory 953 (`NECROMANCY_NEXUS`) exposed ectoplasm and all four necrotic
+runes through the inventory API, updating after additions and spell consumption.
+Availability and freshness across logout and switching multiple nexuses still
+need verification. Neither source is currently included in warnings or totals.
+
+## Quiver diagnostic
 
 The separate `[supply-check] Quiver field probe` looks for Pernix's quiver in
 the backpack and worn inventory and attempts to read undocumented slot fields
