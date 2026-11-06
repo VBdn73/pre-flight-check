@@ -49,7 +49,7 @@ function view.build(host, rules, onChange, prettyui)
     local function text(...) return track(originalText(...)) end
     local function button(...) return track(originalButton(...)) end
     local function input(...) return track(originalInput(...)) end
-    text(parent, 10, 8, 460, "Warnings: loose backpack + equipment only; containers excluded.")
+    text(parent, 10, 8, 460, "Runes: combat counts. Arrows: loose backpack + equipment.")
     for index, rule in ipairs(rules) do
         local y = 36 + (index - 1) * 145
         text(parent, 10, y, 300, catalogue[rule.itemId].name)

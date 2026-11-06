@@ -3,9 +3,9 @@ local rule = { itemId = 565, enabled = true, low = 100, critical = 25,
     lowCooldown = 300, criticalCooldown = 60, warnAtZero = false }
 local instance = monitor.new({ rule })
 local snapshot = { backpack = { available = true, counts = {} },
-    equipment = { available = true, counts = {} } }
+    equipment = { available = true, counts = {} }, runeCounts = {} }
 local function check(count, now)
-    snapshot.backpack.counts[565] = count
+    snapshot.runeCounts[565] = count
     return instance.update(snapshot, now)
 end
 assert(#check(0, 0) == 0)
@@ -18,9 +18,10 @@ assert(#check(24, 362) == 0)
 assert(check(24, 363)[1].level == "critical")
 assert(#check(0, 364) == 0)
 assert(check(24, 365)[1].level == "critical")
-snapshot.equipment.available = false
-assert(#check(10, 500) == 0)
-snapshot.equipment.available = true
+snapshot.runeCounts[565] = nil
+snapshot.runeCounts = nil
+assert(#instance.update(snapshot, 500) == 0)
+snapshot.runeCounts = {}
 assert(check(10, 500)[1].level == "critical")
 rule.enabled = false
 assert(#check(10, 501) == 0)
@@ -28,4 +29,9 @@ rule.enabled, rule.warnAtZero = true, true
 assert(check(0, 502)[1].count == 0)
 instance.reset()
 assert(check(0, 503)[1].level == "critical")
+instance.reset()
+snapshot.backpack.counts[565] = 10000
+assert(check(10, 504)[1].count == 10, "combat count must not be added to loose runes")
+snapshot.runeCounts[565] = nil
+assert(#instance.update(snapshot, 505) == 0, "missing combat count must not be treated as zero")
 print("Warning monitor tests passed.")

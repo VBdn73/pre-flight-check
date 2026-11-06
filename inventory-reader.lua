@@ -1,5 +1,6 @@
 -- Read independent, fresh snapshots; never retain an Inventory proxy across calls.
 local reader = {}
+local catalogue = require("supply-catalogue")
 
 local function integer(value, minimum)
     return type(value) == "number" and value >= minimum
@@ -43,7 +44,14 @@ local function readSource(name)
 end
 
 function reader.read()
-    return { backpack = readSource("INV"), equipment = readSource("WORN") }
+    local runes = {}
+    for itemId, item in pairs(catalogue) do
+        if item.combatVar then
+            local ok, count = pcall(function() return var.VarClient[item.combatVar].value end)
+            if ok and integer(count, 0) then runes[itemId] = count end
+        end
+    end
+    return { backpack = readSource("INV"), equipment = readSource("WORN"), runeCounts = runes }
 end
 
 return reader

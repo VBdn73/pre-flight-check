@@ -8,7 +8,7 @@ Event = { Logic = event("logic"), ServerLogic = event("server"),
 local amount, available = 200, true
 package.loaded["inventory-reader"] = { read = function()
     return { backpack = { available = available, counts = { [563] = amount } },
-        equipment = { available = true, counts = {} } }
+        equipment = { available = true, counts = {} }, runeCounts = available and { [563] = amount } or {} }
 end }
 package.loaded["supply-view"] = { build = function() return function() end end }
 package.loaded["warnings/settings"] = { load = function() return {

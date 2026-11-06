@@ -27,7 +27,7 @@ Make-X rune-count variables remained zero in that test.
 Inventory 953 (`NECROMANCY_NEXUS`) exposed ectoplasm and all four necrotic
 runes through the inventory API, updating after additions and spell consumption.
 Availability and freshness across logout and switching multiple nexuses still
-need verification. Neither source is currently included in warnings or totals.
+need verification. Nexus contents are not yet included in warnings or totals.
 
 ## Quiver diagnostic
 
@@ -38,24 +38,29 @@ means the binding did not yield a number, not that the quiver is empty. Compare
 with `!listinv inv` or `!listinv worn` on the development server. These fields
 are experimental and never used for counts. Mock test: `lua tests/quiver-diagnostic.lua`.
 
-`supply-catalogue.lua` lists exact item IDs and names. Deathspore arrows, blood
-runes and law runes have been checked in-client. No container contents are
-included.
+`supply-catalogue.lua` lists item IDs, names and combat-variable bindings. The
+panel remains a loose-item view; its totals do not include container contents.
 
 ## Experimental warnings
 
 The settings panel uses the required PrettyUI dependency for scrolling. After
 changing the plugin manifest, run `prf` before enabling or reloading the plugin.
 
-The settings icon provides individual warning controls for law runes, blood
-runes and Deathspore arrows. Each starts enabled with a low threshold of 100,
+The settings icon provides individual warning controls for elemental, catalytic
+and combination runes, plus Deathspore arrows. Law runes, blood runes and
+Deathspore arrows start enabled; newly added rune warnings start disabled.
+Each has a default low threshold of 100,
 critical threshold of 25, low repeat of 300 seconds, critical repeat of 60
 seconds, and zero warnings off. Thresholds mean strictly below. Set a repeat
 interval from 1 to 86400 seconds, and press Save for each item. Settings are
 shared across characters on this client type.
 
-Warnings monitor backpack plus equipment even while the ribbon is closed;
-container contents are not counted. Unavailable sources suppress warnings.
+Rune warnings use the client combat rune counts, without adding loose counts;
+law and blood counts were tested with pouches, but the other variables and
+effects of combination runes or infinite-rune equipment require in-client tests.
+An unavailable rune variable suppresses its warning. Deathspore warnings count
+loose backpack plus equipment only, excluding quivers. Monitoring continues
+while the ribbon is closed; unavailable relevant sources suppress warnings.
 Entering the critical range can alert immediately even during a low cooldown.
 The popup disappears after eight seconds. Cooldowns use client logic ticks and
 reset when the game leaves GAME, settings are saved, or the plugin is reloaded.

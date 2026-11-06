@@ -1,6 +1,13 @@
 -- Persistent settings for the initial set of exact-item warnings.
 local settings = {}
 local ids = { 563, 565, 52299 }
+local catalogue = require("supply-catalogue")
+local additional = {}
+for itemId, item in pairs(catalogue) do
+    if item.combatVar and itemId ~= 563 and itemId ~= 565 then additional[#additional + 1] = itemId end
+end
+table.sort(additional)
+for _, itemId in ipairs(additional) do ids[#ids + 1] = itemId end
 local key = "supplyWarnings.v1"
 
 local function validInteger(n, min, max)
@@ -23,7 +30,8 @@ function settings.load()
     for _, itemId in ipairs(ids) do
         local rule = saved[tostring(itemId)]
         if not settings.valid(rule) then
-            rule = { enabled = true, warnAtZero = false, low = 100, critical = 25,
+            rule = { enabled = itemId == 563 or itemId == 565 or itemId == 52299,
+                warnAtZero = false, low = 100, critical = 25,
                 lowCooldown = 300, criticalCooldown = 60 }
         end
         rules[#rules + 1] = { itemId = itemId, enabled = rule.enabled,

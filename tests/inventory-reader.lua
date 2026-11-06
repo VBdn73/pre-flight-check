@@ -9,13 +9,18 @@ local sources = {
 }
 config = { Inv = { INV = "INV", WORN = "WORN" } }
 Inventory = { Find = function(name) return sources[name] end }
+var = { VarClient = { COMBATV2_RUNECOUNT_LAW = { value = 123 },
+    COMBATV2_RUNECOUNT_BLOOD = { value = -1 } } }
 
 local first = reader.read()
 assert(first.backpack.available and first.backpack.counts[565] == 30)
 assert(first.equipment.available and first.equipment.counts[52299] == 6872)
+assert(first.runeCounts[563] == 123 and first.runeCounts[565] == nil)
+var.VarClient.COMBATV2_RUNECOUNT_LAW.value = 12
 slots[2].count = 12
 local second = reader.read()
 assert(second.backpack.counts[565] == 32 and first.backpack.counts[565] == 30)
+assert(second.runeCounts[563] == 12 and first.runeCounts[563] == 123)
 assert(first.backpack.counts ~= second.backpack.counts)
 
 slots = { empty(), empty(), empty() }

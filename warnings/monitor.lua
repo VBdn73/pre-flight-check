@@ -11,16 +11,19 @@ function monitor.new(rules)
     end
 
     function instance.update(snapshot, now)
-        if not snapshot.backpack.available or not snapshot.equipment.available then
-            return {} -- Retain cooldowns; unavailable counts cannot trigger warnings.
-        end
         local alerts = {}
         for _, rule in ipairs(rules) do
-            if rule.enabled then
+            local item = catalogue[rule.itemId]
+            local count
+            if item.combatVar then
+                count = snapshot.runeCounts and snapshot.runeCounts[rule.itemId]
+            elseif snapshot.backpack.available and snapshot.equipment.available then
+                count = (snapshot.backpack.counts[rule.itemId] or 0)
+                    + (snapshot.equipment.counts[rule.itemId] or 0)
+            end
+            if rule.enabled and count ~= nil then
                 local state = states[rule.itemId] or {}
                 states[rule.itemId] = state
-                local count = (snapshot.backpack.counts[rule.itemId] or 0)
-                    + (snapshot.equipment.counts[rule.itemId] or 0)
                 local level
                 if count > 0 or rule.warnAtZero then
                     if count < rule.critical then level = "critical"
@@ -36,7 +39,7 @@ function monitor.new(rules)
                     end
                 end
                 state.level = level
-            else
+            elseif not rule.enabled then
                 states[rule.itemId] = nil
             end
         end
