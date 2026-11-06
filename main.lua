@@ -14,6 +14,7 @@ local canRead = true
 local now
 local checkAfter, checkDeadline
 local anticipatedCloseUntil
+local presetSettleDelay = 0.6 -- Allow a server tick for the preset's supply data to arrive.
 
 -- Wait for server updates following the action before taking a fresh snapshot.
 local function scheduleCheck(delay)
@@ -21,8 +22,8 @@ local function scheduleCheck(delay)
     checkAfter, checkDeadline = now + delay, now + 5
 end
 
-local function anticipateClose(alwaysCheck)
-    if alwaysCheck or not anticipatedCloseUntil then scheduleCheck(0) end
+local function anticipateClose(alwaysCheck, delay)
+    if alwaysCheck or not anticipatedCloseUntil then scheduleCheck(delay or 0) end
     anticipatedCloseUntil = now + 5
 end
 
@@ -75,8 +76,8 @@ Event.KeyDown.Subscribe("supplyCheck.presetShortcut", function(event)
     end
     if presetTrigger.isShortcut(event, modifiers) then
         bankState.markOpen()
-        if rules.checkOnBankClose then anticipateClose(true)
-        elseif rules.checkOnPreset then scheduleCheck(0) end
+        if rules.checkOnBankClose then anticipateClose(true, presetSettleDelay)
+        elseif rules.checkOnPreset then scheduleCheck(presetSettleDelay) end
     end
 end)
 Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
@@ -95,9 +96,9 @@ Event.MiniMenuEntrySelected.Subscribe("supplyCheck.preset", function(event)
     if not presetTrigger.isLoad(event.entry) then return end
     if rules.checkOnBankClose and canRead and now and bankState.isMainPanelOpen() then
         bankState.markOpen()
-        anticipateClose(true)
+        anticipateClose(true, presetSettleDelay)
     elseif rules.checkOnPreset then
-        scheduleCheck(0)
+        scheduleCheck(presetSettleDelay)
     end
 end)
 Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)

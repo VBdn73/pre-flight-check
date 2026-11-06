@@ -39,10 +39,12 @@ callbacks.server()
 assert(#alerts == 0)
 rules.checkOnPreset = true
 load()
+callbacks.server() -- The first update can still contain the previous preset.
+assert(#alerts == 0, "preset check waits for supply data to settle")
 amount = 80 -- server data changes after action
-time(5)
+time(4.6)
 callbacks.server()
-assert(#alerts == 1 and alerts[1][1].count == 80, "preset check runs on the next server update")
+assert(#alerts == 1 and alerts[1][1].count == 80, "preset check uses the settled snapshot")
 time(6)
 callbacks.server()
 assert(#alerts == 1, "server updates do not repeat the check")
@@ -54,12 +56,13 @@ bankOpen = true
 time(9)
 callbacks.key({ gameKey = 16, modifiers = 0, isRepeat = false })
 amount = 70
+time(10.2)
 callbacks.server()
-assert(#alerts == 3 and alerts[3][1].count == 70, "shortcut checks on the next server update")
+assert(#alerts == 3 and alerts[3][1].count == 70, "shortcut checks the settled snapshot")
 rules.checkOnPreset = false
 rules.checkOnBankClose = true
 bankRestricted = true
-time(10)
+time(11)
 bankOpen = false
 time(12)
 callbacks.server()
@@ -106,37 +109,58 @@ bankOpen = true
 time(41)
 load()
 callbacks.server()
-assert(#alerts == 9, "bank-close-only menu preset checks before the bank state changes")
 bankOpen = false
-time(42)
+time(41.5)
 callbacks.server()
-assert(#alerts == 9, "preset menu closure does not duplicate the check")
+assert(#alerts == 8, "bank closure does not replace the pending preset check")
+time(41.7)
+callbacks.server()
+assert(#alerts == 9, "bank-close-only menu preset checks after settling")
 bankOpen = true
 time(43)
 callbacks.key({ gameKey = 16, modifiers = 0, isRepeat = false })
 callbacks.server()
-assert(#alerts == 10, "bank-close-only preset shortcut checks promptly")
 bankOpen = false
-time(44)
+time(43.5)
 callbacks.server()
-assert(#alerts == 10, "preset shortcut closure does not duplicate the check")
+assert(#alerts == 9, "shortcut closure does not check stale data")
+time(43.7)
+callbacks.server()
+assert(#alerts == 10, "bank-close-only preset shortcut checks after settling")
 bankOpen = true
 time(45)
 rules.checkOnPreset = true
 load()
+time(46.2)
 callbacks.server()
 load()
+time(47.5)
 callbacks.server()
 assert(#alerts == 12, "repeated preset loads check even when both triggers are enabled")
 bankOpen = false
-time(46)
+time(48)
 callbacks.server()
 assert(#alerts == 12, "both triggers do not duplicate the close check")
+bankOpen = true
+time(49)
+amount = 10
+load()
+callbacks.server()
+assert(#alerts == 12, "old low preset does not alert during a new load")
+amount = 200
+time(50.3)
+callbacks.server()
+assert(#alerts == 12, "a well-stocked preset does not inherit the previous warning")
+load()
+amount = 10
+time(51.6)
+callbacks.server()
+assert(#alerts == 13 and alerts[13][1].count == 10, "a low newly loaded preset still warns")
 rules[1].enabled = false
 load()
-time(47)
+time(52.9)
 callbacks.server()
-assert(#alerts == 12, "disabled items do not alert on a triggered check")
+assert(#alerts == 13, "disabled items do not alert on a triggered check")
 callbacks.state({ newState = 40 })
 PluginShutdown()
 print("Warning integration tests passed.")
