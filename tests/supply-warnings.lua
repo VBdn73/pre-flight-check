@@ -1,4 +1,4 @@
-local warnings = require("supply-warnings")
+local warnings = require("warnings/evaluate")
 local snapshot = {
     backpack = { available = true, counts = { [563] = 99, [565] = 100, [52299] = 30 } },
     equipment = { available = true, counts = { [52299] = 70 } },

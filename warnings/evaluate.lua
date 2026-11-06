@@ -1,4 +1,4 @@
--- Pure warning decisions; the preset trigger and notification are not wired up.
+-- Legacy stateless threshold decisions, retained separately from the active monitor.
 local catalogue = require("supply-catalogue")
 local warnings = {}
 

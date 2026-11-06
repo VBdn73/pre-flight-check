@@ -7,7 +7,12 @@ local function event(name)
     }
 end
 Event = { ServerLogic = event("server"), GameStateChanged = event("state"),
-    ContentLayerReady = event("content") }
+    ContentLayerReady = event("content"), Logic = event("logic"), SettingsLayerReady = event("settings") }
+package.loaded["warnings/settings"] = { load = function() return {} end }
+package.loaded["warnings/settings-view"] = { build = function() end }
+package.loaded["warnings/monitor"] = { new = function() return {
+    update = function() return {} end, reset = function() end } end }
+package.loaded["warnings/popup"] = { clear = function() end, update = function() end }
 package.loaded["inventory-reader"] = { read = function()
     reads = reads + 1
     return { backpack = { available = true }, equipment = { available = true } }
@@ -31,7 +36,7 @@ failRefresh = true
 callbacks.server()
 readsBefore = reads
 callbacks.server()
-assert(reads == readsBefore, "failed panel should stop refreshing")
+assert(reads == readsBefore + 1, "warnings continue when the panel is unavailable")
 failRefresh = false
 callbacks.content({ component = {} })
 assert(snapshots[5].backpack.available, "reopened panel should read fresh data")
@@ -39,4 +44,6 @@ PluginShutdown()
 assert(unsubscribed.server == "supplyCheck.refresh")
 assert(unsubscribed.state == "supplyCheck.state")
 assert(unsubscribed.content == "supplyCheck.content")
+assert(unsubscribed.logic == "supplyCheck.clock")
+assert(unsubscribed.settings == "supplyCheck.settings")
 print("Panel lifecycle tests passed.")

@@ -1,4 +1,4 @@
-local monitor = require("warning-monitor")
+local monitor = require("warnings/monitor")
 local rule = { itemId = 565, enabled = true, low = 100, critical = 25,
     lowCooldown = 300, criticalCooldown = 60, warnAtZero = false }
 local instance = monitor.new({ rule })
