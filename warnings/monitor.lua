@@ -12,7 +12,7 @@ function monitor.new(rules)
         states = {}
     end
 
-    function instance.update(snapshot, now)
+    function instance.update(snapshot, now, force)
         local alerts = {}
         for _, rule in ipairs(rules) do
             local effective = settings.effective(rules, rule)
@@ -47,7 +47,7 @@ function monitor.new(rules)
                 if level then
                     local cooldown = level == "critical" and effective.criticalCooldown or effective.lowCooldown
                     local escalated = level == "critical" and state.level ~= "critical"
-                    if escalated or not state.lastAlert or now - state.lastAlert >= cooldown then
+                    if force or escalated or not state.lastAlert or now - state.lastAlert >= cooldown then
                         alerts[#alerts + 1] = { itemId = rule.itemId,
                             name = item.name, count = count, level = level }
                         state.lastAlert = now

@@ -4,8 +4,8 @@ local settingsView = require("warnings/settings-view")
 local warningMonitor = require("warnings/monitor")
 local popup = require("warnings/popup")
 local quiverDiagnostic = require("quiver-diagnostic")
-local presetTest = require("preset-test")
-local bankCloseTest = require("bank-close-test").new()
+local presetTrigger = require("preset-trigger")
+local bankState = require("bank-state").new()
 local prettyUILibrary = prettyui
 local rules = warningSettings.load()
 local monitor = warningMonitor.new(rules)
@@ -13,33 +13,35 @@ local refreshSettings, destroySettings
 local canRead = true
 local now
 local retryAfter = 0
-local presetWatcher = presetTest.newWatcher(print)
-local lastTestAt
+local checkAfter, checkDeadline
 
-local function showTestNotification()
-    if not now or not canRead then
-        print("[supply-check] Test popup is available in-game once the client clock starts.")
-        return
-    end
-    if not popup.show({ { name = "Test notification", count = 123, level = "low" } }, now) then
-        print("[supply-check] Test popup could not be displayed.")
-    end
+-- Wait for server updates following the action before taking a fresh snapshot.
+local function scheduleCheck()
+    if not canRead or not now then return end
+    checkAfter, checkDeadline = now + 1.2, now + 5
 end
 
 local function refresh()
-    if canRead then
-        quiverDiagnostic.update()
-    end
+    if canRead then quiverDiagnostic.update() end
     local snapshot = canRead and reader.read() or {
         backpack = { available = false }, equipment = { available = false },
     }
     if not snapshot.backpack.available or not snapshot.equipment.available then popup.clear() end
-    if canRead and now and now >= retryAfter then
-        local alerts = monitor.update(snapshot, now)
-        if #alerts > 0 and not popup.show(alerts, now) then
-            monitor.reset()
-            retryAfter = now + 10
+    if not canRead or not now or now < retryAfter then return end
+    local force = false
+    if checkAfter then
+        if now < checkAfter then return end
+        if not snapshot.backpack.available or not snapshot.equipment.available then
+            if now >= checkDeadline then checkAfter, checkDeadline = nil, nil end
+            return
         end
+        force = true
+        checkAfter, checkDeadline = nil, nil
+    end
+    local alerts = monitor.update(snapshot, now, force)
+    if #alerts > 0 and not popup.show(alerts, now) then
+        monitor.reset()
+        retryAfter = now + 10
     end
 end
 
@@ -47,16 +49,25 @@ Event.ServerLogic.Subscribe("supplyCheck.refresh", refresh)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
     now = event.logicTick / 50
     popup.update(now)
-    if canRead and bankCloseTest.update() and rules.testBankClose then
-        showTestNotification()
-    end
-    if canRead and presetWatcher.update() and (not lastTestAt or now - lastTestAt > 0.5) then
-        showTestNotification()
-        lastTestAt = now
-    end
+    if canRead and bankState.update() and rules.checkOnBankClose then scheduleCheck() end
     if refreshSettings and not pcall(refreshSettings) then
         refreshSettings = nil
         if destroySettings then pcall(destroySettings); destroySettings = nil end
+    end
+end)
+Event.KeyDown.Subscribe("supplyCheck.presetShortcut", function(event)
+    if not rules.checkOnPreset or not canRead or not now or not bankState.isMainPanelOpen() then return end
+    local modifiers = event.modifiers
+    local ok, ctrl, shift, alt = pcall(function()
+        if not Keyboard.IsAvailable() or Keyboard.IsBlocked() then return nil end
+        return Keyboard.IsControlDown(), Keyboard.IsShiftDown(), Keyboard.IsAltDown()
+    end)
+    if ok and ctrl ~= nil then
+        modifiers = (ctrl and 2 or 0) + (shift and 1 or 0) + (alt and 4 or 0)
+    end
+    if presetTrigger.isShortcut(event, modifiers) then
+        bankState.markOpen()
+        scheduleCheck()
     end
 end)
 Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
@@ -66,37 +77,15 @@ Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
         monitor.reset()
         popup.clear()
         retryAfter = 0
-    end, prettyUILibrary, showTestNotification)
+    end, prettyUILibrary)
     if ok then
         refreshSettings, destroySettings = result, destroy
     else
         print("[supply-check] Settings creation failed: " .. tostring(result))
     end
 end)
-Event.MiniMenuEntrySelected.Subscribe("supplyCheck.presetTest", function(event)
-    local entry = event.entry
-    local component = entry and entry.componentData and entry.componentData.component
-    if component and not component.isRestricted and component.interfaceID == 517 then
-        print("[supply-check] Bank action: verb=" .. tostring(entry.verbText)
-            .. " static=" .. tostring(component.staticID)
-            .. " dynamic=" .. tostring(component.dynamicID))
-    elseif entry and type(entry.verbText) == "string"
-        and entry.verbText:lower():find("preset", 1, true) then
-        print("[supply-check] Preset action: verb=" .. entry.verbText)
-    end
-    if presetTest.isLoad(event.entry) then
-        showTestNotification()
-        lastTestAt = now
-    end
-end)
-Event.VarTransmit.Subscribe("supplyCheck.presetProbe", function(event)
-    local variable = event.var
-    if variable and variable.typeName == "VarPlayer" and
-        (variable.id == 9932 or variable.id == 4331 or variable.id == 4338
-            or variable.id == -22180 or variable.id == -22184 or variable.id == -29486) then
-        print("[supply-check] Preset var transmit: id=" .. tostring(variable.id)
-            .. " old=" .. tostring(event.oldValue) .. " new=" .. tostring(event.newValue))
-    end
+Event.MiniMenuEntrySelected.Subscribe("supplyCheck.preset", function(event)
+    if rules.checkOnPreset and presetTrigger.isLoad(event.entry) then scheduleCheck() end
 end)
 Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
     canRead = event.newState == 30 -- GameState.GAME
@@ -104,9 +93,8 @@ Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
         quiverDiagnostic.reset()
         monitor.reset()
         popup.clear()
-        presetWatcher.reset()
-        bankCloseTest.reset()
-        lastTestAt = nil
+        bankState.reset()
+        checkAfter, checkDeadline = nil, nil
     end
     refresh()
 end)
@@ -117,8 +105,8 @@ function PluginShutdown()
     popup.clear()
     Event.ServerLogic.Unsubscribe("supplyCheck.refresh")
     Event.Logic.Unsubscribe("supplyCheck.clock")
+    Event.KeyDown.Unsubscribe("supplyCheck.presetShortcut")
     Event.SettingsLayerReady.Unsubscribe("supplyCheck.settings")
-    Event.MiniMenuEntrySelected.Unsubscribe("supplyCheck.presetTest")
-    Event.VarTransmit.Unsubscribe("supplyCheck.presetProbe")
+    Event.MiniMenuEntrySelected.Unsubscribe("supplyCheck.preset")
     Event.GameStateChanged.Unsubscribe("supplyCheck.state")
 end

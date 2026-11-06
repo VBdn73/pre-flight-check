@@ -45,15 +45,17 @@ function view.build(host, rules, onChange, prettyui)
         "PrettyUI Tabs is required for warning settings")
     assert(prettyui.SpriteButton and prettyui.SpriteButton.new,
         "PrettyUI SpriteButton is required for warning settings")
+    assert(prettyui.CheckboxButton and prettyui.CheckboxButton.new,
+        "PrettyUI CheckboxButton is required for warning settings")
     local tabs = prettyui.Tabs.new(host, {
-        { text = "Magic" }, { text = "Necromancy" },
+        { text = "General" }, { text = "Magic" }, { text = "Necromancy" },
         { text = "Ranged" }, { text = "Melee" },
     }, { width = 0, height = 0, widthAnchor = 1, heightAnchor = 1,
         contentLayout = { startY = 120 } })
-    local pages = { tabs:GetPage(1), tabs:GetPage(2), tabs:GetPage(3), tabs:GetPage(4) }
+    local pages = { tabs:GetPage(2), tabs:GetPage(3), tabs:GetPage(4), tabs:GetPage(5), tabs:GetPage(1) }
     local styleNames = { "Magic", "Necromancy", "Ranged", "Melee" }
-    local controls = { {}, {}, {}, {} }
-    local spriteButtons = {}
+    local controls = { {}, {}, {}, {}, {} }
+    local spriteButtons, checkboxes = {}, {}
     local pageIndex, currentSection = 1, nil
     local layoutChanged = true
     local function track(control)
@@ -84,6 +86,29 @@ function view.build(host, rules, onChange, prettyui)
     local function saveButton(parent, x, y, action)
         return button(parent, x, y, 48, "Save", action)
     end
+    pageIndex = 5
+    text(pages[5].content, 10, 8, 380, "Additional supply checks")
+    local function triggerToggle(y, key, label)
+        local checkbox
+        checkbox = prettyui.CheckboxButton.new(pages[5].content, {
+            { text = label, value = key, selected = rules[key] },
+        }, { width = 300, onChange = function(_, _, _, selected)
+            local old = rules[key]
+            rules[key] = selected
+            if not settings.save(rules) then
+                rules[key] = old
+                checkbox:SetSelected(key, old, false)
+                print("[supply-check] Could not save check setting.")
+            end
+        end })
+        checkbox.root:SetPos(10, y)
+        checkbox.items[1].label.font = id.Font.MUSEO_SANS_11PT_REGULAR
+        checkboxes[#checkboxes + 1] = checkbox
+        track(checkbox.root)
+    end
+    triggerToggle(40, "checkOnPreset", "Check on preset load")
+    triggerToggle(75, "checkOnBankClose", "Check on bank close")
+    pageIndex = 1
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
     local sections = { {}, {}, {}, {} }
     local function addSection(page, name)
@@ -249,11 +274,12 @@ function view.build(host, rules, onChange, prettyui)
     local function refresh()
         local w = math.max(1, host.width)
         local h = math.max(1, host.height - 42)
-        local active = tabs:GetActiveIndex()
+        local selected = tabs:GetActiveIndex()
+        local active = selected == 1 and 5 or selected - 1
         if active ~= activeIndex then activeIndex, layoutChanged = active, true end
         if w ~= width or h ~= height then
             width, height, scrollPositions = w, h, {}
-            for i = 1, 4 do tabs:GetPage(i)._scroll:Refresh() end
+            for i = 1, 5 do tabs:GetPage(i)._scroll:Refresh() end
         end
         for i, page in ipairs(pages) do
             if layoutChanged or page.scrollY ~= scrollPositions[i] then
@@ -284,6 +310,9 @@ function view.build(host, rules, onChange, prettyui)
     refresh()
     return refresh, function()
         for _, b in ipairs(spriteButtons) do b:Destroy() end
+        for _, checkbox in ipairs(checkboxes) do
+            if checkbox.Destroy then checkbox:Destroy() end
+        end
         tabs:Destroy()
     end
 end

@@ -52,6 +52,8 @@ function settings.load()
     local ok, saved = pcall(function() return PersistentDB:GetStructuredData(key) end)
     if not ok or type(saved) ~= "table" then saved = {} end
     local rules = {}
+    rules.checkOnPreset = saved.checkOnPreset == true
+    rules.checkOnBankClose = saved.checkOnBankClose == true
     rules.styles = {}
     for _, style in ipairs(styles) do
         local value = type(saved.styles) == "table" and saved.styles[style]
@@ -71,7 +73,8 @@ function settings.load()
 end
 
 function settings.save(rules)
-    local data = { styles = {} }
+    local data = { styles = {}, checkOnPreset = rules.checkOnPreset == true,
+        checkOnBankClose = rules.checkOnBankClose == true }
     for _, style in ipairs(styles) do
         if not rules.styles or not settings.valid(rules.styles[style]) then return false end
         local value = rules.styles[style]

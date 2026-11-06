@@ -22,9 +22,25 @@ ui = { Text = { new = function(parent) return control("text", parent) end },
     InputField = { new = function(parent) return control("input", parent) end },
     Hook = { ONBUTTONPRESSED = "press", ONCLICK = "click", ONSCROLLWHEEL = "wheel" },
     TextContentVisibilityMode = { VISIBLE = 1 }, InputFieldFilterMode = { NUMBERS_AS_TEXT = 1 } }
-id = { Font = { MUSEO_SANS_11PT_REGULAR = 1 }, StyleSheet = { BUTTON_DEFAULT = 1, INPUT_DEFAULT = 2 } }
+id = { Font = { MUSEO_SANS_11PT_REGULAR = 1 }, StyleSheet = {
+    BUTTON_DEFAULT = 1, INPUT_DEFAULT = 2, CHECKBOX_DEFAULT_LEFT_ALIGNED = 3 } }
 local tabs
-local prettyui = { SpriteButton = { new = function(parent, sprite, action, options)
+local prettyui = { CheckboxButton = { new = function(parent, entries, options)
+    local root = control("checkbox", parent)
+    root:SetSize(options.width, 25)
+    local item = { label = {}, selected = entries[1].selected }
+    local result = { root = root, items = { item } }
+    function result:SetSelected(key, selected, notify)
+        assert(key == entries[1].value)
+        item.selected = selected
+        if notify then options.onChange(self, key, item, selected) end
+    end
+    root.hooks.press = function() result:SetSelected(entries[1].value, not item.selected, true) end
+    function result:Destroy() self.destroyed = true end
+    root.checkbox = result
+    item.label.content = entries[1].text
+    return result
+end }, SpriteButton = { new = function(parent, sprite, action, options)
     local root = control("iconButton", parent)
     root:SetPos(options.x, options.y); root:SetSize(options.size, options.size)
     root.spriteName, root.tooltip = sprite, options.tooltip
@@ -37,7 +53,7 @@ local prettyui = { SpriteButton = { new = function(parent, sprite, action, optio
     return result
 end }, Tabs = { new = function(host, entries, options)
     tabs = { entries = entries, options = options, pages = {}, active = 1 }
-    for i = 1, 4 do
+    for i = 1, 5 do
         local page = { content = {}, scrollY = 0, contentHeight = 0, sections = {} }
         page._scroll = { Refresh = function()
             page.height = math.max(1, host.height - 42)
@@ -78,8 +94,8 @@ PersistentDB = { GetStructuredData = function() return saved end,
 local rules = require("warnings/settings").load()
 local host = { width = 400, height = 600 }
 local refresh, destroy = require("warnings/settings-view").build(host, rules, function() end, prettyui)
-local magic, necro, ranged, melee = table.unpack(tabs.pages)
-assert(tabs.entries[1].text == "Magic" and tabs.entries[4].text == "Melee")
+local general, magic, necro, ranged, melee = table.unpack(tabs.pages)
+assert(tabs.entries[1].text == "General" and tabs.entries[5].text == "Melee")
 assert(tabs.options.contentLayout.startY == 120)
 assert(magic.sections[1].name == "Elemental" and magic.sections[2].name == "Catalytic")
 assert(necro.sections[1].name == "Necrotic Runes" and ranged.sections[1].name == "Ammunition")
@@ -91,6 +107,36 @@ local function find(parent, kind, x, y)
     error("control not found: " .. kind .. " " .. x .. "," .. y)
 end
 local style = magic.content
+local preset = find(general.content, "checkbox", 10, 40)
+local bank = find(general.content, "checkbox", 10, 75)
+assert(preset.checkbox.items[1].label.content == "Check on preset load")
+assert(bank.checkbox.items[1].label.content == "Check on bank close")
+assert(not preset.checkbox.items[1].selected and not bank.checkbox.items[1].selected)
+preset.hooks.press()
+bank.hooks.press()
+assert(saved.checkOnPreset and saved.checkOnBankClose)
+assert(preset.checkbox.items[1].selected and bank.checkbox.items[1].selected)
+bank.hooks.press()
+refresh()
+assert(not bank.checkbox.items[1].selected and not rules.checkOnBankClose)
+bank.hooks.press()
+PersistentDB.SetStructuredData = function() return false end
+preset.hooks.press()
+assert(preset.checkbox.items[1].selected and rules.checkOnPreset, "failed save restores the checkbox")
+PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
+destroy()
+assert(preset.checkbox.destroyed and bank.checkbox.destroyed)
+controls = {}
+rules = require("warnings/settings").load()
+assert(rules.checkOnPreset and rules.checkOnBankClose, "checkbox choices survive a settings reload")
+refresh, destroy = require("warnings/settings-view").build(host, rules, function() end, prettyui)
+general, magic, necro, ranged, melee = table.unpack(tabs.pages)
+style = magic.content
+preset = find(general.content, "checkbox", 10, 40)
+bank = find(general.content, "checkbox", 10, 75)
+assert(preset.checkbox.items[1].selected and bank.checkbox.items[1].selected, "reopening settings shows enabled checks")
+tabs.active = 2
+refresh()
 assert(not find(style, "input", 10, 87).hidden)
 assert(find(style, "text", 10, 40).content == "Magic defaults")
 find(style, "input", 10, 87).content = "5000"
@@ -139,13 +185,13 @@ enabled.hooks.press()
 assert(not customLow.enabled)
 find(fire, "button", 350, 5).hooks.press()
 assert(not saved["554"].enabled)
-tabs.active = 3
+tabs.active = 4
 ranged.sections[1]:SetExpanded(true)
 refresh()
 local arrow = ranged.sections[1].content
 assert(find(arrow, "sprite", 8, 3).itemId == 52299)
 assert(not find(arrow, "iconButton", 180, 5).hidden)
-tabs.active = 4
+tabs.active = 5
 melee.sections[1]:SetExpanded(true)
 refresh()
 assert(find(melee.sections[1].content, "sprite", 8, 3).itemId == 59925)

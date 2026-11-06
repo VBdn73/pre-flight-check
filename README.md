@@ -42,31 +42,20 @@ are experimental and never used for counts. Mock test: `lua tests/quiver-diagnos
 The settings panel uses the required PrettyUI dependency for tabs and scrolling. After
 changing the plugin manifest, run `prf` before enabling or reloading the plugin.
 
-For a repeatable notification test, open plugin settings in-game and press
-**Test popup** on the Magic tab. It displays a sample low warning for eight
-seconds using the current popup style; it does not change supply settings or
-warning cooldowns. Like a real warning, it replaces any popup already visible.
-The separate **Bank close test** toggle on the Magic tab is off by default and
-saves immediately. When enabled, closing the bank shows the test popup; this is
-independent of the existing supply warnings and still needs in-client testing.
-The same test popup is also experimentally triggered by a bank preset's **Load**
-menu action. This detects the action, not confirmation of a successful load;
-client behavior and keyboard shortcuts still need in-game testing.
-It also attempts to detect the bank chest's **Load Last Preset from** action,
-including repeated loads; the exact client menu text needs in-game verification.
-During this experiment, selected bank menu actions print their verb and component
-IDs to the developer console to help identify the compact preset buttons.
-The plugin also experimentally watches `SHARE_PRESET_ISLOADING` on logic ticks
-for shortcut loads. Its availability, timing and meaning need in-client testing;
-variable changes are logged to the developer console. This is not a confirmed
-successful-load signal.
-Changes to `SHARE_PRESET_LAST_PRESET` also trigger the test popup, including
-when a different preset is loaded via shortcut. This is only an approximation:
-reloading the same preset cannot change that value, and other actions that change
-it might also trigger the popup. `SHARE_PRESET_ISLOADING_OLD` is logged only.
-Preset-related server variable transmissions are logged, even when their values
-do not change. Base variable 4338 no longer triggers the popup because it also
-updates on bank closure. Repeated shortcut loads remain an open investigation.
+The **General** tab has separate, immediately saved switches for checking on
+**preset load** and **bank close**. Both default off. When enabled, these add a
+check of configured supply rules after the action, even during a repeat cooldown;
+normal continuous monitoring continues independently. No popup is shown when
+no enabled supply is below its threshold. A triggered alert starts a new cooldown.
+
+Preset checks cover bank menu actions, the selected preset's Load button, the
+bank chest's Load Last Preset action, and the bank's numbered and beast-of-burden
+shortcuts. The detection observes an action or keypress, not confirmation of a
+successful load; shortcuts used for other purposes while banking may trigger a
+check. The check waits at least 1.2 seconds and for the next server update to give
+inventory data time to arrive. This does not guarantee all supply sources are
+fresh; unavailable sources remain suppressed. If backpack or equipment data stays
+unavailable for five seconds, the extra check is dropped.
 
 The Magic and Necromancy tabs provide individual warning controls for elemental,
 catalytic and combination runes, all four necrotic runes and ectoplasm.
@@ -99,7 +88,7 @@ loose backpack plus equipment only, excluding quivers. Monitoring continues
 without a ribbon panel; unavailable relevant sources suppress warnings.
 Entering the critical range can alert immediately even during a low cooldown.
 The popup shows critical alerts in red and low warnings in orange, and disappears
-after eight seconds. Cooldowns use client logic ticks and
+after four seconds. Cooldowns use client logic ticks and
 reset when the game leaves GAME, settings are saved, or the plugin is reloaded.
 The tester reports that warnings work in-client; individual settings and timing
 cases have not been documented separately. Warning modules live in `warnings/`.

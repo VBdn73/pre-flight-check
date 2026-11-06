@@ -5,6 +5,8 @@ PersistentDB = {
 }
 local settings = require("warnings/settings")
 local rules = settings.load()
+assert(not rules.checkOnBankClose and not rules.checkOnPreset)
+rules.checkOnBankClose, rules.checkOnPreset = true, true
 assert(#rules == 29)
 for _, rule in ipairs(rules) do
     assert(rule.enabled and not rule.custom)
@@ -18,6 +20,7 @@ rules[1].custom, rules[1].low, rules[1].critical = true, 70, 10
 rules[2].enabled = false
 assert(settings.save(rules))
 local loaded = settings.load()
+assert(loaded.checkOnBankClose and loaded.checkOnPreset)
 assert(settings.effective(loaded, loaded[1]).low == 70)
 assert(settings.effective(loaded, loaded[2]).low == 5000 and not loaded[2].enabled)
 loaded[1].custom = false

@@ -50,7 +50,7 @@ function popup.show(alerts, now)
             severity.clickthrough = true
             severity.content = critical and "CRITICAL" or "LOW"
         end
-        expires = now + 8
+        expires = now + 4
     end)
     if not ok then
         popup.clear()

@@ -7,7 +7,8 @@ local function event(name)
     }
 end
 Event = { ServerLogic = event("server"), GameStateChanged = event("state"),
-    Logic = event("logic"), SettingsLayerReady = event("settings") }
+    Logic = event("logic"), SettingsLayerReady = event("settings"), MiniMenuEntrySelected = event("menu"),
+    VarTransmit = event("var"), KeyDown = event("key") }
 package.loaded["warnings/settings"] = { load = function() return {} end }
 package.loaded["warnings/settings-view"] = { build = function() end }
 package.loaded["warnings/monitor"] = { new = function() return {
@@ -36,4 +37,6 @@ assert(unsubscribed.server == "supplyCheck.refresh")
 assert(unsubscribed.state == "supplyCheck.state")
 assert(unsubscribed.logic == "supplyCheck.clock")
 assert(unsubscribed.settings == "supplyCheck.settings")
+assert(unsubscribed.menu == "supplyCheck.preset")
+assert(unsubscribed.key == "supplyCheck.presetShortcut")
 print("Plugin lifecycle tests passed.")
