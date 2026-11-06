@@ -4,10 +4,13 @@ local function event(name)
 end
 Event = { Logic = event("logic"), ServerLogic = event("server"), GameStateChanged = event("state"),
     SettingsLayerReady = event("settings"), MiniMenuEntrySelected = event("menu"), KeyDown = event("key") }
-local amount, available, bankOpen = 200, true, false
+local amount, available, bankOpen, bankRestricted = 200, true, false, false
 var = { VarPlayer = { BANK_ACTIVE = { value = 1 } } }
+Keyboard = { IsAvailable = function() return true end, IsBlocked = function() return false end,
+    IsControlDown = function() return false end, IsShiftDown = function() return false end,
+    IsAltDown = function() return false end }
 ui = { Interfaces = { GetInterface = function() return bankOpen and {} or nil end,
-    GetComponent = function() return { visibleGlobal = true } end } }
+    GetComponent = function() return { visibleGlobal = true, isRestricted = bankRestricted } end } }
 package.loaded["inventory-reader"] = { read = function()
     return { backpack = { available = available, counts = {} }, equipment = { available = available, counts = {} },
         runeCounts = { [563] = amount } }
@@ -55,13 +58,13 @@ callbacks.server()
 assert(#alerts == 3 and alerts[3][1].count == 70, "shortcut checks on the next server update")
 rules.checkOnPreset = false
 rules.checkOnBankClose = true
+bankRestricted = true
+time(10)
 bankOpen = false
 time(12)
 callbacks.server()
-assert(#alerts == 3, "bank closure waits for inventory updates")
-time(14)
-callbacks.server()
-assert(#alerts == 4, "bank closure schedules a check")
+assert(#alerts == 4, "bank closure checks on the next server update without a delay")
+bankRestricted = false
 bankOpen = true
 time(15)
 bankOpen = false
@@ -74,15 +77,66 @@ available = true
 time(19)
 callbacks.server()
 assert(#alerts == 5, "pending check retries when inventory returns")
+bankOpen = true
+time(20)
+callbacks.key({ gameKey = 13, isRepeat = false })
+callbacks.server()
+assert(#alerts == 6, "Escape checks on the next server update before bank state changes")
+var.VarPlayer.BANK_ACTIVE.value = 0 -- Escape can leave the root visible.
+time(21)
+callbacks.server()
+assert(#alerts == 6, "bank deactivation does not duplicate the Escape check")
+time(22)
+callbacks.server()
+assert(#alerts == 6, "bank deactivation triggers only one check")
+var.VarPlayer.BANK_ACTIVE.value = 1
+time(23)
+callbacks.key({ gameKey = 13, isRepeat = false })
+callbacks.server()
+assert(#alerts == 7, "Escape can trigger a check after the bank is reopened")
+time(29) -- Escape did not close the bank; a later close must still trigger.
+bankOpen = false
+time(30)
+callbacks.server()
+assert(#alerts == 8, "a later bank close is not suppressed indefinitely")
 time(40)
 callbacks.server()
-assert(#alerts == 5, "server updates do not repeat alerts")
-rules[1].enabled = false
-rules.checkOnPreset = true
+assert(#alerts == 8, "server updates do not repeat alerts")
+bankOpen = true
+time(41)
 load()
+callbacks.server()
+assert(#alerts == 9, "bank-close-only menu preset checks before the bank state changes")
+bankOpen = false
 time(42)
 callbacks.server()
-assert(#alerts == 5, "disabled items do not alert on a triggered check")
+assert(#alerts == 9, "preset menu closure does not duplicate the check")
+bankOpen = true
+time(43)
+callbacks.key({ gameKey = 16, modifiers = 0, isRepeat = false })
+callbacks.server()
+assert(#alerts == 10, "bank-close-only preset shortcut checks promptly")
+bankOpen = false
+time(44)
+callbacks.server()
+assert(#alerts == 10, "preset shortcut closure does not duplicate the check")
+bankOpen = true
+time(45)
+rules.checkOnPreset = true
+load()
+callbacks.server()
+load()
+callbacks.server()
+assert(#alerts == 12, "repeated preset loads check even when both triggers are enabled")
+bankOpen = false
+time(46)
+callbacks.server()
+assert(#alerts == 12, "both triggers do not duplicate the close check")
+rules[1].enabled = false
+load()
+time(47)
+callbacks.server()
+assert(#alerts == 12, "disabled items do not alert on a triggered check")
 callbacks.state({ newState = 40 })
 PluginShutdown()
 print("Warning integration tests passed.")

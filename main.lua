@@ -13,11 +13,17 @@ local refreshSettings, destroySettings
 local canRead = true
 local now
 local checkAfter, checkDeadline
+local anticipatedCloseUntil
 
 -- Wait for server updates following the action before taking a fresh snapshot.
 local function scheduleCheck(delay)
     if not canRead or not now then return end
     checkAfter, checkDeadline = now + delay, now + 5
+end
+
+local function anticipateClose(alwaysCheck)
+    if alwaysCheck or not anticipatedCloseUntil then scheduleCheck(0) end
+    anticipatedCloseUntil = now + 5
 end
 
 local function refresh()
@@ -40,14 +46,25 @@ Event.ServerLogic.Subscribe("supplyCheck.refresh", refresh)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
     now = event.logicTick / 50
     popup.update(now)
-    if canRead and bankState.update() and rules.checkOnBankClose then scheduleCheck(1.2) end
+    if anticipatedCloseUntil and now >= anticipatedCloseUntil then anticipatedCloseUntil = nil end
+    if canRead and bankState.update() then
+        if rules.checkOnBankClose and not anticipatedCloseUntil then scheduleCheck(0) end
+        anticipatedCloseUntil = nil
+    end
     if refreshSettings and not pcall(refreshSettings) then
         refreshSettings = nil
         if destroySettings then pcall(destroySettings); destroySettings = nil end
     end
 end)
 Event.KeyDown.Subscribe("supplyCheck.presetShortcut", function(event)
-    if not rules.checkOnPreset or not canRead or not now or not bankState.isMainPanelOpen() then return end
+    if not canRead or not now or not bankState.isMainPanelOpen() then return end
+    if event.gameKey == 13 and not event.isRepeat and rules.checkOnBankClose then -- Escape
+        local ok, usable = pcall(function() return Keyboard.IsAvailable() and not Keyboard.IsBlocked() end)
+        if not ok or not usable then return end
+        anticipateClose()
+        return
+    end
+    if not rules.checkOnPreset and not rules.checkOnBankClose then return end
     local modifiers = event.modifiers
     local ok, ctrl, shift, alt = pcall(function()
         if not Keyboard.IsAvailable() or Keyboard.IsBlocked() then return nil end
@@ -58,7 +75,8 @@ Event.KeyDown.Subscribe("supplyCheck.presetShortcut", function(event)
     end
     if presetTrigger.isShortcut(event, modifiers) then
         bankState.markOpen()
-        scheduleCheck(0)
+        if rules.checkOnBankClose then anticipateClose(true)
+        elseif rules.checkOnPreset then scheduleCheck(0) end
     end
 end)
 Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
@@ -74,7 +92,13 @@ Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
     end
 end)
 Event.MiniMenuEntrySelected.Subscribe("supplyCheck.preset", function(event)
-    if rules.checkOnPreset and presetTrigger.isLoad(event.entry) then scheduleCheck(0) end
+    if not presetTrigger.isLoad(event.entry) then return end
+    if rules.checkOnBankClose and canRead and now and bankState.isMainPanelOpen() then
+        bankState.markOpen()
+        anticipateClose(true)
+    elseif rules.checkOnPreset then
+        scheduleCheck(0)
+    end
 end)
 Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
     canRead = event.newState == 30 -- GameState.GAME
@@ -83,6 +107,7 @@ Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
         popup.clear()
         bankState.reset()
         checkAfter, checkDeadline = nil, nil
+        anticipatedCloseUntil = nil
     end
     refresh()
 end)

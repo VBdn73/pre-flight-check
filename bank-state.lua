@@ -4,6 +4,9 @@ local bankClose = {}
 function bankClose.new()
     local wasOpen = false
     local function isOpen()
+        -- Escape can deactivate the bank while its root is still visible.
+        local flagOk, active = pcall(function() return var.VarPlayer.BANK_ACTIVE.value end)
+        if flagOk and (active == 0 or active == false) then return false end
         local ok, open = pcall(function()
             local interface = ui.Interfaces:GetInterface(517)
             if not interface then return false end
@@ -11,8 +14,9 @@ function bankClose.new()
             if not root or root.isRestricted then return nil end
             return root.visibleGlobal == true
         end)
-        if not ok then return nil end
-        return open
+        if ok and open ~= nil then return open end
+        -- During teardown the root may be temporarily inaccessible.
+        return nil
     end
     return {
         reset = function() wasOpen = false end,
@@ -30,7 +34,7 @@ function bankClose.new()
         markOpen = function() wasOpen = true end,
         update = function()
             local open = isOpen()
-            if open == nil then wasOpen = false; return false end
+            if open == nil then return false end
             local closed = wasOpen and not open
             wasOpen = open
             return closed
