@@ -49,10 +49,11 @@ The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
 The Melee tab provides one Armour Spikes warning for all six variants combined,
 and the Ranged tab provides a Deathspore arrow warning. Each tab has always-visible
 style defaults above the item sections for thresholds, repeat intervals and zero warnings. Every item
-starts enabled and uses its style defaults. Use its Enabled/Disabled button to
-control that warning independently, or switch Style to Custom to configure an
-exception. Switching back retains the custom values for later use. Press Save
-after changing either the style defaults or an individual item.
+starts enabled and uses its style defaults. Use the eye icon to control that
+warning independently, or the pencil icon to switch between Style and Custom.
+Inherited fields show the style values but cannot be edited. Switching back
+retains the custom values for later use. Use the Save button after changing either
+the style defaults or an individual item; hover over icons for their functions.
 
 Each style starts with a low threshold of 1000, critical threshold of 250, low
 repeat of 300 seconds, critical repeat of 60 seconds, and zero warnings off.

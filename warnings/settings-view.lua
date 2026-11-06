@@ -5,7 +5,7 @@ local view = {}
 local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
 local combination = { [4694] = true, [4695] = true, [4696] = true,
     [4697] = true, [4698] = true, [4699] = true }
-local rowHeight = 105
+local rowHeight = 90
 
 local function text(parent, x, y, width, value)
     local label = ui.Text.new(parent)
@@ -43,14 +43,17 @@ end
 function view.build(host, rules, onChange, prettyui)
     assert(prettyui and prettyui.Tabs and prettyui.Tabs.new,
         "PrettyUI Tabs is required for warning settings")
+    assert(prettyui.SpriteButton and prettyui.SpriteButton.new,
+        "PrettyUI SpriteButton is required for warning settings")
     local tabs = prettyui.Tabs.new(host, {
         { text = "Magic" }, { text = "Necromancy" },
         { text = "Ranged" }, { text = "Melee" },
     }, { width = 0, height = 0, widthAnchor = 1, heightAnchor = 1,
-        contentLayout = { startY = 144 } })
+        contentLayout = { startY = 120 } })
     local pages = { tabs:GetPage(1), tabs:GetPage(2), tabs:GetPage(3), tabs:GetPage(4) }
     local styleNames = { "Magic", "Necromancy", "Ranged", "Melee" }
     local controls = { {}, {}, {}, {} }
+    local spriteButtons = {}
     local pageIndex, currentSection = 1, nil
     local layoutChanged = true
     local function track(control)
@@ -69,11 +72,23 @@ function view.build(host, rules, onChange, prettyui)
     local function button(...) return track(originalButton(...)) end
     local function input(...) return track(originalInput(...)) end
     local function icon(...) return track(originalIcon(...)) end
+    local function iconButton(parent, x, y, sprite, tooltip, action, toggleable, disabled)
+        local b = prettyui.SpriteButton.new(parent, sprite, action, {
+            x = x, y = y, size = 25, tooltip = tooltip,
+            toggleable = toggleable, disabled = disabled,
+        })
+        spriteButtons[#spriteButtons + 1] = b
+        track(b.root)
+        return b
+    end
+    local function saveButton(parent, x, y, action)
+        return button(parent, x, y, 48, "Save", action)
+    end
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
     local sections = { {}, {}, {}, {} }
     local function addSection(page, name)
         sections[page][name] = { count = 0, section = pages[page]:AddCollapseButton(name, {
-            expanded = false, onToggle = function() layoutChanged = true end,
+            expanded = false, indent = 0, onToggle = function() layoutChanged = true end,
         }) }
     end
     for i, style in ipairs(styleNames) do
@@ -93,20 +108,20 @@ function view.build(host, rules, onChange, prettyui)
         text(parent, 155, 68, 180, "Low / critical repeat (sec)")
         local lowCooldown = input(parent, 155, 87, rule.lowCooldown)
         local criticalCooldown = input(parent, 225, 87, rule.criticalCooldown)
-        local status = text(parent, 10, 115, 380, "")
-        button(parent, 312, 39, 52, "Save", function()
+        local status = text(parent, 300, 88, 85, "")
+        saveButton(parent, 312, 39, function()
             local candidate = { enabled = true, warnAtZero = zero, low = tonumber(low.content),
                 critical = tonumber(critical.content), lowCooldown = tonumber(lowCooldown.content),
                 criticalCooldown = tonumber(criticalCooldown.content) }
             if not settings.valid(candidate) then
-                status.content = "Invalid: thresholds > 0, critical <= low; seconds 1-86400."
+                status.content = "Invalid"
                 return
             end
             local old = rules.styles[style]
             rules.styles[style] = candidate
             if not settings.save(rules) then
                 rules.styles[style] = old
-                status.content = "Could not save settings."
+                status.content = "Save failed"
                 return
             end
             onChange()
@@ -147,61 +162,82 @@ function view.build(host, rules, onChange, prettyui)
         currentSection = group.section
         local parent, y = currentSection.content, group.count * rowHeight
         group.count = group.count + 1
-        icon(parent, 10, y, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId)
-        text(parent, 48, y + 5, 100, item.name)
+        -- PrettyUI's list uses a framed rectangle; use the same treatment for each row.
+        local frame = track(ui.Rectangle.new(parent))
+        frame:SetPos(0, y); frame:SetSize(0, rowHeight - 4, 1, 0)
+        frame.fill, frame.rgba, frame.clickthrough = true, 0x514D45C0, true
+        controls[pageIndex][#controls[pageIndex]].background = { x = 0, y = y, width = 0, height = rowHeight - 4 }
+        local background = track(ui.Rectangle.new(parent))
+        background:SetPos(1, y + 1); background:SetSize(-2, rowHeight - 6, 1, 0)
+        background.fill, background.clickthrough = true, true
+        controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
+        icon(parent, 8, y + 3, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId)
+        text(parent, 48, y + 8, 100, item.name)
         local enabled, zero, custom = rule.enabled, rule.warnAtZero, rule.custom
-        local enabledButton, zeroButton
-        enabledButton = button(parent, 150, y + 3, 72, enabled and "Enabled" or "Disabled", function()
-            enabled = not enabled
-            enabledButton.label = enabled and "Enabled" or "Disabled"
-        end)
-        local overrideButton
-        overrideButton = button(parent, 227, y + 3, 80, custom and "Custom" or "Style", function()
-            custom = not custom
-            overrideButton.label = custom and "Custom" or "Style"
-            layoutChanged = true
-        end)
-        local function customControl(control)
-            controls[pageIndex][#controls[pageIndex]].visibleWhen = function() return custom end
-            return control
-        end
-        zeroButton = customControl(button(parent, 310, y + 32, 80, zero and "Zero: on" or "Zero: off", function()
-            zero = not zero
-            zeroButton.label = zero and "Zero: on" or "Zero: off"
-        end))
-        customControl(text(parent, 10, y + 32, 140, "Low / critical below"))
-        local low = customControl(input(parent, 10, y + 51, rule.low))
-        local critical = customControl(input(parent, 80, y + 51, rule.critical))
-        customControl(text(parent, 155, y + 32, 155, "Repeat (sec)"))
-        local lowCooldown = customControl(input(parent, 155, y + 51, rule.lowCooldown))
-        local criticalCooldown = customControl(input(parent, 225, y + 51, rule.criticalCooldown))
-        local inherited = text(parent, 10, y + 43, 380, "Using style defaults")
-        controls[pageIndex][#controls[pageIndex]].visibleWhen = function() return not custom end
-        controls[pageIndex][#controls[pageIndex]].update = function()
+        local draft = { tostring(rule.low), tostring(rule.critical),
+            tostring(rule.lowCooldown), tostring(rule.criticalCooldown) }
+        local fields, zeroButton, mode
+        local function updateRow()
             local shared = rules.styles[settings.style(rule.itemId)]
-            inherited.content = string.format("Style: %d / %d; repeat %d / %ds; zero %s",
-                shared.low, shared.critical, shared.lowCooldown, shared.criticalCooldown,
-                shared.warnAtZero and "on" or "off")
+            local values = custom and draft or { shared.low, shared.critical,
+                shared.lowCooldown, shared.criticalCooldown }
+            for i, field in ipairs(fields) do
+                if not custom then field.content = tostring(values[i]) end
+                field.enabled = custom and enabled
+                field.clickthrough = not field.enabled
+            end
+            zeroButton.label = (custom and zero or (not custom and shared.warnAtZero)) and "Zero: on" or "Zero: off"
+            zeroButton.enabled = custom and enabled
+            mode.content = custom and "Custom" or "Style"
+            background.rgba = enabled and (custom and 0x211F1BE8 or 0x171512D8) or 0x252525B0
         end
-        local status = text(parent, 10, y + 79, 380, "")
-        button(parent, 312, y + 3, 52, "Save", function()
+        iconButton(parent, 150, y + 5, "EYE", "Enable or disable this warning", function(_, active)
+            enabled = active
+            updateRow()
+        end, true, not enabled)
+        iconButton(parent, 180, y + 5, "PENCIL", "Switch between style defaults and custom settings", function(_, active)
+            if custom then
+                for i, field in ipairs(fields) do draft[i] = field.content end
+            end
+            custom = active
+            if custom then for i, field in ipairs(fields) do field.content = draft[i] end end
+            updateRow()
+        end, true, not custom)
+        mode = text(parent, 210, y + 8, 55, custom and "Custom" or "Style")
+        zeroButton = button(parent, 265, y + 5, 80, "", function()
+            if not custom or not enabled then return end
+            zero = not zero
+            updateRow()
+        end)
+        text(parent, 10, y + 35, 140, "Low / critical below")
+        local low = input(parent, 10, y + 54, rule.low)
+        local critical = input(parent, 80, y + 54, rule.critical)
+        text(parent, 155, y + 35, 155, "Repeat (sec)")
+        local lowCooldown = input(parent, 155, y + 54, rule.lowCooldown)
+        local criticalCooldown = input(parent, 225, y + 54, rule.criticalCooldown)
+        fields = { low, critical, lowCooldown, criticalCooldown }
+        local status = text(parent, 300, y + 55, 85, "")
+        saveButton(parent, 350, y + 5, function()
+            if custom then for i, field in ipairs(fields) do draft[i] = field.content end end
             local candidate = { itemId = rule.itemId, enabled = enabled, custom = custom, warnAtZero = zero,
-                low = tonumber(low.content), critical = tonumber(critical.content),
-                lowCooldown = tonumber(lowCooldown.content), criticalCooldown = tonumber(criticalCooldown.content) }
+                low = tonumber(draft[1]), critical = tonumber(draft[2]),
+                lowCooldown = tonumber(draft[3]), criticalCooldown = tonumber(draft[4]) }
             if not settings.valid(candidate) then
-                status.content = "Invalid: thresholds > 0, critical <= low; seconds 1-86400."
+                status.content = "Invalid"
                 return
             end
             local old = rules[index]
             rules[index] = candidate
             if not settings.save(rules) then
                 rules[index] = old
-                status.content = "Could not save settings."
+                status.content = "Save failed"
                 return
             end
             onChange()
             status.content = "Saved."
         end)
+        controls[pageIndex][#controls[pageIndex]].update = updateRow
+        updateRow()
         end
     end
     for _, pageSections in ipairs(sections) do
@@ -226,18 +262,30 @@ function view.build(host, rules, onChange, prettyui)
                 for _, entry in ipairs(controls[i]) do
                     local control, section = entry.control, entry.section
                     if entry.update then entry.update() end
-                    local top = control.y - page.scrollY
+                    local box = entry.background
+                    local top = (box and box.y or control.y) - page.scrollY
                     if section then top = top + section.root.y + section.content.y end
+                    if box then
+                        local inset = math.max(0, -top)
+                        local clippedHeight = math.max(0, math.min(box.height - inset, height - math.max(0, top)))
+                        control:SetPos(box.x, box.y + inset)
+                        control:SetSize(box.width, clippedHeight, 1, 0)
+                        control.hidden = active ~= i or (section and not section.expanded) or clippedHeight == 0
+                    else
                     control.hidden = active ~= i or (section and not section.expanded)
                         or (entry.visibleWhen and not entry.visibleWhen())
                         or top < 0 or top + control.height > height
+                    end
                 end
             end
         end
         layoutChanged = false
     end
     refresh()
-    return refresh, function() tabs:Destroy() end
+    return refresh, function()
+        for _, b in ipairs(spriteButtons) do b:Destroy() end
+        tabs:Destroy()
+    end
 end
 
 return view
