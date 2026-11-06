@@ -29,15 +29,19 @@ local function input(parent, x, y, value)
 end
 
 function view.build(host, rules, onChange, prettyui)
-    assert(prettyui and prettyui.SimpleView and prettyui.SimpleView.new,
-        "PrettyUI SimpleView is required for warning settings")
-    local scroll = prettyui.SimpleView.new(host, {
-        width = math.max(1, host.width), height = math.max(1, host.height),
-    })
-    local parent = scroll.content
-    local controls = {}
+    assert(prettyui and prettyui.Tabs and prettyui.Tabs.new,
+        "PrettyUI Tabs is required for warning settings")
+    local tabs = prettyui.Tabs.new(host, {
+        { text = "Magic" }, { text = "Necromancy" },
+        { text = "Ranged" }, { text = "Melee" },
+    }, { width = 0, height = 0, widthAnchor = 1, heightAnchor = 1 })
+    local pages = { tabs:GetPage(1), tabs:GetPage(2) }
+    local controls = { {}, {} }
+    local pageIndex = 1
     local function track(control)
-        controls[#controls + 1] = control
+        local scroll = pages[pageIndex]
+        local list = controls[pageIndex]
+        list[#list + 1] = control
         control:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.scroll", function(_, delta)
             if not scroll.scrollbarVisible then return true end
             scroll:ScrollBy(delta * 32)
@@ -49,9 +53,17 @@ function view.build(host, rules, onChange, prettyui)
     local function text(...) return track(originalText(...)) end
     local function button(...) return track(originalButton(...)) end
     local function input(...) return track(originalInput(...)) end
-    text(parent, 10, 8, 460, "Magic: combat counts. Necromancy: loose + nexus. Arrows: loose.")
+    local counts = { 0, 0 }
+    text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
+    pageIndex = 2
+    text(pages[2].content, 10, 8, 400, "Counts include loose supplies and the nexus.")
     for index, rule in ipairs(rules) do
-        local y = 36 + (index - 1) * 145
+        local item = catalogue[rule.itemId]
+        pageIndex = item.category == "rune" and 1 or item.category == "necromancy" and 2 or nil
+        if pageIndex then
+        local parent = pages[pageIndex].content
+        local y = 36 + counts[pageIndex] * 145
+        counts[pageIndex] = counts[pageIndex] + 1
         text(parent, 10, y, 300, catalogue[rule.itemId].name)
         local enabled, zero = rule.enabled, rule.warnAtZero
         local enabledButton, zeroButton
@@ -88,26 +100,30 @@ function view.build(host, rules, onChange, prettyui)
             onChange()
             status.content = "Saved."
         end)
-    end
-    local width, height, scrollY
-    local function refresh()
-        local w, h = math.max(1, host.width), math.max(1, host.height)
-        if w ~= width or h ~= height then
-            scroll:SetSize(w, h)
-            scroll:SetContentHeight(36 + #rules * 145)
-            width, height, scrollY = w, h, nil
         end
-        if scroll.scrollY ~= scrollY then
-            scrollY = scroll.scrollY
-            -- Input text and other native controls may draw outside the viewport.
-            for _, control in ipairs(controls) do
-                local top = control.y - scrollY
-                control.hidden = top < 0 or top + control.height > height
+    end
+    for i, page in ipairs(pages) do page:SetContentHeight(36 + counts[i] * 145) end
+    local width, height, scrollPositions
+    local function refresh()
+        local w = math.max(1, host.width)
+        local h = math.max(1, host.height - 42)
+        if w ~= width or h ~= height then
+            width, height, scrollPositions = w, h, {}
+            for i = 1, 4 do tabs:GetPage(i)._scroll:Refresh() end
+        end
+        for i, page in ipairs(pages) do
+            if page.scrollY ~= scrollPositions[i] then
+                scrollPositions[i] = page.scrollY
+                -- Input text and other native controls may draw outside the viewport.
+                for _, control in ipairs(controls[i]) do
+                    local top = control.y - page.scrollY
+                    control.hidden = top < 0 or top + control.height > height
+                end
             end
         end
     end
     refresh()
-    return refresh, function() scroll:Destroy() end
+    return refresh, function() tabs:Destroy() end
 end
 
 return view

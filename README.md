@@ -44,11 +44,13 @@ panel remains a loose-item view; its totals do not include container contents.
 
 ## Experimental warnings
 
-The settings panel uses the required PrettyUI dependency for scrolling. After
+The settings panel uses the required PrettyUI dependency for tabs and scrolling. After
 changing the plugin manifest, run `prf` before enabling or reloading the plugin.
 
-The settings icon provides individual warning controls for elemental, catalytic
-and combination runes, all four necrotic runes, ectoplasm, and Deathspore arrows. Law runes, blood runes and
+The Magic and Necromancy tabs provide individual warning controls for elemental,
+catalytic and combination runes, all four necrotic runes and ectoplasm. The
+Ranged and Melee tabs are empty for now; existing Deathspore arrow warnings still
+run using their saved settings. Law runes, blood runes and
 Deathspore arrows start enabled; newly added warnings start disabled.
 Each has a default low threshold of 100,
 critical threshold of 25, low repeat of 300 seconds, critical repeat of 60
