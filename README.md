@@ -48,8 +48,10 @@ The settings panel uses the required PrettyUI dependency for tabs and scrolling.
 changing the plugin manifest, run `prf` before enabling or reloading the plugin.
 
 The Magic and Necromancy tabs provide individual warning controls for elemental,
-catalytic and combination runes, all four necrotic runes and ectoplasm. The
-Ranged and Melee tabs are empty for now; existing Deathspore arrow warnings still
+catalytic and combination runes, all four necrotic runes and ectoplasm.
+Magic tab groups runes into collapsible Elemental, Catalytic and Combination sections.
+The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
+The Ranged and Melee tabs are empty for now; existing Deathspore arrow warnings still
 run using their saved settings. Law runes, blood runes and
 Deathspore arrows start enabled; newly added warnings start disabled.
 Each has a default low threshold of 100,

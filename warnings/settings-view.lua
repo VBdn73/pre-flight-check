@@ -1,6 +1,9 @@
 local catalogue = require("supply-catalogue")
 local settings = require("warnings/settings")
 local view = {}
+local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
+local combination = { [4694] = true, [4695] = true, [4696] = true,
+    [4697] = true, [4698] = true, [4699] = true }
 
 local function text(parent, x, y, width, value)
     local label = ui.Text.new(parent)
@@ -34,14 +37,16 @@ function view.build(host, rules, onChange, prettyui)
     local tabs = prettyui.Tabs.new(host, {
         { text = "Magic" }, { text = "Necromancy" },
         { text = "Ranged" }, { text = "Melee" },
-    }, { width = 0, height = 0, widthAnchor = 1, heightAnchor = 1 })
+    }, { width = 0, height = 0, widthAnchor = 1, heightAnchor = 1,
+        contentLayout = { startY = 36 } })
     local pages = { tabs:GetPage(1), tabs:GetPage(2) }
     local controls = { {}, {} }
-    local pageIndex = 1
+    local pageIndex, currentSection = 1, nil
+    local layoutChanged = true
     local function track(control)
         local scroll = pages[pageIndex]
         local list = controls[pageIndex]
-        list[#list + 1] = control
+        list[#list + 1] = { control = control, section = currentSection }
         control:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.scroll", function(_, delta)
             if not scroll.scrollbarVisible then return true end
             scroll:ScrollBy(delta * 32)
@@ -53,17 +58,32 @@ function view.build(host, rules, onChange, prettyui)
     local function text(...) return track(originalText(...)) end
     local function button(...) return track(originalButton(...)) end
     local function input(...) return track(originalInput(...)) end
-    local counts = { 0, 0 }
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
+    local sections = { {}, {} }
+    local function addSection(page, name)
+        sections[page][name] = { count = 0, section = pages[page]:AddCollapseButton(name, {
+            expanded = false, onToggle = function() layoutChanged = true end,
+        }) }
+    end
+    for _, name in ipairs({ "Elemental", "Catalytic", "Combination" }) do addSection(1, name) end
     pageIndex = 2
     text(pages[2].content, 10, 8, 400, "Counts include loose supplies and the nexus.")
+    for _, name in ipairs({ "Necrotic Runes", "Ectoplasm" }) do addSection(2, name) end
     for index, rule in ipairs(rules) do
         local item = catalogue[rule.itemId]
         pageIndex = item.category == "rune" and 1 or item.category == "necromancy" and 2 or nil
         if pageIndex then
-        local parent = pages[pageIndex].content
-        local y = 36 + counts[pageIndex] * 145
-        counts[pageIndex] = counts[pageIndex] + 1
+        local name
+        if pageIndex == 1 then
+            name = elemental[rule.itemId] and "Elemental"
+                or combination[rule.itemId] and "Combination" or "Catalytic"
+        else
+            name = rule.itemId == 55336 and "Ectoplasm" or "Necrotic Runes"
+        end
+        local group = sections[pageIndex][name]
+        currentSection = group.section
+        local parent, y = currentSection.content, group.count * 145
+        group.count = group.count + 1
         text(parent, 10, y, 300, catalogue[rule.itemId].name)
         local enabled, zero = rule.enabled, rule.warnAtZero
         local enabledButton, zeroButton
@@ -102,25 +122,35 @@ function view.build(host, rules, onChange, prettyui)
         end)
         end
     end
-    for i, page in ipairs(pages) do page:SetContentHeight(36 + counts[i] * 145) end
-    local width, height, scrollPositions
+    for _, pageSections in ipairs(sections) do
+        for _, group in pairs(pageSections) do
+            group.section:_SetContentHeight(group.count * 145)
+        end
+    end
+    local width, height, scrollPositions, activeIndex
     local function refresh()
         local w = math.max(1, host.width)
         local h = math.max(1, host.height - 42)
+        local active = tabs:GetActiveIndex()
+        if active ~= activeIndex then activeIndex, layoutChanged = active, true end
         if w ~= width or h ~= height then
             width, height, scrollPositions = w, h, {}
             for i = 1, 4 do tabs:GetPage(i)._scroll:Refresh() end
         end
         for i, page in ipairs(pages) do
-            if page.scrollY ~= scrollPositions[i] then
+            if layoutChanged or page.scrollY ~= scrollPositions[i] then
                 scrollPositions[i] = page.scrollY
                 -- Input text and other native controls may draw outside the viewport.
-                for _, control in ipairs(controls[i]) do
+                for _, entry in ipairs(controls[i]) do
+                    local control, section = entry.control, entry.section
                     local top = control.y - page.scrollY
-                    control.hidden = top < 0 or top + control.height > height
+                    if section then top = top + section.root.y + section.content.y end
+                    control.hidden = active ~= i or (section and not section.expanded)
+                        or top < 0 or top + control.height > height
                 end
             end
         end
+        layoutChanged = false
     end
     refresh()
     return refresh, function() tabs:Destroy() end
