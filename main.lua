@@ -4,9 +4,11 @@ local warningSettings = require("warnings/settings")
 local settingsView = require("warnings/settings-view")
 local warningMonitor = require("warnings/monitor")
 local popup = require("warnings/popup")
+local prettyUILibrary = prettyui
 local rules = warningSettings.load()
 local monitor = warningMonitor.new(rules)
 local refreshContent
+local refreshSettings, destroySettings
 local canRead = true
 local now
 local retryAfter = 0
@@ -47,14 +49,24 @@ Event.ServerLogic.Subscribe("supplyCheck.refresh", refresh)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
     now = event.logicTick / 50
     popup.update(now)
+    if refreshSettings and not pcall(refreshSettings) then
+        refreshSettings = nil
+        if destroySettings then pcall(destroySettings); destroySettings = nil end
+    end
 end)
 Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
-    local ok, err = pcall(settingsView.build, event.component, rules, function()
+    if destroySettings then pcall(destroySettings) end
+    refreshSettings, destroySettings = nil, nil
+    local ok, result, destroy = pcall(settingsView.build, event.component, rules, function()
         monitor.reset()
         popup.clear()
         retryAfter = 0
-    end)
-    if not ok then print("[supply-check] Settings creation failed: " .. tostring(err)) end
+    end, prettyUILibrary)
+    if ok then
+        refreshSettings, destroySettings = result, destroy
+    else
+        print("[supply-check] Settings creation failed: " .. tostring(result))
+    end
 end)
 Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
     canRead = event.newState == 30 -- GameState.GAME
@@ -67,6 +79,8 @@ end)
 
 function PluginShutdown()
     refreshContent = nil
+    refreshSettings = nil
+    if destroySettings then pcall(destroySettings); destroySettings = nil end
     popup.clear()
     Event.ContentLayerReady.Unsubscribe("supplyCheck.content")
     Event.ServerLogic.Unsubscribe("supplyCheck.refresh")

@@ -28,7 +28,27 @@ local function input(parent, x, y, value)
     return field
 end
 
-function view.build(parent, rules, onChange)
+function view.build(host, rules, onChange, prettyui)
+    assert(prettyui and prettyui.SimpleView and prettyui.SimpleView.new,
+        "PrettyUI SimpleView is required for warning settings")
+    local scroll = prettyui.SimpleView.new(host, {
+        width = math.max(1, host.width), height = math.max(1, host.height),
+    })
+    local parent = scroll.content
+    local controls = {}
+    local function track(control)
+        controls[#controls + 1] = control
+        control:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.scroll", function(_, delta)
+            if not scroll.scrollbarVisible then return true end
+            scroll:ScrollBy(delta * 32)
+            return false
+        end)
+        return control
+    end
+    local originalText, originalButton, originalInput = text, button, input
+    local function text(...) return track(originalText(...)) end
+    local function button(...) return track(originalButton(...)) end
+    local function input(...) return track(originalInput(...)) end
     text(parent, 10, 8, 460, "Warnings: loose backpack + equipment only; containers excluded.")
     for index, rule in ipairs(rules) do
         local y = 36 + (index - 1) * 145
@@ -69,6 +89,25 @@ function view.build(parent, rules, onChange)
             status.content = "Saved."
         end)
     end
+    local width, height, scrollY
+    local function refresh()
+        local w, h = math.max(1, host.width), math.max(1, host.height)
+        if w ~= width or h ~= height then
+            scroll:SetSize(w, h)
+            scroll:SetContentHeight(36 + #rules * 145)
+            width, height, scrollY = w, h, nil
+        end
+        if scroll.scrollY ~= scrollY then
+            scrollY = scroll.scrollY
+            -- Input text and other native controls may draw outside the viewport.
+            for _, control in ipairs(controls) do
+                local top = control.y - scrollY
+                control.hidden = top < 0 or top + control.height > height
+            end
+        end
+    end
+    refresh()
+    return refresh, function() scroll:Destroy() end
 end
 
 return view
