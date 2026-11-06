@@ -15,9 +15,9 @@ local now
 local checkAfter, checkDeadline
 
 -- Wait for server updates following the action before taking a fresh snapshot.
-local function scheduleCheck()
+local function scheduleCheck(delay)
     if not canRead or not now then return end
-    checkAfter, checkDeadline = now + 1.2, now + 5
+    checkAfter, checkDeadline = now + delay, now + 5
 end
 
 local function refresh()
@@ -40,7 +40,7 @@ Event.ServerLogic.Subscribe("supplyCheck.refresh", refresh)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
     now = event.logicTick / 50
     popup.update(now)
-    if canRead and bankState.update() and rules.checkOnBankClose then scheduleCheck() end
+    if canRead and bankState.update() and rules.checkOnBankClose then scheduleCheck(1.2) end
     if refreshSettings and not pcall(refreshSettings) then
         refreshSettings = nil
         if destroySettings then pcall(destroySettings); destroySettings = nil end
@@ -58,7 +58,7 @@ Event.KeyDown.Subscribe("supplyCheck.presetShortcut", function(event)
     end
     if presetTrigger.isShortcut(event, modifiers) then
         bankState.markOpen()
-        scheduleCheck()
+        scheduleCheck(0)
     end
 end)
 Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
@@ -74,7 +74,7 @@ Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
     end
 end)
 Event.MiniMenuEntrySelected.Subscribe("supplyCheck.preset", function(event)
-    if rules.checkOnPreset and presetTrigger.isLoad(event.entry) then scheduleCheck() end
+    if rules.checkOnPreset and presetTrigger.isLoad(event.entry) then scheduleCheck(0) end
 end)
 Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
     canRead = event.newState == 30 -- GameState.GAME

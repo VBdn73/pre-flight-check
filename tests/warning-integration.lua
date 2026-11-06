@@ -39,10 +39,10 @@ load()
 amount = 80 -- server data changes after action
 time(5)
 callbacks.server()
-assert(#alerts == 0, "must wait for fresh server data")
+assert(#alerts == 1 and alerts[1][1].count == 80, "preset check runs on the next server update")
 time(6)
 callbacks.server()
-assert(#alerts == 1 and alerts[1][1].count == 80, "preset check uses fresh data")
+assert(#alerts == 1, "server updates do not repeat the check")
 load()
 time(8)
 callbacks.server()
@@ -51,13 +51,14 @@ bankOpen = true
 time(9)
 callbacks.key({ gameKey = 16, modifiers = 0, isRepeat = false })
 amount = 70
-time(11)
 callbacks.server()
-assert(#alerts == 3 and alerts[3][1].count == 70, "shortcut schedules a check")
+assert(#alerts == 3 and alerts[3][1].count == 70, "shortcut checks on the next server update")
 rules.checkOnPreset = false
 rules.checkOnBankClose = true
 bankOpen = false
 time(12)
+callbacks.server()
+assert(#alerts == 3, "bank closure waits for inventory updates")
 time(14)
 callbacks.server()
 assert(#alerts == 4, "bank closure schedules a check")

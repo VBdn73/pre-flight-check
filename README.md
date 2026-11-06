@@ -51,10 +51,10 @@ Preset checks cover bank menu actions, the selected preset's Load button, the
 bank chest's Load Last Preset action, and the bank's numbered and beast-of-burden
 shortcuts. The detection observes an action or keypress, not confirmation of a
 successful load; shortcuts used for other purposes while banking may trigger a
-check. The check waits at least 1.2 seconds and for the next server update to give
-inventory data time to arrive. This does not guarantee all supply sources are
-fresh; unavailable sources remain suppressed. If backpack or equipment data stays
-unavailable for five seconds, the extra check is dropped.
+check. Preset checks run on the next server update; bank-close checks wait at least
+1.2 seconds and for a server update. Supply data may not yet be fresh, particularly
+for preset checks; unavailable sources remain suppressed. If backpack or equipment
+data stays unavailable for five seconds, the check is dropped.
 
 The Magic and Necromancy tabs provide individual warning controls for elemental,
 catalytic and combination runes, all four necrotic runes and ectoplasm.
