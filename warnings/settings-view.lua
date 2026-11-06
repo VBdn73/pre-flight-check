@@ -47,8 +47,9 @@ function view.build(host, rules, onChange, prettyui)
         { text = "Magic" }, { text = "Necromancy" },
         { text = "Ranged" }, { text = "Melee" },
     }, { width = 0, height = 0, widthAnchor = 1, heightAnchor = 1,
-        contentLayout = { startY = 36 } })
+        contentLayout = { startY = 144 } })
     local pages = { tabs:GetPage(1), tabs:GetPage(2), tabs:GetPage(3), tabs:GetPage(4) }
+    local styleNames = { "Magic", "Necromancy", "Ranged", "Melee" }
     local controls = { {}, {}, {}, {} }
     local pageIndex, currentSection = 1, nil
     local layoutChanged = true
@@ -75,17 +76,61 @@ function view.build(host, rules, onChange, prettyui)
             expanded = false, onToggle = function() layoutChanged = true end,
         }) }
     end
+    for i, style in ipairs(styleNames) do
+        pageIndex = i
+        local parent = pages[i].content
+        local rule = rules.styles[style]
+        local zero = rule.warnAtZero
+        local zeroButton
+        text(parent, 10, 40, 200, style .. " defaults")
+        zeroButton = button(parent, 227, 39, 80, zero and "Zero: on" or "Zero: off", function()
+            zero = not zero
+            zeroButton.label = zero and "Zero: on" or "Zero: off"
+        end)
+        text(parent, 10, 68, 140, "Low / critical below")
+        local low = input(parent, 10, 87, rule.low)
+        local critical = input(parent, 80, 87, rule.critical)
+        text(parent, 155, 68, 180, "Low / critical repeat (sec)")
+        local lowCooldown = input(parent, 155, 87, rule.lowCooldown)
+        local criticalCooldown = input(parent, 225, 87, rule.criticalCooldown)
+        local status = text(parent, 10, 115, 380, "")
+        button(parent, 312, 39, 52, "Save", function()
+            local candidate = { enabled = true, warnAtZero = zero, low = tonumber(low.content),
+                critical = tonumber(critical.content), lowCooldown = tonumber(lowCooldown.content),
+                criticalCooldown = tonumber(criticalCooldown.content) }
+            if not settings.valid(candidate) then
+                status.content = "Invalid: thresholds > 0, critical <= low; seconds 1-86400."
+                return
+            end
+            local old = rules.styles[style]
+            rules.styles[style] = candidate
+            if not settings.save(rules) then
+                rules.styles[style] = old
+                status.content = "Could not save settings."
+                return
+            end
+            onChange()
+            layoutChanged = true
+            status.content = "Saved."
+        end)
+    end
+    currentSection = nil
+    pageIndex = 1
     for _, name in ipairs({ "Elemental", "Catalytic", "Combination" }) do addSection(1, name) end
     pageIndex = 2
     text(pages[2].content, 10, 8, 400, "Counts include loose supplies and the nexus.")
     for _, name in ipairs({ "Necrotic Runes", "Ectoplasm" }) do addSection(2, name) end
+    pageIndex = 3
+    text(pages[3].content, 10, 8, 400, "Counts include loose ammunition.")
+    addSection(3, "Ammunition")
     pageIndex = 4
     text(pages[4].content, 10, 8, 400, "Counts include loose spikes and one harness.")
     addSection(4, "Armour Spikes")
     for index, rule in ipairs(rules) do
         local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
         pageIndex = rule.itemId == spikes.ruleId and 4
-            or item.category == "rune" and 1 or item.category == "necromancy" and 2 or nil
+            or item.category == "rune" and 1 or item.category == "necromancy" and 2
+            or item.category == "ammunition" and 3 or nil
         if pageIndex then
         local name
         if pageIndex == 1 then
@@ -93,6 +138,8 @@ function view.build(host, rules, onChange, prettyui)
                 or combination[rule.itemId] and "Combination" or "Catalytic"
         elseif pageIndex == 2 then
             name = rule.itemId == 55336 and "Ectoplasm" or "Necrotic Runes"
+        elseif pageIndex == 3 then
+            name = "Ammunition"
         else
             name = "Armour Spikes"
         end
@@ -102,25 +149,43 @@ function view.build(host, rules, onChange, prettyui)
         group.count = group.count + 1
         icon(parent, 10, y, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId)
         text(parent, 48, y + 5, 100, item.name)
-        local enabled, zero = rule.enabled, rule.warnAtZero
+        local enabled, zero, custom = rule.enabled, rule.warnAtZero, rule.custom
         local enabledButton, zeroButton
         enabledButton = button(parent, 150, y + 3, 72, enabled and "Enabled" or "Disabled", function()
             enabled = not enabled
             enabledButton.label = enabled and "Enabled" or "Disabled"
         end)
-        zeroButton = button(parent, 227, y + 3, 80, zero and "Zero: on" or "Zero: off", function()
+        local overrideButton
+        overrideButton = button(parent, 227, y + 3, 80, custom and "Custom" or "Style", function()
+            custom = not custom
+            overrideButton.label = custom and "Custom" or "Style"
+            layoutChanged = true
+        end)
+        local function customControl(control)
+            controls[pageIndex][#controls[pageIndex]].visibleWhen = function() return custom end
+            return control
+        end
+        zeroButton = customControl(button(parent, 310, y + 32, 80, zero and "Zero: on" or "Zero: off", function()
             zero = not zero
             zeroButton.label = zero and "Zero: on" or "Zero: off"
-        end)
-        text(parent, 10, y + 32, 140, "Low / critical below")
-        local low = input(parent, 10, y + 51, rule.low)
-        local critical = input(parent, 80, y + 51, rule.critical)
-        text(parent, 155, y + 32, 180, "Low / critical repeat (sec)")
-        local lowCooldown = input(parent, 155, y + 51, rule.lowCooldown)
-        local criticalCooldown = input(parent, 225, y + 51, rule.criticalCooldown)
+        end))
+        customControl(text(parent, 10, y + 32, 140, "Low / critical below"))
+        local low = customControl(input(parent, 10, y + 51, rule.low))
+        local critical = customControl(input(parent, 80, y + 51, rule.critical))
+        customControl(text(parent, 155, y + 32, 155, "Repeat (sec)"))
+        local lowCooldown = customControl(input(parent, 155, y + 51, rule.lowCooldown))
+        local criticalCooldown = customControl(input(parent, 225, y + 51, rule.criticalCooldown))
+        local inherited = text(parent, 10, y + 43, 380, "Using style defaults")
+        controls[pageIndex][#controls[pageIndex]].visibleWhen = function() return not custom end
+        controls[pageIndex][#controls[pageIndex]].update = function()
+            local shared = rules.styles[settings.style(rule.itemId)]
+            inherited.content = string.format("Style: %d / %d; repeat %d / %ds; zero %s",
+                shared.low, shared.critical, shared.lowCooldown, shared.criticalCooldown,
+                shared.warnAtZero and "on" or "off")
+        end
         local status = text(parent, 10, y + 79, 380, "")
         button(parent, 312, y + 3, 52, "Save", function()
-            local candidate = { itemId = rule.itemId, enabled = enabled, warnAtZero = zero,
+            local candidate = { itemId = rule.itemId, enabled = enabled, custom = custom, warnAtZero = zero,
                 low = tonumber(low.content), critical = tonumber(critical.content),
                 lowCooldown = tonumber(lowCooldown.content), criticalCooldown = tonumber(criticalCooldown.content) }
             if not settings.valid(candidate) then
@@ -160,9 +225,11 @@ function view.build(host, rules, onChange, prettyui)
                 -- Input text and other native controls may draw outside the viewport.
                 for _, entry in ipairs(controls[i]) do
                     local control, section = entry.control, entry.section
+                    if entry.update then entry.update() end
                     local top = control.y - page.scrollY
                     if section then top = top + section.root.y + section.content.y end
                     control.hidden = active ~= i or (section and not section.expanded)
+                        or (entry.visibleWhen and not entry.visibleWhen())
                         or top < 0 or top + control.height > height
                 end
             end

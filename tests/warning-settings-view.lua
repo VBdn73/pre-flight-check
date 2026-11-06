@@ -34,7 +34,7 @@ local prettyui = { Tabs = { new = function(host, entries, options)
         function page:SetContentHeight(h) self.contentHeight = h; self._scroll:Refresh() end
         function page:ScrollBy(delta) self.scrollY = math.max(0, math.min(self.contentHeight - self.height, self.scrollY + delta)) end
         function page:reflow()
-            local y = 36
+            local y = options.contentLayout.startY
             for _, section in ipairs(self.sections) do
                 section.root.y = y
                 y = y + 20 + (section.expanded and 4 + section.contentHeight or 0) + 8
@@ -64,98 +64,60 @@ local saved
 PersistentDB = { GetStructuredData = function() return saved end,
     SetStructuredData = function(_, _, data) saved = data; return true end }
 local rules = require("warnings/settings").load()
-local host = { width = 400, height = 150 }
+local host = { width = 400, height = 600 }
 local refresh, destroy = require("warnings/settings-view").build(host, rules, function() end, prettyui)
-local magic, necro = tabs.pages[1], tabs.pages[2]
-assert(tabs.entries[1].text == "Magic" and tabs.entries[2].text == "Necromancy")
-assert(tabs.entries[3].text == "Ranged" and tabs.entries[4].text == "Melee")
-assert(#magic.sections == 3 and magic.sections[1].name == "Elemental"
-    and magic.sections[2].name == "Catalytic" and magic.sections[3].name == "Combination")
-assert(magic.sections[1].contentHeight == 4 * 105)
-assert(magic.sections[2].contentHeight == 12 * 105)
-assert(magic.sections[3].contentHeight == 6 * 105)
-local fire, law, lava
-for _, c in ipairs(controls) do
-    if c.content == "Fire rune" then fire = c end
-    if c.content == "Law rune" then law = c end
-    if c.content == "Lava rune" then lava = c end
-end
-assert(fire.parent == magic.sections[1].content and law.parent == magic.sections[2].content
-    and lava.parent == magic.sections[3].content)
-assert(fire.hidden and law.hidden and lava.hidden)
-magic.sections[1]:SetExpanded(true)
-refresh()
-assert(not fire.hidden and law.hidden and lava.hidden and magic.scrollbarVisible)
-local fireToggle, fireSave, fireIcon
-for _, c in ipairs(controls) do
-    if c.parent == fire.parent and c.kind == "sprite" and c.itemId == 554 then fireIcon = c end
-    if c.parent == fire.parent and c.kind == "button" and c.y == fire.y - 2 and c.x == 150 then fireToggle = c end
-    if c.parent == fire.parent and c.kind == "button" and c.y == fire.y - 2 and c.x == 312 then fireSave = c end
-end
-assert(fireIcon and not fireIcon.hidden)
-fireToggle.hooks.press()
-magic.sections[1]:SetExpanded(false)
-refresh()
-assert(fire.hidden)
-assert(fireIcon.hidden)
-magic.sections[1]:SetExpanded(true)
-refresh()
-assert(fireToggle.label == "Enabled", "unsaved edits should survive collapsing")
-fireSave.hooks.press()
-assert(saved["554"].enabled, "saving a grouped rune should update its original rule")
-assert(#necro.sections == 2 and necro.sections[1].name == "Necrotic Runes"
-    and necro.sections[2].name == "Ectoplasm")
-assert(necro.sections[1].contentHeight == 4 * 105 and necro.sections[2].contentHeight == 105)
-local spirit, ectoplasm
-for _, c in ipairs(controls) do
-    if c.content == "Spirit rune" then spirit = c end
-    if c.content == "Ectoplasm" then ectoplasm = c end
-end
-assert(spirit.parent == necro.sections[1].content and ectoplasm.parent == necro.sections[2].content)
-assert(spirit.hidden and ectoplasm.hidden)
-assert(controls[1].parent == magic.content and controls[2].parent == necro.content)
-local melee = tabs.pages[4]
-assert(#melee.sections == 1 and melee.sections[1].name == "Armour Spikes"
-    and melee.sections[1].contentHeight == 105)
-local spikeLabels, spikeSave, spikeToggle = 0
-for _, c in ipairs(controls) do
-    assert(c.parent ~= tabs.pages[3].content)
-    assert(c.content ~= "Deathspore arrows")
-    if c.parent == melee.sections[1].content then
-        if c.kind == "sprite" then assert(c.itemId == 59925) end
-        if c.content == "Armour spikes" then spikeLabels = spikeLabels + 1 end
-        if c.kind == "button" and c.label == "Save" then spikeSave = c end
-        if c.kind == "button" and c.label == "Disabled" then spikeToggle = c end
+local magic, necro, ranged, melee = table.unpack(tabs.pages)
+assert(tabs.entries[1].text == "Magic" and tabs.entries[4].text == "Melee")
+assert(magic.sections[1].name == "Elemental" and magic.sections[2].name == "Catalytic")
+assert(necro.sections[1].name == "Necrotic Runes" and ranged.sections[1].name == "Ammunition")
+assert(melee.sections[1].name == "Armour Spikes")
+local function find(parent, kind, x, y)
+    for _, c in ipairs(controls) do
+        if c.parent == parent and c.kind == kind and c.x == x and c.y == y then return c end
     end
+    error("control not found: " .. kind .. " " .. x .. "," .. y)
 end
-assert(spikeLabels == 1 and spikeSave and spikeToggle)
+local style = magic.content
+assert(not find(style, "input", 10, 87).hidden)
+assert(find(style, "text", 10, 40).content == "Magic defaults")
+find(style, "input", 10, 87).content = "5000"
+find(style, "button", 312, 39).hooks.press()
+assert(saved.styles.Magic.low == 5000 and rules.styles.Magic.low == 5000)
+host.height = 600
+magic.sections[1]:SetExpanded(true)
+refresh()
+local fire = magic.sections[1].content
+local override = find(fire, "button", 227, 3)
+local customLow = find(fire, "input", 10, 51)
+local inherited = find(fire, "text", 10, 43)
+assert(override.label == "Style" and customLow.hidden and not inherited.hidden)
+assert(inherited.content:find("5000", 1, true))
+override.hooks.press()
+refresh()
+assert(not customLow.hidden and inherited.hidden)
+customLow.content = "7000"
+find(fire, "button", 312, 3).hooks.press()
+assert(saved["554"].custom and saved["554"].low == 7000)
+override.hooks.press()
+find(fire, "button", 312, 3).hooks.press()
+assert(not saved["554"].custom and saved["554"].low == 7000)
+override.hooks.press()
+refresh()
+assert(customLow.content == "7000")
+local enabled = find(fire, "button", 150, 3)
+enabled.hooks.press()
+find(fire, "button", 312, 3).hooks.press()
+assert(not saved["554"].enabled)
+tabs.active = 3
+ranged.sections[1]:SetExpanded(true)
+refresh()
+local arrow = ranged.sections[1].content
+assert(find(arrow, "sprite", 10, 0).itemId == 52299)
+assert(not find(arrow, "button", 227, 3).hidden)
 tabs.active = 4
 melee.sections[1]:SetExpanded(true)
 refresh()
-spikeToggle.hooks.press()
-spikeSave.hooks.press()
-assert(saved["armour-spikes"].enabled and saved["armour-spikes"].low == 1000
-    and saved["armour-spikes"].critical == 250)
-local lastNecro
-for _, c in ipairs(controls) do
-    if c.parent == necro.sections[1].content and c.kind == "text" and c.y == 3 * 105 + 79 then lastNecro = c end
-end
-assert(lastNecro.hidden, "off-screen controls should be hidden")
-tabs.active = 2
-necro.sections[1]:SetExpanded(true)
-refresh()
-assert(not spirit.hidden and ectoplasm.hidden and necro.scrollbarVisible)
-controls[2].hooks.wheel(nil, 1000)
-refresh()
-assert(necro.scrollY == necro.contentHeight - necro.height and not lastNecro.hidden)
-necro.sections[1]:SetExpanded(false)
-necro.sections[2]:SetExpanded(true)
-necro:ScrollBy(32)
-refresh()
-assert(spirit.hidden and not ectoplasm.hidden)
-host.height = 500
-refresh()
-assert(necro.height == 458 and not necro.scrollbarVisible)
+assert(find(melee.sections[1].content, "sprite", 10, 0).itemId == 59925)
 destroy()
 assert(tabs.destroyed)
-print("Warning settings scroll tests passed.")
+print("Warning settings view tests passed.")

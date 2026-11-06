@@ -65,4 +65,20 @@ snapshot.backpack.available = true
 snapshot.backpack.counts, snapshot.equipment.counts = {}, {}
 spikes.reset()
 assert(spikes.update(snapshot, 201)[1].count == 0)
+local sharedRules = { styles = { Magic = { enabled = true, low = 5000, critical = 1000,
+    lowCooldown = 300, criticalCooldown = 60, warnAtZero = true } },
+    { itemId = 554, enabled = true, custom = false, low = 100, critical = 25,
+        lowCooldown = 20, criticalCooldown = 10, warnAtZero = false } }
+local sharedMonitor = monitor.new(sharedRules)
+snapshot.runeCounts[554] = 2000
+assert(sharedMonitor.update(snapshot, 1)[1].level == "low")
+sharedRules[1].custom = true
+sharedMonitor.reset()
+assert(#sharedMonitor.update(snapshot, 2) == 0)
+snapshot.runeCounts[554] = 0
+assert(#sharedMonitor.update(snapshot, 3) == 0)
+sharedRules[1].custom = false
+assert(sharedMonitor.update(snapshot, 4)[1].level == "critical")
+sharedRules[1].enabled = false
+assert(#sharedMonitor.update(snapshot, 5) == 0)
 print("Warning monitor tests passed.")

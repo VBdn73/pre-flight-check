@@ -46,15 +46,19 @@ The Magic and Necromancy tabs provide individual warning controls for elemental,
 catalytic and combination runes, all four necrotic runes and ectoplasm.
 Magic tab groups runes into collapsible Elemental, Catalytic and Combination sections.
 The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
-The Melee tab provides one Armour Spikes warning for all six variants combined.
-The Ranged tab is empty for now; existing Deathspore arrow warnings still
-run using their saved settings. Law runes, blood runes and
-Deathspore arrows start enabled; newly added warnings start disabled.
-All have a default low threshold of 1000 and critical threshold of 250. Existing
-saved settings are preserved. All use a low repeat of 300 seconds, critical repeat of 60
-seconds, and zero warnings off. Thresholds mean strictly below. Set a repeat
-interval from 1 to 86400 seconds, and press Save for each item. Settings are
-shared across characters on this client type.
+The Melee tab provides one Armour Spikes warning for all six variants combined,
+and the Ranged tab provides a Deathspore arrow warning. Each tab has always-visible
+style defaults above the item sections for thresholds, repeat intervals and zero warnings. Every item
+starts enabled and uses its style defaults. Use its Enabled/Disabled button to
+control that warning independently, or switch Style to Custom to configure an
+exception. Switching back retains the custom values for later use. Press Save
+after changing either the style defaults or an individual item.
+
+Each style starts with a low threshold of 1000, critical threshold of 250, low
+repeat of 300 seconds, critical repeat of 60 seconds, and zero warnings off.
+Thresholds mean strictly below. Set a repeat interval from 1 to 86400 seconds.
+Settings are shared across characters on this client type. The new settings format
+does not import the previous experimental per-item settings.
 
 Rune warnings use the client combat rune counts, without adding loose counts;
 law and blood counts were tested with pouches, but the other variables and

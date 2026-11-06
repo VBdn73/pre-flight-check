@@ -1,6 +1,7 @@
 -- Time is supplied in seconds by the caller so cooldowns can be tested independently.
 local catalogue = require("supply-catalogue")
 local spikes = require("armour-spikes")
+local settings = require("warnings/settings")
 local monitor = {}
 
 function monitor.new(rules)
@@ -14,6 +15,7 @@ function monitor.new(rules)
     function instance.update(snapshot, now)
         local alerts = {}
         for _, rule in ipairs(rules) do
+            local effective = settings.effective(rules, rule)
             local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
             local count
             if rule.itemId == spikes.ruleId then
@@ -38,12 +40,12 @@ function monitor.new(rules)
                 local state = states[rule.itemId] or {}
                 states[rule.itemId] = state
                 local level
-                if count > 0 or rule.warnAtZero then
-                    if count < rule.critical then level = "critical"
-                    elseif count < rule.low then level = "low" end
+                if count > 0 or effective.warnAtZero then
+                    if count < effective.critical then level = "critical"
+                    elseif count < effective.low then level = "low" end
                 end
                 if level then
-                    local cooldown = level == "critical" and rule.criticalCooldown or rule.lowCooldown
+                    local cooldown = level == "critical" and effective.criticalCooldown or effective.lowCooldown
                     local escalated = level == "critical" and state.level ~= "critical"
                     if escalated or not state.lastAlert or now - state.lastAlert >= cooldown then
                         alerts[#alerts + 1] = { itemId = rule.itemId,
