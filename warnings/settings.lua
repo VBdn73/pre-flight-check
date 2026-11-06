@@ -35,8 +35,7 @@ function settings.load()
         local rule = saved[tostring(itemId)]
         if not settings.valid(rule) then
             rule = { enabled = itemId == 563 or itemId == 565 or itemId == 52299,
-                warnAtZero = false, low = itemId == spikes.ruleId and 1000 or 100,
-                critical = itemId == spikes.ruleId and 250 or 25,
+                warnAtZero = false, low = 1000, critical = 250,
                 lowCooldown = 300, criticalCooldown = 60 }
         end
         rules[#rules + 1] = { itemId = itemId, enabled = rule.enabled,

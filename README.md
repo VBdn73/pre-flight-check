@@ -50,8 +50,8 @@ The Melee tab provides one Armour Spikes warning for all six variants combined.
 The Ranged tab is empty for now; existing Deathspore arrow warnings still
 run using their saved settings. Law runes, blood runes and
 Deathspore arrows start enabled; newly added warnings start disabled.
-Most have a default low threshold of 100 and critical threshold of 25; armour
-spikes default to 1000 and 250. All use a low repeat of 300 seconds, critical repeat of 60
+All have a default low threshold of 1000 and critical threshold of 250. Existing
+saved settings are preserved. All use a low repeat of 300 seconds, critical repeat of 60
 seconds, and zero warnings off. Thresholds mean strictly below. Set a repeat
 interval from 1 to 86400 seconds, and press Save for each item. Settings are
 shared across characters on this client type.
