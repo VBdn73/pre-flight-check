@@ -3,14 +3,13 @@ local function event(name)
     return { Subscribe = function(_, cb) callbacks[name] = cb end, Unsubscribe = function() end }
 end
 Event = { Logic = event("logic"), ServerLogic = event("server"),
-    GameStateChanged = event("state"), ContentLayerReady = event("content"),
+    GameStateChanged = event("state"),
     SettingsLayerReady = event("settings") }
 local amount, available = 200, true
 package.loaded["inventory-reader"] = { read = function()
     return { backpack = { available = available, counts = { [563] = amount } },
         equipment = { available = true, counts = {} }, runeCounts = available and { [563] = amount } or {} }
 end }
-package.loaded["supply-view"] = { build = function() return function() end end }
 package.loaded["warnings/settings"] = { load = function() return {
     { itemId = 563, enabled = true, warnAtZero = false, low = 100, critical = 25,
         lowCooldown = 300, criticalCooldown = 60 } } end }

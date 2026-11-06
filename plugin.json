@@ -2,7 +2,7 @@
     "name": "Supply Check",
     "version": "0.0.1",
     "hasSettingsIcon": true,
-    "hasRibbonIcon": true,
+    "hasRibbonIcon": false,
     "contactEmailAddress": "vincent.rs.plugins@gmail.com",
     "requiredDependencies": {
         "prettyui": 6398181

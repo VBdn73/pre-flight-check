@@ -3,10 +3,7 @@
 A planned RuneScape plugin for warning when supplies such as runes or ammunition
 are running low, potentially when entering a boss arena or loading a preset.
 
-Open the ribbon panel to see loose backpack and equipped supplies separately.
-Totals are shown only when both sources are available. Pouch, quiver and other
-container contents are excluded. See
-[DATA-SOURCES.md](DATA-SOURCES.md) for data-source and panel verification findings.
+Configure supply warnings in the plugin settings; alerts appear as popups.
 
 **Development limitation:** In testing, the client disabled this local plugin
 when returning to the lobby. After logging in, use `pon supply-check` to enable
@@ -27,8 +24,7 @@ Make-X rune-count variables remained zero in that test.
 Inventory 953 (`NECROMANCY_NEXUS`) exposed ectoplasm and all four necrotic
 runes through the inventory API, updating after additions and spell consumption.
 Availability and freshness across logout and switching multiple nexuses still
-need verification. Nexus contents are included in necromancy warnings, but not
-in the loose-item panel totals.
+need verification. Nexus contents are included in necromancy warnings.
 
 ## Quiver diagnostic
 
@@ -39,8 +35,7 @@ means the binding did not yield a number, not that the quiver is empty. Compare
 with `!listinv inv` or `!listinv worn` on the development server. These fields
 are experimental and never used for counts. Mock test: `lua tests/quiver-diagnostic.lua`.
 
-`supply-catalogue.lua` lists item IDs, names and combat-variable bindings. The
-panel remains a loose-item view; its totals do not include container contents.
+`supply-catalogue.lua` lists item IDs, names and combat-variable bindings.
 
 ## Experimental warnings
 
@@ -70,7 +65,7 @@ is carried. Multiple nexuses or an unavailable inventory suppress these warnings
 with no nexus they count loose supplies only. Switching nexuses and inventory
 freshness need further in-client testing. Deathspore warnings count
 loose backpack plus equipment only, excluding quivers. Monitoring continues
-while the ribbon is closed; unavailable relevant sources suppress warnings.
+without a ribbon panel; unavailable relevant sources suppress warnings.
 Entering the critical range can alert immediately even during a low cooldown.
 The popup disappears after eight seconds. Cooldowns use client logic ticks and
 reset when the game leaves GAME, settings are saved, or the plugin is reloaded.
