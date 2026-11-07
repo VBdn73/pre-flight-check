@@ -43,7 +43,7 @@ The settings panel uses the required PrettyUI dependency for tabs and scrolling.
 changing the plugin manifest, run `prf` before enabling or reloading the plugin.
 
 The **General** tab has separate, immediately saved switches for checking on
-**preset load** and **bank close**. Both default off. When enabled, these check
+**preset load** and **bank close**. Preset load defaults on; bank close defaults off. When enabled, these check
 configured supply rules after the action. No popup is shown when no enabled supply
 is below its threshold.
 

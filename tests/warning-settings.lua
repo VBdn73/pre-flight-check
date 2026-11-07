@@ -5,7 +5,7 @@ PersistentDB = {
 }
 local settings = require("warnings/settings")
 local rules = settings.load()
-assert(not rules.checkOnBankClose and not rules.checkOnPreset)
+assert(not rules.checkOnBankClose and rules.checkOnPreset and settings.defaults().checkOnPreset)
 assert(rules.signOfLife and settings.defaults().signOfLife)
 assert(rules.popupDuration == 4)
 rules.popupDuration = 12
@@ -33,6 +33,10 @@ rules[2].enabled = false
 assert(settings.save(rules))
 saved.signOfLife = false
 assert(not settings.load().signOfLife, "explicitly disabled sign warning remains disabled")
+saved.checkOnPreset = false
+assert(not settings.load().checkOnPreset, "explicitly disabled preset check remains disabled")
+saved.checkOnPreset = nil
+assert(settings.load().checkOnPreset, "missing preset setting uses the default")
 saved.signOfLife = nil
 assert(settings.load().signOfLife, "missing sign setting uses the default")
 saved["53065"].enabled, saved["41633"].custom = false, true

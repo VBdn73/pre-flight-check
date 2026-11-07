@@ -69,7 +69,7 @@ end
 local function fromSaved(saved)
     if type(saved) ~= "table" then saved = {} end
     local rules = {}
-    rules.checkOnPreset = saved.checkOnPreset == true
+    rules.checkOnPreset = saved.checkOnPreset ~= false
     rules.checkOnBankClose = saved.checkOnBankClose == true
     rules.signOfLife = saved.signOfLife ~= false
     rules.popupDuration = settings.validDuration(saved.popupDuration) and saved.popupDuration or 4
