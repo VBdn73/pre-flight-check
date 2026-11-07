@@ -68,11 +68,11 @@ The Melee tab provides one Armour Spikes warning for all six variants combined,
 and the Ranged tab provides a Deathspore arrow warning. Each tab has always-visible
 style defaults above the item sections for thresholds. Every item
 starts enabled and uses its style defaults. Use an item's checkbox to toggle
-its warning immediately: green means enabled and red means disabled. Use the pencil
-icon to switch between Style and Custom; that change is saved immediately.
-Item fields always show their custom values, even in Style mode, where the style
-defaults are used for warnings instead. Editing an item field switches it to
-Custom without changing the style defaults. The two fields are low and critical
+its warning immediately: green means enabled and red means disabled. Use the
+Defaults/Custom button to switch threshold modes; that change is saved immediately.
+The fields always show the item's own thresholds, but are read-only in Defaults
+mode, when the style thresholds are used. Custom lets you edit the item values.
+The two fields are low and critical
 thresholds, respectively, and show descriptions on hover. Threshold changes are
 saved when you leave a field or press Enter. Invalid values or save failures are
 shown beside the fields; correct the values and leave the field to retry.

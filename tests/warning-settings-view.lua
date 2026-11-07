@@ -36,7 +36,8 @@ ui = { Text = { new = function(parent) return control("text", parent) end },
     InputField = { new = function(parent) return control("input", parent) end },
     Hook = { ONBUTTONPRESSED = "press", ONCLICK = "click", ONSCROLLWHEEL = "wheel", ONCONTENTCHANGED = "change", ONMOUSEOVER = "over" },
     InputFieldActionResult = { SUBMIT = 1, SUBMIT_ON_FOCUS_LOSS = 2, CONTENT_CHANGE = 3 },
-    TextContentVisibilityMode = { VISIBLE = 1 }, InputFieldFilterMode = { NUMBERS_AS_TEXT = 1 } }
+    TextContentVisibilityMode = { VISIBLE = 1 }, InputFieldFilterMode = { NUMBERS_AS_TEXT = 1 },
+    AlignMode = { CENTRE = 1 } }
 id = { Font = { MUSEO_SANS_11PT_REGULAR = 1 }, StyleSheet = {
     BUTTON_DEFAULT = 1, INPUT_DEFAULT = 2, CHECKBOX_DEFAULT_LEFT_ALIGNED = 3, CHECKBOX_DEFAULT = 4 } }
 local tabs
@@ -171,12 +172,14 @@ host.height = 600
 magic.sections[1]:SetExpanded(true)
 refresh()
 local fire = magic.sections[1].content
-local override = find(fire, "iconButton", -253, 5)
+local override = find(fire, "button", -251, 5)
 local customLow = find(fire, "input", -171, 5)
 local customCritical = find(fire, "input", -104, 5)
-local mode = find(fire, "text", -223, 8)
+local mode = find(fire, "text", -251, 5)
+assert(override.width == 75 and mode.width == 75 and mode.alignHorizontal == ui.AlignMode.CENTRE
+    and mode.alignVertical == ui.AlignMode.CENTRE)
 assert(override.xAnchor == 1 and customLow.xAnchor == 1 and customCritical.xAnchor == 1)
-assert(override.tooltip.placement == "above" and override.tooltip.text:find("style defaults"))
+assert(override.tooltip.placement == "above" and override.tooltip.text:find("style thresholds"))
 assert(customLow.tooltip.text:find("Low") and customCritical.tooltip.text:find("Critical"))
 assert(customLow.tooltip.placement == "above" and customCritical.tooltip.placement == "above")
 assert(not customLow.tooltip.constrainToParent and not override.tooltip.constrainToParent)
@@ -190,10 +193,10 @@ customLow.attachment.context = nil
 customLow.x = -171
 override.x = 200
 override.hooks.over()
-assert(override.tooltip.x == 0 and override.tooltip.y == -61)
-override.x = -253
+assert(override.tooltip.x == 35 and override.tooltip.y == -61)
+override.x = -251
 assert(find(fire, "text", 48, 8).widthAnchor == 1)
-assert(mode.content == "Style" and not customLow.hidden and customLow.enabled and not customLow.clickthrough)
+assert(mode.content == "Defaults" and not customLow.hidden and not customLow.enabled and customLow.clickthrough)
 assert(customLow.content == "1000")
 local frame = find(fire, "rectangle", 0, 0)
 local background = find(fire, "rectangle", 1, 1)
@@ -224,13 +227,15 @@ assert(fireIcon.hidden, "icon completely above the viewport is hidden")
 magic.scrollY = 0
 refresh()
 assert(frame.y == 0 and frame.height == 36 and background.y == 1 and background.height == 34)
+override.hooks.press()
+assert(mode.content == "Custom" and customLow.content == "1000" and customLow.enabled)
 customLow.content = "5500"
 customLow.hooks.change(nil, ui.InputFieldActionResult.CONTENT_CHANGE)
-assert(mode.content == "Custom" and not override.disabled and rules.styles.Magic.low == 5000)
+assert(mode.content == "Custom" and rules.styles.Magic.low == 5000)
 customLow.hooks.change(nil, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
 assert(saved["554"].custom and saved["554"].low == 5500)
 override.hooks.press()
-assert(mode.content == "Style" and customLow.content == "5500")
+assert(mode.content == "Defaults" and customLow.content == "5500" and not customLow.enabled)
 assert(require("warnings/settings").effective(rules, rules[4]).low == 5000)
 override.hooks.press()
 refresh()
@@ -247,12 +252,12 @@ PersistentDB.SetStructuredData = function() return false end
 customLow.hooks.change(nil, ui.InputFieldActionResult.SUBMIT)
 assert(mode.content == "Failed" and rules[4].low == 7000)
 override.hooks.press()
-assert(rules[4].custom and not override.disabled)
+assert(rules[4].custom)
 PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
 customLow.content = "7000"
 customLow.hooks.change(nil, ui.InputFieldActionResult.SUBMIT)
 override.hooks.press()
-assert(customLow.content == "7000" and customLow.enabled)
+assert(customLow.content == "7000" and not customLow.enabled)
 assert(not saved["554"].custom and saved["554"].low == 7000)
 rules.styles.Magic.low = 6000
 host.width = 401
@@ -288,11 +293,11 @@ customLow.simulateProgrammaticChange, customCritical.simulateProgrammaticChange 
 override.hooks.press()
 assert(not saved["554"].custom and customLow.content == "7000" and customCritical.content == "300")
 assert(require("warnings/settings").effective(rules, rules[4]).low == 6000)
--- Client input events can arrive after the pencil changes modes.
+-- Client input events can arrive after the button changes modes.
 customLow.hooks.change(customLow, ui.InputFieldActionResult.CONTENT_CHANGE)
 customCritical.hooks.change(customCritical, ui.InputFieldActionResult.CONTENT_CHANGE)
 customCritical.hooks.change(customCritical, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
-assert(mode.content ~= "Custom" and override.spriteButton.disabled and not saved["554"].custom)
+assert(mode.content ~= "Custom" and not saved["554"].custom)
 assert(saved["554"].low == 7000 and saved["554"].critical == 300)
 refresh()
 override.hooks.press()
@@ -306,7 +311,7 @@ ranged.sections[1]:SetExpanded(true)
 refresh()
 local arrow = ranged.sections[1].content
 assert(find(arrow, "sprite", 8, 3).itemId == 52299)
-assert(not find(arrow, "iconButton", -253, 5).hidden)
+assert(not find(arrow, "button", -251, 5).hidden)
 tabs.active = 5
 melee.sections[1]:SetExpanded(true)
 refresh()

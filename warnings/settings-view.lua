@@ -34,8 +34,6 @@ end
 function view.build(host, rules, onChange, prettyui)
     assert(prettyui and prettyui.Tabs and prettyui.Tabs.new,
         "PrettyUI Tabs is required for warning settings")
-    assert(prettyui.SpriteButton and prettyui.SpriteButton.new,
-        "PrettyUI SpriteButton is required for warning settings")
     assert(prettyui.CheckboxButton and prettyui.CheckboxButton.new,
         "PrettyUI CheckboxButton is required for warning settings")
     assert(prettyui.Tooltip and prettyui.Tooltip.attach,
@@ -48,7 +46,7 @@ function view.build(host, rules, onChange, prettyui)
     local pages = { tabs:GetPage(2), tabs:GetPage(3), tabs:GetPage(4), tabs:GetPage(5), tabs:GetPage(1) }
     local styleNames = { "Magic", "Necromancy", "Ranged", "Melee" }
     local controls = { {}, {}, {}, {}, {} }
-    local spriteButtons, checkboxes, tooltips, tooltipTargets = {}, {}, {}, {}
+    local checkboxes, tooltips, tooltipTargets = {}, {}, {}
     local pageIndex, currentSection = 1, nil
     local layoutChanged = true
     local function track(control)
@@ -69,15 +67,6 @@ function view.build(host, rules, onChange, prettyui)
         local sprite = track(originalIcon(...))
         controls[pageIndex][#controls[pageIndex]].viewportClipped = true
         return sprite
-    end
-    local function iconButton(parent, x, y, sprite, tooltip, action, toggleable, disabled)
-        local b = prettyui.SpriteButton.new(parent, sprite, action, {
-            x = x, y = y, size = 25, tooltip = tooltip,
-            toggleable = toggleable, disabled = disabled,
-        })
-        spriteButtons[#spriteButtons + 1] = b
-        track(b.root)
-        return b
     end
     local function tooltip(target, parent, value)
         local tip
@@ -212,7 +201,7 @@ function view.build(host, rules, onChange, prettyui)
         controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
         icon(parent, 8, y + 3, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId).clickthrough = true
         local itemLabel = text(parent, 48, y + 8, 90, item.name)
-        itemLabel:SetSize(-303, 22, 1, 0)
+        itemLabel:SetSize(-300, 22, 1, 0)
         itemLabel.clickthrough = true
         local enabled, custom = rule.enabled, rule.custom
         local draft = { tostring(rule.low), tostring(rule.critical) }
@@ -227,10 +216,10 @@ function view.build(host, rules, onChange, prettyui)
         end
         local function updateRow()
             for _, field in ipairs(fields) do
-                field.enabled = true
-                field.clickthrough = false
+                field.enabled = custom
+                field.clickthrough = not custom
             end
-            mode.content = custom and "Custom" or "Style"
+            mode.content = custom and "Custom" or "Defaults"
             background.rgba = enabled and 0x23412DE8 or 0x492626E8
             switch.value = enabled
         end
@@ -255,28 +244,31 @@ function view.build(host, rules, onChange, prettyui)
         switch.buttonSize = 22
         switch:Subscribe(ui.Hook.ONBUTTONPRESSED, toggleEnabled)
         tooltip(switch, parent, "Enable or disable this warning")
-        local pencil = iconButton(parent, -253, y + 5, "PENCIL", nil, function(b, active)
+        local modeButton = track(ui.Button.new(parent))
+        modeButton:SetPos(-251, y + 5, 1, 0); modeButton:SetSize(75, 25)
+        modeButton.stylesheetID = id.StyleSheet.BUTTON_DEFAULT
+        modeButton:Subscribe(ui.Hook.ONBUTTONPRESSED, function()
             if custom then
                 for i, field in ipairs(fields) do draft[i] = field.content end
             end
             local old = rules[index].custom
-            rules[index].custom = active
+            rules[index].custom = not custom
             if not settings.save(rules) then
                 rules[index].custom = old
-                b:SetDisabled(not old)
                 mode.content = "Failed"
-                return
+                return true
             end
-            custom = active
+            custom = rules[index].custom
             if custom then for i, field in ipairs(fields) do setField(field, draft[i]) end end
             updateRow()
             layoutChanged = true
             onChange()
-        end, true, not custom)
-        pencil.root:SetPos(-253, y + 5, 1, 0)
-        tooltip(pencil.root, parent, "Switch between style defaults and custom settings")
-        mode = text(parent, -223, y + 8, 48, custom and "Custom" or "Style")
-        mode:SetPos(-223, y + 8, 1, 0)
+            return true
+        end)
+        tooltip(modeButton, parent, "Defaults: use style thresholds. Custom: use the item values shown. Click to switch.")
+        mode = text(parent, -251, y + 5, 75, custom and "Custom" or "Defaults")
+        mode:SetPos(-251, y + 5, 1, 0); mode:SetSize(75, 25)
+        mode.alignHorizontal, mode.alignVertical = ui.AlignMode.CENTRE, ui.AlignMode.CENTRE
         mode.clickthrough = true
         local low = input(parent, -171, y + 5, rule.low)
         local critical = input(parent, -104, y + 5, rule.critical)
@@ -286,21 +278,17 @@ function view.build(host, rules, onChange, prettyui)
         for i, field in ipairs(fields) do
             local description = i == 1 and "Low warning quantity: warns below this value"
                 or "Critical warning quantity: warns below this value"
-            description = description .. ". Item values are used in Custom mode."
+            description = description .. ". Switch to Custom to set an item value."
             tooltip(field, parent, description)
         end
         local function editItem()
             if settingFields then return end
-            if not custom then
-                if fields[1].content == draft[1] and fields[2].content == draft[2] then return end
-                custom = true
-                pencil:SetDisabled(false)
-                mode.content = "Custom"
-            end
+            if not custom then return end
             for i, field in ipairs(fields) do draft[i] = field.content end
         end
         local function saveItem()
             if settingFields then return end
+            if not custom then return end
             if custom then for i, field in ipairs(fields) do draft[i] = field.content end end
             local candidate = { itemId = rule.itemId, enabled = enabled, custom = custom,
                 low = tonumber(draft[1]), critical = tonumber(draft[2]) }
@@ -316,7 +304,7 @@ function view.build(host, rules, onChange, prettyui)
                 return
             end
             onChange()
-            mode.content = custom and "Custom" or "Style"
+            mode.content = custom and "Custom" or "Defaults"
         end
         onSubmit(low, saveItem, editItem)
         onSubmit(critical, saveItem, editItem)
@@ -371,7 +359,6 @@ function view.build(host, rules, onChange, prettyui)
     refresh()
     return refresh, function()
         for _, tip in ipairs(tooltips) do tip:Destroy() end
-        for _, b in ipairs(spriteButtons) do b:Destroy() end
         for _, checkbox in ipairs(checkboxes) do
             if checkbox.Destroy then checkbox:Destroy() end
         end
