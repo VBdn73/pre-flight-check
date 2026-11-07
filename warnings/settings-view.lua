@@ -49,6 +49,7 @@ function view.build(host, rules, onChange, prettyui)
     local checkboxes, tooltips, tooltipTargets = {}, {}, {}
     local pageIndex, currentSection = 1, nil
     local layoutChanged = true
+    local resetControls = { {}, {}, {}, {}, {}, {} }
     local function track(control)
         local scroll = pages[pageIndex]
         local list = controls[pageIndex]
@@ -110,6 +111,9 @@ function view.build(host, rules, onChange, prettyui)
         checkbox.items[1].label.font = id.Font.MUSEO_SANS_11PT_REGULAR
         checkboxes[#checkboxes + 1] = checkbox
         track(checkbox.root)
+        resetControls[6][#resetControls[6] + 1] = function()
+            checkbox:SetSelected(key, rules[key], false)
+        end
     end
     triggerToggle(40, "checkOnPreset", "Check on preset load")
     triggerToggle(75, "checkOnBankClose", "Check on bank close")
@@ -136,6 +140,10 @@ function view.build(host, rules, onChange, prettyui)
         end
         durationStatus.content = ""
     end)
+    resetControls[6][#resetControls[6] + 1] = function()
+        duration.content = tostring(rules.popupDuration)
+        durationStatus.content = ""
+    end
     pages[6]:SetContentHeight(150)
     pageIndex = 1
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
@@ -191,6 +199,11 @@ function view.build(host, rules, onChange, prettyui)
         end
         onSubmit(low, saveDefaults)
         onSubmit(critical, saveDefaults)
+        resetControls[i][#resetControls[i] + 1] = function()
+            low.content = tostring(rules.styles[style].low)
+            critical.content = tostring(rules.styles[style].critical)
+            status.content = ""
+        end
     end
     currentSection = nil
     pageIndex = 1
@@ -252,6 +265,7 @@ function view.build(host, rules, onChange, prettyui)
         end)
         tooltip(switch, parent, "Enable or disable this warning")
         frameEntry.update = updateRow
+        resetControls[5][#resetControls[5] + 1] = updateRow
         updateRow()
         group.count = 1
         currentSection = nil
@@ -381,6 +395,14 @@ function view.build(host, rules, onChange, prettyui)
         onSubmit(low, saveItem, editItem)
         onSubmit(critical, saveItem, editItem)
         frameEntry.update = updateRow
+        local function resetRow()
+            local value = rules[index]
+            enabled, custom = value.enabled, value.custom
+            draft = { tostring(value.low), tostring(value.critical) }
+            for i, field in ipairs(fields) do setField(field, draft[i]) end
+            updateRow()
+        end
+        frameEntry.reset = resetRow
         updateRow()
     end
     for index, rule in ipairs(rules) do
@@ -452,6 +474,78 @@ function view.build(host, rules, onChange, prettyui)
         for _, group in pairs(pageSections) do
             group.section:_SetContentHeight(group.count * rowHeight)
         end
+    end
+    currentSection = nil
+    for i, page in ipairs(pages) do
+        pageIndex = i
+        local button = track(ui.Button.new(page.content))
+        button:SetPos(-160, 5, 1, 0); button:SetSize(150, 25)
+        button.stylesheetID = id.StyleSheet.BUTTON_DEFAULT
+        local label = text(page.content, -160, 5, 150, "Restore to defaults")
+        label:SetPos(-160, 5, 1, 0)
+        label:SetSize(150, 25)
+        label.alignHorizontal, label.alignVertical = ui.AlignMode.CENTRE, ui.AlignMode.CENTRE
+        label.clickthrough = true
+        local confirming = false
+        local cancel = track(ui.Button.new(page.content))
+        cancel:SetPos(-235, 5, 1, 0); cancel:SetSize(70, 25)
+        cancel.stylesheetID = id.StyleSheet.BUTTON_DEFAULT
+        controls[i][#controls[i]].visibleWhen = function() return confirming end
+        local cancelLabel = text(page.content, -235, 5, 70, "Cancel")
+        cancelLabel:SetPos(-235, 5, 1, 0)
+        cancelLabel:SetSize(70, 25)
+        cancelLabel.alignHorizontal, cancelLabel.alignVertical = ui.AlignMode.CENTRE, ui.AlignMode.CENTRE
+        cancelLabel.clickthrough = true
+        controls[i][#controls[i]].visibleWhen = function() return confirming end
+        cancel:Subscribe(ui.Hook.ONBUTTONPRESSED, function()
+            confirming = false
+            label.content = "Restore to defaults"
+            layoutChanged = true
+            return true
+        end)
+        button:Subscribe(ui.Hook.ONBUTTONPRESSED, function()
+            if not confirming then
+                confirming = true
+                label.content = "Confirm restore"
+                layoutChanged = true
+                return true
+            end
+            confirming = false
+            label.content = "Restore to defaults"
+            layoutChanged = true
+            local defaults = settings.defaults()
+            local old = {}
+            if i == 6 then
+                for _, key in ipairs({ "checkOnPreset", "checkOnBankClose", "popupDuration" }) do
+                    old[key], rules[key] = rules[key], defaults[key]
+                end
+            else
+                local style = styleNames[i]
+                old.style, rules.styles[style] = rules.styles[style], defaults.styles[style]
+                if style == "Misc" then old.signOfLife, rules.signOfLife = rules.signOfLife, defaults.signOfLife end
+                for index, rule in ipairs(rules) do
+                    if settings.style(rule.itemId) == style then
+                        old[index], rules[index] = rule, defaults[index]
+                    end
+                end
+            end
+            if not settings.save(rules) then
+                if i == 6 then
+                    for _, key in ipairs({ "checkOnPreset", "checkOnBankClose", "popupDuration" }) do rules[key] = old[key] end
+                else
+                    rules.styles[styleNames[i]] = old.style
+                    if i == 5 then rules.signOfLife = old.signOfLife end
+                    for index, rule in pairs(old) do if type(index) == "number" then rules[index] = rule end end
+                end
+                label.content = "Save failed"
+                return true
+            end
+            for _, update in ipairs(resetControls[i]) do update() end
+            for _, entry in ipairs(controls[i]) do if entry.reset then entry.reset() end end
+            layoutChanged = true
+            onChange()
+            return true
+        end)
     end
     local width, height, scrollPositions, activeIndex
     local function refresh()

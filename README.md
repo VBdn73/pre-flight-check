@@ -89,6 +89,8 @@ saved when you leave a field or press Enter. Invalid values or save failures are
 shown beside the fields; correct the values and leave the field to retry.
 Only one section per combat style can be open at a time. Ranged sections load
 their rows on demand to keep the panel within the client's UI resource limits.
+Each tab has a **Restore to defaults** button. Confirm the action to reset only
+that tab's settings, including its item overrides; Cancel leaves them unchanged.
 
 Each style starts with a low threshold of 1000 and a critical threshold of 250.
 Invention charge instead starts in Custom mode with thresholds of 50,000 low and

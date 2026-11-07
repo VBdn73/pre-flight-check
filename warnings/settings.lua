@@ -66,9 +66,8 @@ function settings.validDuration(value)
     return validInteger(value, 1, 3600)
 end
 
-function settings.load()
-    local ok, saved = pcall(function() return PersistentDB:GetStructuredData(key) end)
-    if not ok or type(saved) ~= "table" then saved = {} end
+local function fromSaved(saved)
+    if type(saved) ~= "table" then saved = {} end
     local rules = {}
     rules.checkOnPreset = saved.checkOnPreset == true
     rules.checkOnBankClose = saved.checkOnBankClose == true
@@ -94,6 +93,15 @@ function settings.load()
             custom = rule.custom == true }
     end
     return rules
+end
+
+function settings.defaults()
+    return fromSaved({})
+end
+
+function settings.load()
+    local ok, saved = pcall(function() return PersistentDB:GetStructuredData(key) end)
+    return fromSaved(ok and saved or nil)
 end
 
 function settings.save(rules)

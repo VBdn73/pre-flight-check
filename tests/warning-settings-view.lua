@@ -408,6 +408,50 @@ assert(not find(misc.sections[1].content, "sprite", 8, 3).hidden)
 misc.sections[2]:SetExpanded(true)
 refresh()
 assert(find(misc.sections[2].content, "sprite", 8, 3).itemId == 36389)
+-- Reset is explicitly confirmed, scoped to one tab, persisted, and updates open rows.
+local magicReset = find(magic.content, "button", -160, 5)
+local magicCancel = find(magic.content, "button", -235, 5)
+local magicResetLabel = find(magic.content, "text", -160, 5)
+assert(magicReset.xAnchor == 1 and magicResetLabel.xAnchor == 1 and magicCancel.xAnchor == 1)
+magicReset.hooks.press()
+assert(magicResetLabel.content == "Confirm restore" and rules.styles.Magic.low == 6000)
+magicCancel.hooks.press()
+assert(magicResetLabel.content == "Restore to defaults" and rules[4].custom)
+magicReset.hooks.press()
+PersistentDB.SetStructuredData = function() return false end
+magicReset.hooks.press()
+assert(rules.styles.Magic.low == 6000 and rules[4].custom)
+assert(magicResetLabel.content == "Save failed")
+PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
+magicReset.hooks.press(); magicReset.hooks.press()
+assert(rules.styles.Magic.low == 1000 and not rules[4].custom and rules[4].low == 1000)
+assert(customLow.content == "1000" and not customLow.enabled and mode.content == "Defaults")
+assert(saved.styles.Magic.low == 1000 and not saved["554"].custom)
+assert(rules.checkOnPreset and rules.popupDuration == 15)
+local generalReset = find(general.content, "button", -160, 5)
+generalReset.hooks.press(); generalReset.hooks.press()
+assert(not rules.checkOnPreset and not rules.checkOnBankClose and rules.popupDuration == 4)
+assert(not preset.checkbox.items[1].selected and not bank.checkbox.items[1].selected)
+assert(find(general.content, "input", 205, 115).content == "4")
+local settings = require("warnings/settings")
+for _, styleName in ipairs({ "Necromancy", "Ranged", "Melee", "Misc" }) do
+    rules.styles[styleName].low = 2222
+    for _, rule in ipairs(rules) do
+        if settings.style(rule.itemId) == styleName then rule.enabled = false; break end
+    end
+end
+rules.signOfLife = true
+for i, page in ipairs({ necro, ranged, melee, misc }) do
+    local styleName = ({ "Necromancy", "Ranged", "Melee", "Misc" })[i]
+    local reset = find(page.content, "button", -160, 5)
+    reset.hooks.press(); reset.hooks.press()
+    assert(rules.styles[styleName].low == 1000 and saved.styles[styleName].low == 1000)
+    for _, rule in ipairs(rules) do
+        if settings.style(rule.itemId) == styleName then assert(rule.enabled) end
+    end
+end
+assert(not rules.signOfLife and not sign.value and not saved.signOfLife)
+assert(saved["36389"].custom and saved["36389"].low == 50000)
 destroy()
 assert(tabs.destroyed)
 print("Warning settings view tests passed.")
