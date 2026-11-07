@@ -17,6 +17,13 @@ assert(first.backpack.available and first.backpack.counts[565] == 30)
 assert(first.equipment.available and first.equipment.counts[52299] == 6872)
 assert(first.runeCounts[563] == 123 and first.runeCounts[565] == nil)
 assert(first.inventionCharge == 126399)
+assert(first.signOfLifeCooldown == nil)
+var.VarClient.COMBATV2_REVIVE_LIFE_EFFECT_COOLDOWN = { value = 10 }
+assert(reader.read().signOfLifeCooldown == true)
+var.VarClient.COMBATV2_REVIVE_LIFE_EFFECT_COOLDOWN.value = 0
+assert(reader.read().signOfLifeCooldown == false)
+var.VarClient.COMBATV2_REVIVE_LIFE_EFFECT_COOLDOWN.value = -1
+assert(reader.read().signOfLifeCooldown == nil)
 local chargeMonitor = require("warnings/monitor").new({
     { itemId = 36389, enabled = true, custom = true, low = 200000, critical = 175000 },
 })

@@ -8,6 +8,9 @@ function monitor.new(rules)
 
     function instance.update(snapshot)
         local alerts = {}
+        if rules.signOfLife and snapshot.signOfLifeCooldown == true then
+            alerts[#alerts + 1] = { name = "Sign of life", message = "Sign of life: on cooldown", level = "critical" }
+        end
         for _, rule in ipairs(rules) do
             local effective = settings.effective(rules, rule)
             local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]

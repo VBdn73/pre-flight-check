@@ -97,4 +97,15 @@ snapshot.inventionCharge = 1000
 assert(#charge.update(snapshot) == 0)
 snapshot.inventionCharge = nil
 assert(#charge.update(snapshot) == 0)
+local signRules = { signOfLife = true }
+local sign = monitor.new(signRules)
+snapshot.signOfLifeCooldown = true
+assert(sign.update(snapshot)[1].message == "Sign of life: on cooldown")
+snapshot.signOfLifeCooldown = false
+assert(#sign.update(snapshot) == 0)
+snapshot.signOfLifeCooldown = nil
+assert(#sign.update(snapshot) == 0)
+snapshot.signOfLifeCooldown = true
+signRules.signOfLife = false
+assert(#sign.update(snapshot) == 0)
 print("Warning monitor tests passed.")

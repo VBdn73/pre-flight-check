@@ -72,6 +72,7 @@ function settings.load()
     local rules = {}
     rules.checkOnPreset = saved.checkOnPreset == true
     rules.checkOnBankClose = saved.checkOnBankClose == true
+    rules.signOfLife = saved.signOfLife == true
     rules.popupDuration = settings.validDuration(saved.popupDuration) and saved.popupDuration or 4
     rules.styles = {}
     for _, style in ipairs(styles) do
@@ -98,7 +99,8 @@ end
 function settings.save(rules)
     if not settings.validDuration(rules.popupDuration) then return false end
     local data = { styles = {}, checkOnPreset = rules.checkOnPreset == true,
-        checkOnBankClose = rules.checkOnBankClose == true, popupDuration = rules.popupDuration }
+        checkOnBankClose = rules.checkOnBankClose == true, signOfLife = rules.signOfLife == true,
+        popupDuration = rules.popupDuration }
     for _, style in ipairs(styles) do
         if not rules.styles or not settings.valid(rules.styles[style]) then return false end
         local value = rules.styles[style]

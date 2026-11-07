@@ -45,14 +45,14 @@ function popup.show(alerts, now, duration)
             label.font = id.Font.MUSEO_SANS_15PT_REGULAR
             label.alignVertical = ui.AlignMode.CENTRE
             label.clickthrough = true
-            label.content = alert.name .. ": " .. alert.count
+            label.content = alert.message or (alert.name .. ": " .. alert.count)
             local severity = ui.Text.new(root)
             severity:SetPos(247, y); severity:SetSize(75, 32)
             severity.font = id.Font.MUSEO_SANS_11PT_REGULAR
             severity.alignHorizontal = ui.AlignMode.BOTTOMRIGHT
             severity.alignVertical = ui.AlignMode.CENTRE
             severity.clickthrough = true
-            severity.content = critical and "CRITICAL" or "LOW"
+            severity.content = alert.message and "" or (critical and "CRITICAL" or "LOW")
         end
         expires = now + (duration or 4)
     end)

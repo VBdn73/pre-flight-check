@@ -53,6 +53,9 @@ end
 function reader.read()
     local runes = {}
     local charge
+    local signOfLifeCooldown
+    local cooldownOk, cooldown = pcall(function() return var.VarClient.COMBATV2_REVIVE_LIFE_EFFECT_COOLDOWN.value end)
+    if cooldownOk and integer(cooldown, 0) then signOfLifeCooldown = cooldown > 0 end
     local ok, raw = pcall(function() return var.VarPlayer.INVENT_CHARGE.value end)
     if ok and integer(raw, 0) then charge = math.floor(raw / 3000) end
     for itemId, item in pairs(catalogue) do
@@ -83,7 +86,7 @@ function reader.read()
         end
     end
     return { backpack = backpack, equipment = equipment, runeCounts = runes, nexus = nexus,
-        spikeHarness = spikeHarness, inventionCharge = charge }
+        spikeHarness = spikeHarness, inventionCharge = charge, signOfLifeCooldown = signOfLifeCooldown }
 end
 
 return reader

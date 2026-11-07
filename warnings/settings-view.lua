@@ -210,6 +210,52 @@ function view.build(host, rules, onChange, prettyui)
     text(pages[5].content, 10, 8, 400, "Counts include supplies in the backpack and equipment.")
     addSection(5, "Bombs")
     addSection(5, "Invention")
+    addSection(5, "Other")
+    do
+        local group = sections[5]["Other"]
+        currentSection = group.section
+        local parent = group.section.content
+        local frame = track(ui.Rectangle.new(parent))
+        local frameEntry = controls[pageIndex][#controls[pageIndex]]
+        frame:SetPos(0, 0); frame:SetSize(0, rowHeight - 4, 1, 0)
+        frame.fill, frame.rgba, frame.clickthrough = true, 0x514D45C0, true
+        frameEntry.background = { x = 0, y = 0, width = 0, height = rowHeight - 4 }
+        local background = track(ui.Rectangle.new(parent))
+        background:SetPos(1, 1); background:SetSize(-2, rowHeight - 6, 1, 0)
+        background.fill, background.clickthrough = true, true
+        controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = 1, width = -2, height = rowHeight - 6 }
+        icon(parent, 8, 3, 29290).clickthrough = true
+        local label = text(parent, 48, 3, 200, "Sign of life cooldown")
+        label:SetSize(-85, 32, 1, 0)
+        label.alignVertical, label.clickthrough = ui.AlignMode.CENTRE, true
+        local switch = track(ui.Check.new(parent))
+        switch:SetPos(-30, 7, 1, 0); switch:SetSize(22, 22)
+        switch.stylesheetID = id.StyleSheet.CHECKBOX_DEFAULT
+        switch.buttonSize = 22
+        local function updateRow()
+            background.rgba = rules.signOfLife and 0x23412DE8 or 0x492626E8
+            switch.value = rules.signOfLife
+        end
+        switch:Subscribe(ui.Hook.ONBUTTONPRESSED, function()
+            local old = rules.signOfLife
+            rules.signOfLife = not old
+            if not settings.save(rules) then
+                rules.signOfLife = old
+                updateRow()
+                print("[supply-check] Could not save Sign of life setting.")
+                return true
+            end
+            updateRow()
+            layoutChanged = true
+            onChange()
+            return true
+        end)
+        tooltip(switch, parent, "Enable or disable this warning")
+        frameEntry.update = updateRow
+        updateRow()
+        group.count = 1
+        currentSection = nil
+    end
     local function buildRow(index, rule, item, group, rowPage, y)
         pageIndex = rowPage
         currentSection = group.section

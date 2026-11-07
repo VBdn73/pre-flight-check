@@ -73,6 +73,10 @@ and converted to whole charges by dividing by 3,000. Adding a divine charge incr
 raw value by 9,000,000 and the converted value matched the displayed pack charge; ongoing
 drain and update timing still need in-client verification. An unavailable variable suppresses
 the warning. Thresholds are in pack charges, not divine charge items.
+The Misc tab's Other section has an optional Sign of life cooldown warning, off by
+default. It reports the shared revive cooldown during the same preset/bank checks,
+without a quantity threshold. It reads `COMBATV2_REVIVE_LIFE_EFFECT_COOLDOWN`;
+its availability and nonzero-on-cooldown interpretation still need in-client verification.
 Each tab has always-visible style defaults above the item sections for thresholds. Every item
 starts enabled and uses its style defaults. Use an item's checkbox to toggle
 its warning immediately: green means enabled and red means disabled. Use the
