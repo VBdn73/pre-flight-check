@@ -52,7 +52,8 @@ function view.build(host, rules, onChange, prettyui)
     local function track(control)
         local scroll = pages[pageIndex]
         local list = controls[pageIndex]
-        list[#list + 1] = { control = control, section = currentSection }
+        list[#list + 1] = { control = control, section = currentSection,
+            viewportClipped = currentSection ~= nil }
         control:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.scroll", function(_, delta)
             if not scroll.scrollbarVisible then return true end
             scroll:ScrollBy(delta * 32)
@@ -63,11 +64,7 @@ function view.build(host, rules, onChange, prettyui)
     local originalText, originalInput, originalIcon = text, input, icon
     local function text(...) return track(originalText(...)) end
     local function input(...) return track(originalInput(...)) end
-    local function icon(...)
-        local sprite = track(originalIcon(...))
-        controls[pageIndex][#controls[pageIndex]].viewportClipped = true
-        return sprite
-    end
+    local function icon(...) return track(originalIcon(...)) end
     local function tooltip(target, parent, value)
         local tip
         target:Subscribe(ui.Hook.ONMOUSEOVER, "supplyCheck.tooltipPosition", function()
