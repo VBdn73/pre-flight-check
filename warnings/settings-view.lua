@@ -47,13 +47,13 @@ function view.build(host, rules, onChange, prettyui)
     local styleNames = { "Magic", "Necromancy", "Ranged", "Melee", "Misc" }
     local controls = { {}, {}, {}, {}, {}, {} }
     local checkboxes, tooltips, tooltipTargets = {}, {}, {}
-    local pageIndex, currentSection = 1, nil
+    local pageIndex, currentSection, currentRow = 1, nil, nil
     local layoutChanged = true
     local resetControls = { {}, {}, {}, {}, {}, {} }
     local function track(control)
         local scroll = pages[pageIndex]
         local list = controls[pageIndex]
-        list[#list + 1] = { control = control, section = currentSection,
+        list[#list + 1] = { control = control, section = currentSection, row = currentRow,
             viewportClipped = currentSection ~= nil }
         control:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.scroll", function(_, delta)
             if not scroll.scrollbarVisible then return true end
@@ -175,20 +175,19 @@ function view.build(host, rules, onChange, prettyui)
     pageIndex = 1
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
     local sections = { {}, {}, {}, {}, {} }
-    local toggleRanged
+    local toggleLazy
     local function addSection(page, name)
         sections[page][name] = { count = 0, section = pages[page]:AddCollapseButton(name, {
             expanded = false, indent = 0, onToggle = function(section, expanded)
                 layoutChanged = true
-                if page == 3 and toggleRanged then
-                    toggleRanged(section, expanded)
-                elseif expanded then
+                if expanded then
                     for _, group in pairs(sections[page]) do
                         if group.section ~= section and group.section.expanded then
                             group.section:SetExpanded(false)
                         end
                     end
                 end
+                if toggleLazy then toggleLazy(page, section, expanded) end
             end,
         }) }
     end
@@ -305,11 +304,21 @@ function view.build(host, rules, onChange, prettyui)
         frameEntry.update = updateRow
         resetControls[5][#resetControls[5] + 1] = updateRow
         updateRow()
-        for i, item in ipairs({
+        group.count = 1
+        currentSection = nil
+    end
+    local function addUnavailableRows()
+        pageIndex = 5
+        local group = sections[5]["Other"]
+        currentSection = group.section
+        local parent = group.section.content
+        for _, item in ipairs({
             { id = 48680, name = "Blessed flask" },
             { id = 44548, name = "Grace of the elves" },
+            { id = 26295, name = "Scrimshaw" },
         }) do
-            local y = i * rowHeight
+            local y = group.count * rowHeight
+            group.count = group.count + 1
             local unavailableFrame = track(ui.Rectangle.new(parent))
             unavailableFrame:SetPos(0, y); unavailableFrame:SetSize(0, rowHeight - 4, 1, 0)
             unavailableFrame.fill, unavailableFrame.rgba, unavailableFrame.clickthrough = true, 0x514D45C0, true
@@ -323,7 +332,6 @@ function view.build(host, rules, onChange, prettyui)
             label:SetSize(-55, 32, 1, 0)
             label.alignVertical, label.clickthrough = ui.AlignMode.CENTRE, true
         end
-        group.count = 3
         currentSection = nil
     end
     local function buildRow(index, rule, item, group, rowPage, y)
@@ -506,40 +514,40 @@ function view.build(host, rules, onChange, prettyui)
         end
         end
     end
-    -- Ranged has many items. Keep only the open section's controls alive so the
-    -- client does not exhaust its limited dynamic UI IDs, even after repeated use.
-    toggleRanged = function(section, expanded)
-        if expanded then
-            for _, group in pairs(sections[3]) do
-                if group.section ~= section and group.section.expanded then
-                    group.section:SetExpanded(false)
-                end
-            end
-            for _, group in pairs(sections[3]) do
-                if group.section == section then
-                    for _, row in ipairs(group.rows or {}) do
-                        local rule = rules[row.index]
-                        buildRow(row.index, rule, catalogue[rule.itemId], group, 3, row.y)
+    addUnavailableRows()
+    local function destroyRows(page, section, keep)
+        for i = #controls[page], 1, -1 do
+            local entry = controls[page][i]
+            if entry.section == section and entry.row and not keep[entry.row] then
+                local tip = tooltipTargets[entry.control]
+                if tip then
+                    tip:Destroy()
+                    tooltipTargets[entry.control] = nil
+                    for j = #tooltips, 1, -1 do
+                        if tooltips[j] == tip then table.remove(tooltips, j); break end
                     end
-                    break
                 end
+                entry.control:Destroy()
+                table.remove(controls[page], i)
             end
-        else
-            for i = #controls[3], 1, -1 do
-                local entry = controls[3][i]
-                if entry.section == section then
-                    local tip = tooltipTargets[entry.control]
-                    if tip then
-                        tip:Destroy()
-                        tooltipTargets[entry.control] = nil
-                        for j = #tooltips, 1, -1 do
-                            if tooltips[j] == tip then table.remove(tooltips, j); break end
-                        end
-                    end
-                    entry.control:Destroy()
-                    table.remove(controls[3], i)
-                end
+        end
+    end
+    -- Ranged sections create controls only while open to conserve dynamic UI IDs.
+    toggleLazy = function(page, section, expanded)
+        local selected
+        for _, group in pairs(sections[page]) do
+            if group.section == section then selected = group; break end
+        end
+        if not selected or not selected.rows then return end
+        if expanded and page == 3 then
+            for _, row in ipairs(selected.rows) do
+                currentRow = row.index
+                local rule = rules[row.index]
+                buildRow(row.index, rule, catalogue[rule.itemId], selected, page, row.y)
             end
+            currentRow = nil
+        elseif not expanded then
+            destroyRows(page, section, {})
         end
         currentSection = nil
     end

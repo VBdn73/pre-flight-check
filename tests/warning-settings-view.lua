@@ -145,15 +145,17 @@ local function find(parent, kind, x, y)
 end
 local style = magic.content
 local sign = find(misc.sections[4].content, "check", -30, 7)
-local flask = find(misc.sections[4].content, "text", 48, 43)
+local flask = find(misc.sections[4].content, "text", 48, 123)
 assert(flask.content == "Blessed flask: warning unavailable")
-assert(find(misc.sections[4].content, "sprite", 8, 43).itemId == 48680)
-local grace = find(misc.sections[4].content, "text", 48, 83)
+assert(find(misc.sections[4].content, "sprite", 8, 123).itemId == 48680)
+local grace = find(misc.sections[4].content, "text", 48, 163)
 assert(grace.content == "Grace of the elves: warning unavailable")
-assert(find(misc.sections[4].content, "sprite", 8, 83).itemId == 44548)
-assert(misc.sections[4].contentHeight == 200 and misc.sections[3].contentHeight == 840)
-assert(find(misc.sections[4].content, "sprite", 8, 123).itemId == 22370)
-assert(find(misc.sections[4].content, "sprite", 8, 163).itemId == 22371)
+assert(find(misc.sections[4].content, "sprite", 8, 163).itemId == 44548)
+assert(find(misc.sections[4].content, "text", 48, 203).content == "Scrimshaw: warning unavailable")
+assert(find(misc.sections[4].content, "sprite", 8, 203).itemId == 26295)
+assert(misc.sections[4].contentHeight == 240 and misc.sections[3].contentHeight == 840)
+assert(find(misc.sections[4].content, "sprite", 8, 43).itemId == 22370)
+assert(find(misc.sections[4].content, "sprite", 8, 83).itemId == 22371)
 assert(find(misc.sections[3].content, "text", 8, 8).content
     == "Only equipped books are checked; backpack timers are unavailable.")
 for i, name in ipairs({ "Scripture of Jas", "Scripture of Wen", "Scripture of Bik",
@@ -167,7 +169,7 @@ local fulCritical = find(misc.sections[3].content, "input", -104, 165)
 assert(fulLow.content == "60" and fulCritical.content == "30")
 fulLow.content = "1441"
 fulLow.hooks.change(fulLow, ui.InputFieldActionResult.SUBMIT)
-assert(saved == nil or not saved["52494"])
+assert(saved == nil or not saved["52494"] or saved["52494"].low == 60)
 fulLow.content = "120"
 fulLow.hooks.change(fulLow, ui.InputFieldActionResult.SUBMIT)
 assert(saved["52494"].low == 120 and saved["52494"].critical == 30)

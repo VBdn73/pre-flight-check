@@ -1,5 +1,5 @@
 -- Exact item IDs only; variants and container contents are not interchangeable.
-return {
+local catalogue = {
     [36389] = { name = "Invention charge", category = "misc", group = "Invention", inventionCharge = true },
     [52494] = { name = "Scripture of Ful", category = "misc", group = "God Books", godBook = true },
     [42787] = { name = "Erethdor's grimoire", category = "misc", group = "God Books", godBook = true },
@@ -182,3 +182,40 @@ return {
     [60317] = { name = "Havensilver bolt +1", category = "ammunition", group = "Standard Bolts" },
     [60322] = { name = "Havensilver bolt +2", category = "ammunition", group = "Standard Bolts" },
 }
+
+-- Scrimshaw data is retained for future use; warnings are currently unavailable.
+local scrimshaws = {
+    { "Log-splitting", 26283, 26284, 26285, 33892 },
+    { "Rock-crushing", 26286, 26287, 26288, 33893 },
+    { "Tree-shaking", 26289, 26290, 26291, 33894 },
+    { "Gem-finding", 26292, 26293, 26294, 33895 },
+    { "Vampyrism", 26295, 26296, 26297, 33909 },
+    { "attack", 26298, 26299, 26300, 33910 },
+    { "the elements", 26301, 26302, 26303, 33911 },
+    { "Magic", 26304, 26305, 26306, 33912 },
+    { "Cruelty", 26307, 26308, 26309, 33913 },
+    { "Ranging", 26310, 26311, 26312, 33914 },
+    { "Whopper-baiting", 33896, 33898, 33899, 33900 },
+    { "Casket-salvaging", 33901, 33903, 33904, 33905 },
+    { "Memory-crushing", 38823, 38825, 38826, 38827 },
+    { "Energy-gathering", 38828, 38830, 38831, 38832 },
+}
+local function addScrimshaw(id, name, ids, group)
+    catalogue[id] = { name = name, category = "misc", group = group or "Scrimshaws: Combat",
+        scrimshaw = true, equippedIds = ids }
+end
+for _, entry in ipairs(scrimshaws) do
+    local skilling = entry[1]:find("%-") ~= nil
+    local name = skilling and (entry[1] .. " scrimshaw") or ("Scrimshaw of " .. entry[1]:lower())
+    local group = skilling and "Scrimshaws: Skilling" or "Scrimshaws: Combat"
+    addScrimshaw(entry[2], name, { entry[2], entry[3] }, group)
+    addScrimshaw(entry[4], "Superior " .. name:sub(1, 1):lower() .. name:sub(2), { entry[4], entry[5] }, group)
+end
+addScrimshaw(35767, "Corrupted scrimshaw of aggression", { 35767, 35768 })
+addScrimshaw(35769, "Corrupted scrimshaw of sacrifice", { 35769, 35770 })
+addScrimshaw(35771, "Corrupted scrimshaw of corruption", { 35771, 35772 })
+addScrimshaw(43175, "Superior scrimshaw of sacrifice", { 43175, 43176 })
+addScrimshaw(43177, "Superior scrimshaw of aggression", { 43177, 43178 })
+addScrimshaw(43179, "Superior scrimshaw of corruption", { 43179, 43180 })
+
+return catalogue

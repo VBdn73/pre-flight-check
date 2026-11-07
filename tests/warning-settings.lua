@@ -14,7 +14,10 @@ rules.popupRows = 10
 rules.checkOnBankClose, rules.checkOnPreset = true, true
 local seen = {}
 for _, rule in ipairs(rules) do seen[rule.itemId] = (seen[rule.itemId] or 0) + 1 end
-for itemId in pairs(require("supply-catalogue")) do assert(seen[itemId] == 1) end
+for itemId, item in pairs(require("supply-catalogue")) do
+    if item.scrimshaw then assert(seen[itemId] == nil)
+    else assert(seen[itemId] == 1) end
+end
 assert(seen["armour-spikes"] == 1)
 for _, rule in ipairs(rules) do
     assert(rule.enabled)
@@ -42,6 +45,10 @@ rules.styles.Magic.low = 5000
 rules[1].custom, rules[1].low, rules[1].critical = true, 70, 10
 rules[2].enabled = false
 assert(settings.save(rules))
+saved["26295"] = { enabled = true, custom = true, low = 60, critical = 30 }
+for _, rule in ipairs(settings.load()) do
+    assert(rule.itemId ~= 26295, "saved scrimshaw rules must not be loaded")
+end
 saved.signOfLife = false
 assert(not settings.load().signOfLife, "explicitly disabled sign warning remains disabled")
 saved.checkOnPreset = false

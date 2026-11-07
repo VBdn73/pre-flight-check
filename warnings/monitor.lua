@@ -40,15 +40,16 @@ function monitor.new(rules)
                     + (snapshot.equipment.counts[rule.itemId] or 0)
                 if item.nexus then count = count + (snapshot.nexus.counts[rule.itemId] or 0) end
             end
-            if rule.enabled and count ~= nil and (count > 0 or item.godBook) then
+            local timed = item.godBook
+            if rule.enabled and count ~= nil and (count > 0 or timed) then
                 local level
-                local comparable = item.godBook and count * 0.6 or count
-                local scale = item.godBook and 60 or 1
+                local comparable = timed and count * 0.6 or count
+                local scale = timed and 60 or 1
                 if comparable < effective.critical * scale then level = "critical"
                 elseif comparable < effective.low * scale then level = "low" end
                 if level then
                     local alert = { itemId = rule.itemId, name = item.name, count = count, level = level }
-                    if item.godBook then
+                    if timed then
                         local seconds = math.floor(count * 0.6)
                         alert.message = string.format("%s: %d:%02d:%02d remaining", item.name,
                             math.floor(seconds / 3600), math.floor(seconds / 60) % 60, seconds % 60)

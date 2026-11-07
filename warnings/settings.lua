@@ -10,7 +10,7 @@ for itemId, item in pairs(catalogue) do
         additional[#additional + 1] = itemId
     elseif item.category == "ammunition" and itemId ~= 52299 then
         ammunition[#ammunition + 1] = itemId
-    elseif item.category == "misc" then
+    elseif item.category == "misc" and not item.scrimshaw then
         additional[#additional + 1] = itemId
     end
 end
