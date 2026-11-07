@@ -22,7 +22,8 @@ local popup = require("warnings/popup")
 assert(popup.show({ { name = "Law rune", count = 10, level = "critical" },
     { name = "Blood rune", count = 50, level = "low" } }, 100))
 local root, title, red, redAccent, critical, criticalSeverity, orange, orangeAccent, low, lowSeverity = table.unpack(components)
-for _, control in ipairs(components) do assert(control.clickthrough) end
+assert(root.clickthrough == false)
+for i = 2, #components do assert(components[i].clickthrough) end
 assert(red.fill and orange.fill and redAccent.fill and orangeAccent.fill)
 assert(red.colour[1] > red.colour[2] and orange.colour[2] > red.colour[2])
 assert(critical.content == "Law rune: 10" and low.content == "Blood rune: 50")
@@ -46,6 +47,25 @@ popup.update(121.9)
 assert(not replacement.destroyed)
 popup.update(122)
 assert(replacement.destroyed)
+assert(popup.show({ { name = "Law rune", count = 1, level = "critical" } }, 130, 2))
+local hovered = components[17]
+hovered.isMouseOver = true
+popup.update(132)
+assert(not hovered.destroyed)
+popup.update(140)
+assert(not hovered.destroyed)
+hovered.isMouseOver = false
+popup.update(140.1)
+assert(hovered.destroyed)
+assert(popup.show({ { name = "Law rune", count = 1, level = "critical" } }, 150, 5))
+local leftEarly = components[23]
+leftEarly.isMouseOver = true
+popup.update(151)
+leftEarly.isMouseOver = false
+popup.update(152)
+assert(not leftEarly.destroyed)
+popup.update(155)
+assert(leftEarly.destroyed)
 popup.clear()
 assert(replacement.destroyed)
 print("Warning popup tests passed.")

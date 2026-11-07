@@ -18,7 +18,8 @@ function popup.show(alerts, now, duration)
         root:SetHeaderLayout(0, 0, 0, 0, 0)
         root:SetPos(-170, 45, 0.5, 0)
         root:SetSize(340, 42 + #alerts * 36)
-        root.clickthrough = true
+        -- The root must receive mouse input for isMouseOver to detect hover.
+        root.clickthrough = false
         local title = ui.Text.new(root)
         title:SetPos(10, 6); title:SetSize(320, 24)
         title.font = id.Font.MUSEO_SANS_15PT_REGULAR
@@ -64,7 +65,7 @@ function popup.show(alerts, now, duration)
 end
 
 function popup.update(now)
-    if expires and now >= expires then popup.clear() end
+    if expires and now >= expires and not root.isMouseOver then popup.clear() end
 end
 
 return popup

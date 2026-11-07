@@ -105,6 +105,8 @@ loose backpack plus equipment only, excluding quivers. Unavailable relevant sour
 suppress warnings.
 The popup shows critical alerts in red and low warnings in orange. Its duration
 can be set in the General tab from 1 to 3600 seconds (default: four seconds).
+Hovering over a popup keeps it visible after its duration expires; it disappears
+when the pointer leaves. The popup captures mouse input while it is visible.
 The tester reports that warnings work in-client; individual settings and timing
 cases have not been documented separately. Warning modules live in `warnings/`.
 
