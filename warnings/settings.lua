@@ -71,7 +71,7 @@ local function fromSaved(saved)
     local rules = {}
     rules.checkOnPreset = saved.checkOnPreset == true
     rules.checkOnBankClose = saved.checkOnBankClose == true
-    rules.signOfLife = saved.signOfLife == true
+    rules.signOfLife = saved.signOfLife ~= false
     rules.popupDuration = settings.validDuration(saved.popupDuration) and saved.popupDuration or 4
     rules.styles = {}
     for _, style in ipairs(styles) do

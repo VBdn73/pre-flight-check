@@ -146,14 +146,14 @@ end
 local style = magic.content
 local sign = find(misc.sections[3].content, "check", -30, 7)
 local signBackground = find(misc.sections[3].content, "rectangle", 1, 1)
-assert(not rules.signOfLife)
-assert(signBackground.rgba == 0x492626E8 and not sign.value)
-sign.hooks.press()
-assert(rules.signOfLife and saved.signOfLife)
+assert(rules.signOfLife)
 assert(signBackground.rgba == 0x23412DE8 and sign.value)
-assert(require("warnings/settings").load().signOfLife)
 sign.hooks.press()
+assert(not rules.signOfLife and not saved.signOfLife)
 assert(signBackground.rgba == 0x492626E8 and not sign.value)
+assert(not require("warnings/settings").load().signOfLife)
+sign.hooks.press()
+assert(signBackground.rgba == 0x23412DE8 and sign.value)
 local preset = find(general.content, "checkbox", 10, 40)
 local bank = find(general.content, "checkbox", 10, 75)
 local duration = find(general.content, "input", 205, 115)
@@ -440,7 +440,7 @@ for _, styleName in ipairs({ "Necromancy", "Ranged", "Melee", "Misc" }) do
         if settings.style(rule.itemId) == styleName then rule.enabled = false; break end
     end
 end
-rules.signOfLife = true
+rules.signOfLife = false
 for i, page in ipairs({ necro, ranged, melee, misc }) do
     local styleName = ({ "Necromancy", "Ranged", "Melee", "Misc" })[i]
     local reset = find(page.content, "button", -160, 5)
@@ -450,7 +450,7 @@ for i, page in ipairs({ necro, ranged, melee, misc }) do
         if settings.style(rule.itemId) == styleName then assert(rule.enabled) end
     end
 end
-assert(not rules.signOfLife and not sign.value and not saved.signOfLife)
+assert(rules.signOfLife and sign.value and saved.signOfLife)
 assert(saved["36389"].custom and saved["36389"].low == 50000)
 destroy()
 assert(tabs.destroyed)
