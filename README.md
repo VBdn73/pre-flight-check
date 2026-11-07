@@ -75,12 +75,14 @@ The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
 The Melee tab provides one Armour Spikes warning for all six variants combined,
 and the Ranged tab groups arrows, bolts and chinchompas into collapsible sections, with commonly
 used ammunition first. Each ammunition variant has its own warning.
-The Misc tab includes vulnerability, poison and sticky bombs, counted in the backpack and equipment,
+The Misc tab includes vulnerability, poison and sticky bombs, dreadnips and dominion mines,
+counted in the backpack and equipment,
 and an Invention charge pack warning. Charge is read from VarPlayer 5984 (`INVENT_CHARGE`)
 and converted to whole charges by dividing by 3,000. Adding a divine charge increased the
 raw value by 9,000,000 and the converted value matched the displayed pack charge; ongoing
 drain and update timing still need in-client verification. An unavailable variable suppresses
 the warning. Thresholds are in pack charges, not divine charge items.
+Dreadnips and dominion mines default to custom thresholds of 10 low and 5 critical.
 The Misc → God Books section includes Erethdor's and chaotic grimoires, the six scriptures,
 and the six regular and six illuminated god books, each with independent thresholds in
 whole minutes (0–1440), defaulting to 60 low and 30 critical. It checks only when

@@ -21,6 +21,9 @@ for _, rule in ipairs(rules) do
     if rule.itemId == 36389 then
         assert(rule.custom and rule.low == 50000 and rule.critical == 10000)
         assert(settings.effective(rules, rule).low == 50000)
+    elseif rule.itemId == 22370 or rule.itemId == 22371 then
+        assert(rule.custom and rule.low == 10 and rule.critical == 5)
+        assert(settings.effective(rules, rule).low == 10)
     elseif require("supply-catalogue")[rule.itemId] and require("supply-catalogue")[rule.itemId].godBook then
         assert(rule.custom and rule.low == 60 and rule.critical == 30)
         assert(settings.effective(rules, rule).low == 60)
@@ -50,6 +53,7 @@ assert(settings.load().signOfLife, "missing sign setting uses the default")
 saved["53065"].enabled, saved["41633"].custom = false, true
 saved["41633"].low, saved["41633"].critical = 77, 12
 saved["36389"] = { enabled = true, custom = true, low = 12345, critical = 1234 }
+saved["22370"] = { enabled = false, custom = false, low = 20, critical = 7 }
 saved.styles.Magic.lowCooldown, saved.styles.Magic.criticalCooldown = 300, 60
 saved.styles.Magic.warnAtZero = true
 saved[tostring(rules[1].itemId)].warnAtZero = true
@@ -59,6 +63,7 @@ for _, rule in ipairs(loaded) do
     if rule.itemId == 53065 then assert(not rule.enabled) end
     if rule.itemId == 41633 then assert(rule.custom and rule.low == 77 and rule.critical == 12) end
     if rule.itemId == 36389 then assert(rule.custom and rule.low == 12345 and rule.critical == 1234) end
+    if rule.itemId == 22370 then assert(not rule.enabled and not rule.custom and rule.low == 20 and rule.critical == 7) end
 end
 assert(loaded.checkOnBankClose and loaded.checkOnPreset)
 assert(loaded.popupDuration == 12)

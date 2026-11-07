@@ -9,6 +9,10 @@ for itemId, name in pairs({ [48951] = "Vulnerability bomb", [48954] = "Poison bo
     local item = catalogue[itemId]
     assert(item.name == name and item.category == "misc" and item.group == "Bombs")
 end
+for itemId, name in pairs({ [22370] = "Dreadnip", [22371] = "Dominion mine" }) do
+    local item = catalogue[itemId]
+    assert(item.name == name and item.category == "misc" and item.group == "Other")
+end
 for itemId, name in pairs({ [10033] = "Chinchompa", [10034] = "Red chinchompa",
     [60791] = "Black chinchompa", [36391] = "Mechanised chinchompa" }) do
     local item = catalogue[itemId]

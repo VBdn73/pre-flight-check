@@ -151,7 +151,9 @@ assert(find(misc.sections[4].content, "sprite", 8, 43).itemId == 48680)
 local grace = find(misc.sections[4].content, "text", 48, 83)
 assert(grace.content == "Grace of the elves: warning unavailable")
 assert(find(misc.sections[4].content, "sprite", 8, 83).itemId == 44548)
-assert(misc.sections[4].contentHeight == 120 and misc.sections[3].contentHeight == 840)
+assert(misc.sections[4].contentHeight == 200 and misc.sections[3].contentHeight == 840)
+assert(find(misc.sections[4].content, "sprite", 8, 123).itemId == 22370)
+assert(find(misc.sections[4].content, "sprite", 8, 163).itemId == 22371)
 assert(find(misc.sections[3].content, "text", 8, 8).content
     == "Only equipped books are checked; backpack timers are unavailable.")
 for i, name in ipairs({ "Scripture of Jas", "Scripture of Wen", "Scripture of Bik",
