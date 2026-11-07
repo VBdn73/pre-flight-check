@@ -42,7 +42,7 @@ function view.build(host, rules, onChange, prettyui)
         { text = "General" }, { text = "Magic" }, { text = "Necromancy" },
         { text = "Ranged" }, { text = "Melee" },
     }, { width = 0, height = 0, widthAnchor = 1, heightAnchor = 1,
-        contentLayout = { startY = 120 } })
+        contentLayout = { startY = 80 } })
     local pages = { tabs:GetPage(2), tabs:GetPage(3), tabs:GetPage(4), tabs:GetPage(5), tabs:GetPage(1) }
     local styleNames = { "Magic", "Necromancy", "Ranged", "Melee" }
     local controls = { {}, {}, {}, {}, {} }
@@ -128,13 +128,16 @@ function view.build(host, rules, onChange, prettyui)
         pageIndex = i
         local parent = pages[i].content
         local rule = rules.styles[style]
-        text(parent, 10, 40, 200, style .. " defaults")
-        text(parent, 10, 68, 140, "Low / critical below")
-        local low = input(parent, 10, 87, rule.low)
-        local critical = input(parent, 80, 87, rule.critical)
+        local label = text(parent, 10, 38, 150, style .. " defaults")
+        label:SetSize(150, 25)
+        label.alignVertical = ui.AlignMode.CENTRE
+        local low = input(parent, 165, 38, rule.low)
+        local critical = input(parent, 232, 38, rule.critical)
         tooltip(low, parent, "Low warning quantity: warns below this value")
         tooltip(critical, parent, "Critical warning quantity: warns below this value")
-        local status = text(parent, 160, 88, 100, "")
+        local status = text(parent, 302, 38, 100, "")
+        status:SetSize(100, 25)
+        status.alignVertical = ui.AlignMode.CENTRE
         local function saveDefaults()
             local candidate = { enabled = true, low = tonumber(low.content),
                 critical = tonumber(critical.content) }

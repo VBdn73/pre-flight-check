@@ -120,7 +120,7 @@ local changes = 0
 local refresh, destroy = require("warnings/settings-view").build(host, rules, function() changes = changes + 1 end, prettyui)
 local general, magic, necro, ranged, melee = table.unpack(tabs.pages)
 assert(tabs.entries[1].text == "General" and tabs.entries[5].text == "Melee")
-assert(tabs.options.contentLayout.startY == 120)
+assert(tabs.options.contentLayout.startY == 80)
 assert(magic.sections[1].name == "Elemental" and magic.sections[2].name == "Catalytic")
 assert(necro.sections[1].name == "Necrotic Runes" and ranged.sections[1].name == "Ammunition")
 assert(melee.sections[1].name == "Armour Spikes")
@@ -161,12 +161,21 @@ bank = find(general.content, "checkbox", 10, 75)
 assert(preset.checkbox.items[1].selected and bank.checkbox.items[1].selected, "reopening settings shows enabled checks")
 tabs.active = 2
 refresh()
-assert(not find(style, "input", 10, 87).hidden)
-assert(find(style, "text", 10, 40).content == "Magic defaults")
-find(style, "input", 10, 87).content = "5000"
-find(style, "input", 10, 87).hooks.change(nil, ui.InputFieldActionResult.CONTENT_CHANGE)
+assert(not find(style, "input", 165, 38).hidden)
+local defaultLabel = find(style, "text", 10, 38)
+assert(defaultLabel.content == "Magic defaults" and defaultLabel.height == 25
+    and defaultLabel.alignVertical == ui.AlignMode.CENTRE)
+for _, page in ipairs({ magic, necro, ranged, melee }) do
+    assert(find(page.content, "input", 165, 38).tooltip.text:find("Low"))
+    assert(find(page.content, "input", 232, 38).tooltip.text:find("Critical"))
+    for _, c in ipairs(controls) do
+        assert(not (c.parent == page.content and c.content == "Low / critical below"))
+    end
+end
+find(style, "input", 165, 38).content = "5000"
+find(style, "input", 165, 38).hooks.change(nil, ui.InputFieldActionResult.CONTENT_CHANGE)
 assert(rules.styles.Magic.low ~= 5000)
-find(style, "input", 10, 87).hooks.change(nil, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
+find(style, "input", 165, 38).hooks.change(nil, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
 assert(saved.styles.Magic.low == 5000 and rules.styles.Magic.low == 5000)
 host.height = 600
 magic.sections[1]:SetExpanded(true)
