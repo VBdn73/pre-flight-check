@@ -54,6 +54,8 @@ function reader.read()
     local runes = {}
     local charge
     local signOfLifeCooldown
+    local bookOk, bookTicks = pcall(function() return var.VarPlayer.GOD_BOOK_TIMELEFT.value end)
+    if not bookOk or not integer(bookTicks, 0) then bookTicks = nil end
     local cooldownOk, cooldown = pcall(function() return var.VarPlayer.DIV_LIFE_COOLDOWN.value end)
     if cooldownOk and integer(cooldown, 0) then signOfLifeCooldown = cooldown end
     local ok, raw = pcall(function() return var.VarPlayer.INVENT_CHARGE.value end)
@@ -86,7 +88,8 @@ function reader.read()
         end
     end
     return { backpack = backpack, equipment = equipment, runeCounts = runes, nexus = nexus,
-        spikeHarness = spikeHarness, inventionCharge = charge, signOfLifeCooldown = signOfLifeCooldown }
+        spikeHarness = spikeHarness, inventionCharge = charge, signOfLifeCooldown = signOfLifeCooldown,
+        godBookTicks = bookTicks }
 end
 
 return reader

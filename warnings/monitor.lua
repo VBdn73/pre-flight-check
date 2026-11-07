@@ -26,6 +26,10 @@ function monitor.new(rules)
                             + (snapshot.spikeHarness.counts[itemId] or 0)
                     end
                 end
+            elseif item.godBook then
+                if snapshot.equipment.available and (snapshot.equipment.counts[rule.itemId] or 0) > 0 then
+                    count = snapshot.godBookTicks
+                end
             elseif item.inventionCharge then
                 count = snapshot.inventionCharge
             elseif item.combatVar then
@@ -36,13 +40,20 @@ function monitor.new(rules)
                     + (snapshot.equipment.counts[rule.itemId] or 0)
                 if item.nexus then count = count + (snapshot.nexus.counts[rule.itemId] or 0) end
             end
-            if rule.enabled and count ~= nil and count > 0 then
+            if rule.enabled and count ~= nil and (count > 0 or item.godBook) then
                 local level
-                if count < effective.critical then level = "critical"
-                elseif count < effective.low then level = "low" end
+                local comparable = item.godBook and count * 0.6 or count
+                local scale = item.godBook and 60 or 1
+                if comparable < effective.critical * scale then level = "critical"
+                elseif comparable < effective.low * scale then level = "low" end
                 if level then
-                    alerts[#alerts + 1] = { itemId = rule.itemId,
-                        name = item.name, count = count, level = level }
+                    local alert = { itemId = rule.itemId, name = item.name, count = count, level = level }
+                    if item.godBook then
+                        local seconds = math.floor(count * 0.6)
+                        alert.message = string.format("%s: %d:%02d:%02d remaining", item.name,
+                            math.floor(seconds / 3600), math.floor(seconds / 60) % 60, seconds % 60)
+                    end
+                    alerts[#alerts + 1] = alert
                 end
             end
         end

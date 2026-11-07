@@ -18,6 +18,12 @@ assert(first.equipment.available and first.equipment.counts[52299] == 6872)
 assert(first.runeCounts[563] == 123 and first.runeCounts[565] == nil)
 assert(first.inventionCharge == 126399)
 assert(first.signOfLifeCooldown == nil)
+var.VarPlayer.GOD_BOOK_TIMELEFT = { value = 92184 }
+assert(reader.read().godBookTicks == 92184)
+var.VarPlayer.GOD_BOOK_TIMELEFT.value = -1
+assert(reader.read().godBookTicks == nil)
+var.VarPlayer.GOD_BOOK_TIMELEFT = nil
+assert(reader.read().godBookTicks == nil)
 var.VarPlayer.DIV_LIFE_COOLDOWN = { value = 30 }
 assert(reader.read().signOfLifeCooldown == 30)
 var.VarPlayer.DIV_LIFE_COOLDOWN.value = 0

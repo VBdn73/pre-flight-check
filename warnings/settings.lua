@@ -46,6 +46,7 @@ function settings.style(itemId)
 end
 
 function settings.effective(rules, rule)
+    if rule.itemId == 52494 then return rule end
     if not rule.custom and rules.styles then
         return rules.styles[settings.style(rule.itemId)]
     end
@@ -57,6 +58,10 @@ local function validInteger(n, min, max)
 end
 
 function settings.valid(rule)
+    if type(rule) == "table" and rule.itemId == 52494 then
+        return type(rule.enabled) == "boolean" and validInteger(rule.low, 0, 1440)
+            and validInteger(rule.critical, 0, rule.low)
+    end
     return type(rule) == "table" and type(rule.enabled) == "boolean"
         and validInteger(rule.low, 1, 2147483647)
         and validInteger(rule.critical, 1, rule.low)
@@ -86,16 +91,20 @@ local function fromSaved(saved)
     end
     for _, itemId in ipairs(ids) do
         local rule = saved[tostring(itemId)]
-        if not settings.valid(rule) then
+        local candidate = type(rule) == "table" and { itemId = itemId, enabled = rule.enabled,
+            low = rule.low, critical = rule.critical } or nil
+        if not settings.valid(candidate) then
             if itemId == 36389 then
                 rule = { enabled = true, custom = true, low = 50000, critical = 10000 }
+            elseif itemId == 52494 then
+                rule = { enabled = true, custom = true, low = 60, critical = 30 }
             else
                 rule = defaults()
             end
         end
         rules[#rules + 1] = { itemId = itemId, enabled = rule.enabled,
             low = rule.low, critical = rule.critical,
-            custom = rule.custom == true }
+            custom = itemId == 52494 or rule.custom == true }
     end
     return rules
 end

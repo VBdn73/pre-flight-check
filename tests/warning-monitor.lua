@@ -110,4 +110,23 @@ assert(#sign.update(snapshot) == 0)
 snapshot.signOfLifeCooldown = 30
 signRules.signOfLife = false
 assert(#sign.update(snapshot) == 0)
+local ful = monitor.new({ { itemId = 52494, enabled = true, low = 60, critical = 30 } })
+snapshot.equipment = { available = true, counts = { [52494] = 1 } }
+snapshot.godBookTicks = 6000
+assert(#ful.update(snapshot) == 0)
+snapshot.godBookTicks = 5999
+assert(ful.update(snapshot)[1].level == "low")
+snapshot.godBookTicks = 3000
+assert(ful.update(snapshot)[1].level == "low")
+snapshot.godBookTicks = 2999
+assert(ful.update(snapshot)[1].level == "critical")
+snapshot.godBookTicks = 0
+assert(ful.update(snapshot)[1].message == "Scripture of Ful: 0:00:00 remaining")
+snapshot.equipment.counts = {}
+assert(#ful.update(snapshot) == 0)
+snapshot.equipment.available = false
+assert(#ful.update(snapshot) == 0)
+snapshot.equipment = { available = true, counts = { [52494] = 1 } }
+snapshot.godBookTicks = nil
+assert(#ful.update(snapshot) == 0)
 print("Warning monitor tests passed.")

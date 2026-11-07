@@ -21,6 +21,9 @@ for _, rule in ipairs(rules) do
     if rule.itemId == 36389 then
         assert(rule.custom and rule.low == 50000 and rule.critical == 10000)
         assert(settings.effective(rules, rule).low == 50000)
+    elseif rule.itemId == 52494 then
+        assert(rule.custom and rule.low == 60 and rule.critical == 30)
+        assert(settings.effective(rules, rule).low == 60)
     else
         assert(not rule.custom and settings.effective(rules, rule).low == 1000)
     end
@@ -29,6 +32,9 @@ for _, name in ipairs({ "Magic", "Necromancy", "Ranged", "Melee", "Misc" }) do
     assert(rules.styles[name].low == 1000 and rules.styles[name].critical == 250)
 end
 assert(settings.style(48951) == "Misc")
+assert(settings.valid({ itemId = 52494, enabled = true, low = 1440, critical = 0 }))
+assert(not settings.valid({ itemId = 52494, enabled = true, low = 1441, critical = 0 }))
+assert(not settings.valid({ itemId = 52494, enabled = true, low = 30, critical = 31 }))
 rules.styles.Magic.low = 5000
 rules[1].custom, rules[1].low, rules[1].critical = true, 70, 10
 rules[2].enabled = false

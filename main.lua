@@ -4,7 +4,6 @@ local settingsView = require("warnings/settings-view")
 local warningMonitor = require("warnings/monitor")
 local popup = require("warnings/popup")
 local ribbon = require("warnings/ribbon")
-local quiverDiagnostic = require("quiver-diagnostic")
 local presetTrigger = require("preset-trigger")
 local bankState = require("bank-state").new()
 local prettyUILibrary = prettyui
@@ -29,7 +28,6 @@ local function anticipateClose(alwaysCheck, delay)
 end
 
 local function refresh()
-    if canRead then quiverDiagnostic.update() end
     local snapshot = canRead and reader.read() or {
         backpack = { available = false }, equipment = { available = false },
     }
@@ -113,7 +111,6 @@ end)
 Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
     canRead = event.newState == 30 -- GameState.GAME
     if not canRead then
-        quiverDiagnostic.reset()
         popup.clear()
         bankState.reset()
         checkAfter, checkDeadline = nil, nil

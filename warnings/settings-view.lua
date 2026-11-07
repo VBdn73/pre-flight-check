@@ -250,6 +250,7 @@ function view.build(host, rules, onChange, prettyui)
     text(pages[5].content, 10, 8, 400, "Counts include supplies in the backpack and equipment.")
     addSection(5, "Bombs")
     addSection(5, "Invention")
+    addSection(5, "God Books")
     addSection(5, "Other")
     do
         local group = sections[5]["Other"]
@@ -379,6 +380,7 @@ function view.build(host, rules, onChange, prettyui)
         modeButton:SetPos(-251, y + 5, 1, 0); modeButton:SetSize(75, 25)
         modeButton.stylesheetID = id.StyleSheet.BUTTON_DEFAULT
         modeButton:Subscribe(ui.Hook.ONBUTTONPRESSED, function()
+            if item.godBook then return true end
             if custom then
                 for i, field in ipairs(fields) do draft[i] = field.content end
             end
@@ -396,7 +398,8 @@ function view.build(host, rules, onChange, prettyui)
             onChange()
             return true
         end)
-        tooltip(modeButton, parent, "Defaults: use style thresholds. Custom: use the item values shown. Click to switch.")
+        tooltip(modeButton, parent, item.godBook and "Book thresholds are independent of Misc defaults."
+            or "Defaults: use style thresholds. Custom: use the item values shown. Click to switch.")
         mode = text(parent, -251, y + 5, 75, custom and "Custom" or "Defaults")
         mode:SetPos(-251, y + 5, 1, 0); mode:SetSize(75, 25)
         mode.alignHorizontal, mode.alignVertical = ui.AlignMode.CENTRE, ui.AlignMode.CENTRE
@@ -409,7 +412,12 @@ function view.build(host, rules, onChange, prettyui)
         for i, field in ipairs(fields) do
             local description = i == 1 and "Low warning quantity: warns below this value"
                 or "Critical warning quantity: warns below this value"
-            description = description .. ". Switch to Custom to set an item value."
+            if item.godBook then
+                description = (i == 1 and "Low" or "Critical")
+                    .. " remaining time in minutes (0-1440); warns below this value."
+            else
+                description = description .. ". Switch to Custom to set an item value."
+            end
             tooltip(field, parent, description)
         end
         local function editItem()

@@ -1,6 +1,7 @@
 -- Exact item IDs only; variants and container contents are not interchangeable.
 return {
     [36389] = { name = "Invention charge", category = "misc", group = "Invention", inventionCharge = true },
+    [52494] = { name = "Scripture of Ful", category = "misc", group = "God Books", godBook = true },
     [48951] = { name = "Vulnerability bomb", category = "misc", group = "Bombs" },
     [48954] = { name = "Poison bomb", category = "misc", group = "Bombs" },
     [48957] = { name = "Sticky bomb", category = "misc", group = "Bombs" },
