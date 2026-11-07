@@ -29,6 +29,16 @@ local function displayName(name, count)
     return base .. suffix
 end
 
+function popup.formatAlert(alert)
+    return alert.message or (displayName(alert.name, alert.count) .. ": " .. formatCount(alert.count))
+end
+
+function popup.colours(level)
+    local critical = level == "critical"
+    return critical and Vector4.new(0.34, 0.08, 0.08, 1) or Vector4.new(0.38, 0.20, 0.06, 1),
+        critical and Vector4.new(0.95, 0.25, 0.20, 1) or Vector4.new(1, 0.58, 0.16, 1)
+end
+
 function popup.clear()
     local old = root
     root, expires = nil, nil
@@ -54,25 +64,24 @@ function popup.show(alerts, now, duration)
         title.content = "Supply Check"
         for i, alert in ipairs(alerts) do
             local critical = alert.level == "critical"
+            local backgroundColour, accentColour = popup.colours(alert.level)
             local y = 32 + (i - 1) * 36
             local box = ui.Rectangle.new(root)
             box:SetPos(5, y); box:SetSize(324, 32)
             box.fill = true
-            box.colour = critical and Vector4.new(0.34, 0.08, 0.08, 1)
-                or Vector4.new(0.38, 0.20, 0.06, 1)
+            box.colour = backgroundColour
             box.clickthrough = true
             local accent = ui.Rectangle.new(root)
             accent:SetPos(5, y); accent:SetSize(4, 32)
             accent.fill = true
-            accent.colour = critical and Vector4.new(0.95, 0.25, 0.20, 1)
-                or Vector4.new(1, 0.58, 0.16, 1)
+            accent.colour = accentColour
             accent.clickthrough = true
             local label = ui.Text.new(root)
             label:SetPos(17, y); label:SetSize(220, 32)
             label.font = id.Font.MUSEO_SANS_15PT_REGULAR
             label.alignVertical = ui.AlignMode.CENTRE
             label.clickthrough = true
-            label.content = alert.message or (displayName(alert.name, alert.count) .. ": " .. formatCount(alert.count))
+            label.content = popup.formatAlert(alert)
             local severity = ui.Text.new(root)
             severity:SetPos(247, y); severity:SetSize(75, 32)
             severity.font = id.Font.MUSEO_SANS_11PT_REGULAR

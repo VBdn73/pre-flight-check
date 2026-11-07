@@ -3,7 +3,8 @@ local function event(name)
     return { Subscribe = function(_, cb) callbacks[name] = cb end, Unsubscribe = function() end }
 end
 Event = { Logic = event("logic"), ServerLogic = event("server"), GameStateChanged = event("state"),
-    SettingsLayerReady = event("settings"), MiniMenuEntrySelected = event("menu"), KeyDown = event("key") }
+    SettingsLayerReady = event("settings"), ContentLayerReady = event("content"),
+    MiniMenuEntrySelected = event("menu"), KeyDown = event("key") }
 local amount, available, bankOpen, bankRestricted = 200, true, false, false
 var = { VarPlayer = { BANK_ACTIVE = { value = 1 } } }
 Keyboard = { IsAvailable = function() return true end, IsBlocked = function() return false end,
@@ -21,6 +22,9 @@ package.loaded["warnings/settings"] = { effective = function(_, rule) return rul
     load = function() return rules end }
 package.loaded["warnings/settings-view"] = { build = function() end }
 local alerts = {}
+local lastBatch, lastTime
+package.loaded["warnings/ribbon"] = { record = function(items, now) lastBatch, lastTime = items, now end,
+    open = function() end, close = function() end, update = function() end }
 package.loaded["warnings/popup"] = { show = function(items) alerts[#alerts + 1] = items; return true end,
     clear = function() end, update = function() end }
 dofile("main.lua")
@@ -45,6 +49,7 @@ amount = 80 -- server data changes after action
 time(4.6)
 callbacks.server()
 assert(#alerts == 1 and alerts[1][1].count == 80, "preset check uses the settled snapshot")
+assert(lastBatch == alerts[1] and lastTime == 4.6, "ribbon records the notification batch at trigger time")
 time(6)
 callbacks.server()
 assert(#alerts == 1, "server updates do not repeat the check")
@@ -151,11 +156,13 @@ amount = 200
 time(50.3)
 callbacks.server()
 assert(#alerts == 12, "a well-stocked preset does not inherit the previous warning")
+assert(lastBatch == alerts[12], "a check without notifications preserves the last batch")
 load()
 amount = 10
 time(51.6)
 callbacks.server()
 assert(#alerts == 13 and alerts[13][1].count == 10, "a low newly loaded preset still warns")
+assert(lastBatch == alerts[13], "a new notification replaces the previous batch")
 rules[1].enabled = false
 load()
 time(52.9)

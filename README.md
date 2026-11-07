@@ -4,6 +4,11 @@ A planned RuneScape plugin for warning when supplies such as runes or ammunition
 are running low, potentially when entering a boss arena or loading a preset.
 
 Configure supply warnings in the plugin settings; alerts appear as popups.
+The ribbon displays the most recent batch of notifications and the client clock time in its heading,
+with a scrollbar for longer lists. A new notification replaces the batch;
+checks without warnings leave it unchanged. The batch is kept in memory until the
+plugin is reloaded. The clock follows the in-game clock's server/local setting;
+set it to server time for game time. If the clock cannot be read, it shows unavailable.
 
 **Development limitation:** In testing, the client disabled this local plugin
 when returning to the lobby. After logging in, use `pon supply-check` to enable

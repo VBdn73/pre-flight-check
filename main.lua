@@ -3,6 +3,7 @@ local warningSettings = require("warnings/settings")
 local settingsView = require("warnings/settings-view")
 local warningMonitor = require("warnings/monitor")
 local popup = require("warnings/popup")
+local ribbon = require("warnings/ribbon")
 local quiverDiagnostic = require("quiver-diagnostic")
 local presetTrigger = require("preset-trigger")
 local bankState = require("bank-state").new()
@@ -40,13 +41,17 @@ local function refresh()
     end
     checkAfter, checkDeadline = nil, nil
     local alerts = monitor.update(snapshot)
-    if #alerts > 0 then popup.show(alerts, now, rules.popupDuration) end
+    if #alerts > 0 then
+        ribbon.record(alerts, now)
+        popup.show(alerts, now, rules.popupDuration)
+    end
 end
 
 Event.ServerLogic.Subscribe("supplyCheck.refresh", refresh)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
     now = event.logicTick / 50
     popup.update(now)
+    ribbon.update()
     if anticipatedCloseUntil and now >= anticipatedCloseUntil then anticipatedCloseUntil = nil end
     if canRead and bankState.update() then
         if rules.checkOnBankClose and not anticipatedCloseUntil then scheduleCheck(0) end
@@ -92,6 +97,10 @@ Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
         print("[supply-check] Settings creation failed: " .. tostring(result))
     end
 end)
+Event.ContentLayerReady.Subscribe("supplyCheck.content", function(event)
+    local ok, err = pcall(ribbon.open, event.component, prettyUILibrary)
+    if not ok then print("[supply-check] Ribbon creation failed: " .. tostring(err)) end
+end)
 Event.MiniMenuEntrySelected.Subscribe("supplyCheck.preset", function(event)
     if not presetTrigger.isLoad(event.entry) then return end
     if rules.checkOnBankClose and canRead and now and bankState.isMainPanelOpen() then
@@ -117,10 +126,12 @@ function PluginShutdown()
     refreshSettings = nil
     if destroySettings then pcall(destroySettings); destroySettings = nil end
     popup.clear()
+    ribbon.close()
     Event.ServerLogic.Unsubscribe("supplyCheck.refresh")
     Event.Logic.Unsubscribe("supplyCheck.clock")
     Event.KeyDown.Unsubscribe("supplyCheck.presetShortcut")
     Event.SettingsLayerReady.Unsubscribe("supplyCheck.settings")
+    Event.ContentLayerReady.Unsubscribe("supplyCheck.content")
     Event.MiniMenuEntrySelected.Unsubscribe("supplyCheck.preset")
     Event.GameStateChanged.Unsubscribe("supplyCheck.state")
 end
