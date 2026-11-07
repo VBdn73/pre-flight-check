@@ -12,8 +12,13 @@ for _, rule in ipairs(rules) do seen[rule.itemId] = (seen[rule.itemId] or 0) + 1
 for itemId in pairs(require("supply-catalogue")) do assert(seen[itemId] == 1) end
 assert(seen["armour-spikes"] == 1)
 for _, rule in ipairs(rules) do
-    assert(rule.enabled and not rule.custom)
-    assert(settings.effective(rules, rule).low == 1000)
+    assert(rule.enabled)
+    if rule.itemId == 36389 then
+        assert(rule.custom and rule.low == 50000 and rule.critical == 10000)
+        assert(settings.effective(rules, rule).low == 50000)
+    else
+        assert(not rule.custom and settings.effective(rules, rule).low == 1000)
+    end
 end
 for _, name in ipairs({ "Magic", "Necromancy", "Ranged", "Melee", "Misc" }) do
     assert(rules.styles[name].low == 1000 and rules.styles[name].critical == 250)
@@ -25,6 +30,7 @@ rules[2].enabled = false
 assert(settings.save(rules))
 saved["53065"].enabled, saved["41633"].custom = false, true
 saved["41633"].low, saved["41633"].critical = 77, 12
+saved["36389"] = { enabled = true, custom = true, low = 12345, critical = 1234 }
 saved.styles.Magic.lowCooldown, saved.styles.Magic.criticalCooldown = 300, 60
 saved.styles.Magic.warnAtZero = true
 saved[tostring(rules[1].itemId)].warnAtZero = true
@@ -33,6 +39,7 @@ local loaded = settings.load()
 for _, rule in ipairs(loaded) do
     if rule.itemId == 53065 then assert(not rule.enabled) end
     if rule.itemId == 41633 then assert(rule.custom and rule.low == 77 and rule.critical == 12) end
+    if rule.itemId == 36389 then assert(rule.custom and rule.low == 12345 and rule.critical == 1234) end
 end
 assert(loaded.checkOnBankClose and loaded.checkOnPreset)
 assert(loaded.styles.Magic.warnAtZero == nil and loaded[1].warnAtZero == nil)

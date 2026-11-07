@@ -52,6 +52,9 @@ end
 
 function reader.read()
     local runes = {}
+    local charge
+    local ok, raw = pcall(function() return var.VarPlayer.INVENT_CHARGE.value end)
+    if ok and integer(raw, 0) then charge = math.floor(raw / 3000) end
     for itemId, item in pairs(catalogue) do
         if item.combatVar then
             local ok, count = pcall(function() return var.VarClient[item.combatVar].value end)
@@ -80,7 +83,7 @@ function reader.read()
         end
     end
     return { backpack = backpack, equipment = equipment, runeCounts = runes, nexus = nexus,
-        spikeHarness = spikeHarness }
+        spikeHarness = spikeHarness, inventionCharge = charge }
 end
 
 return reader

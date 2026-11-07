@@ -22,6 +22,8 @@ function monitor.new(rules)
                             + (snapshot.spikeHarness.counts[itemId] or 0)
                     end
                 end
+            elseif item.inventionCharge then
+                count = snapshot.inventionCharge
             elseif item.combatVar then
                 count = snapshot.runeCounts and snapshot.runeCounts[rule.itemId]
             elseif snapshot.backpack.available and snapshot.equipment.available

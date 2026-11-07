@@ -67,7 +67,12 @@ The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
 The Melee tab provides one Armour Spikes warning for all six variants combined,
 and the Ranged tab groups arrows, bolts and chinchompas into collapsible sections, with commonly
 used ammunition first. Each ammunition variant has its own warning.
-The Misc tab includes vulnerability, poison and sticky bombs, counted in the backpack and equipment.
+The Misc tab includes vulnerability, poison and sticky bombs, counted in the backpack and equipment,
+and an Invention charge pack warning. Charge is read from VarPlayer 5984 (`INVENT_CHARGE`)
+and converted to whole charges by dividing by 3,000. Adding a divine charge increased the
+raw value by 9,000,000 and the converted value matched the displayed pack charge; ongoing
+drain and update timing still need in-client verification. An unavailable variable suppresses
+the warning. Thresholds are in pack charges, not divine charge items.
 Each tab has always-visible style defaults above the item sections for thresholds. Every item
 starts enabled and uses its style defaults. Use an item's checkbox to toggle
 its warning immediately: green means enabled and red means disabled. Use the
@@ -82,6 +87,8 @@ Only one section per combat style can be open at a time. Ranged sections load
 their rows on demand to keep the panel within the client's UI resource limits.
 
 Each style starts with a low threshold of 1000 and a critical threshold of 250.
+Invention charge instead starts in Custom mode with thresholds of 50,000 low and
+10,000 critical; existing saved settings are retained.
 Thresholds mean strictly below; zero counts do not trigger warnings.
 Settings are shared across characters on this client type. The new settings format
 does not import the previous experimental per-item settings.

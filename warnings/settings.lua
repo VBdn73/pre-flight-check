@@ -77,7 +77,11 @@ function settings.load()
     for _, itemId in ipairs(ids) do
         local rule = saved[tostring(itemId)]
         if not settings.valid(rule) then
-            rule = defaults()
+            if itemId == 36389 then
+                rule = { enabled = true, custom = true, low = 50000, critical = 10000 }
+            else
+                rule = defaults()
+            end
         end
         rules[#rules + 1] = { itemId = itemId, enabled = rule.enabled,
             low = rule.low, critical = rule.critical,

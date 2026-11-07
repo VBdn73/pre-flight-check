@@ -9,13 +9,23 @@ local sources = {
 }
 config = { Inv = { INV = "INV", WORN = "WORN" } }
 Inventory = { Find = function(name) return sources[name] end }
-var = { VarClient = { COMBATV2_RUNECOUNT_LAW = { value = 123 },
+var = { VarPlayer = { INVENT_CHARGE = { value = 379197048 } }, VarClient = { COMBATV2_RUNECOUNT_LAW = { value = 123 },
     COMBATV2_RUNECOUNT_BLOOD = { value = -1 } } }
 
 local first = reader.read()
 assert(first.backpack.available and first.backpack.counts[565] == 30)
 assert(first.equipment.available and first.equipment.counts[52299] == 6872)
 assert(first.runeCounts[563] == 123 and first.runeCounts[565] == nil)
+assert(first.inventionCharge == 126399)
+local chargeMonitor = require("warnings/monitor").new({
+    { itemId = 36389, enabled = true, custom = true, low = 200000, critical = 175000 },
+})
+local chargeAlert = chargeMonitor.update(first)[1]
+assert(chargeAlert and chargeAlert.count == 126399 and chargeAlert.level == "critical")
+var.VarPlayer.INVENT_CHARGE.value = -1
+assert(reader.read().inventionCharge == nil)
+var.VarPlayer.INVENT_CHARGE = nil
+assert(reader.read().inventionCharge == nil)
 var.VarClient.COMBATV2_RUNECOUNT_LAW.value = 12
 slots[2].count = 12
 local second = reader.read()

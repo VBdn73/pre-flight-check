@@ -88,4 +88,13 @@ snapshot.equipment.counts = {}
 assert(bombs.update(snapshot)[1].count == 10 and bombs.update(snapshot)[1].level == "critical")
 snapshot.backpack.available = false
 assert(#bombs.update(snapshot) == 0)
+local charge = monitor.new({ { itemId = 36389, enabled = true, low = 1000, critical = 250 } })
+snapshot.inventionCharge = 249
+assert(charge.update(snapshot)[1].count == 249 and charge.update(snapshot)[1].level == "critical")
+snapshot.inventionCharge = 250
+assert(charge.update(snapshot)[1].level == "low")
+snapshot.inventionCharge = 1000
+assert(#charge.update(snapshot) == 0)
+snapshot.inventionCharge = nil
+assert(#charge.update(snapshot) == 0)
 print("Warning monitor tests passed.")

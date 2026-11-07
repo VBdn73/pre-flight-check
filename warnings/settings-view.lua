@@ -185,6 +185,7 @@ function view.build(host, rules, onChange, prettyui)
     pageIndex = 5
     text(pages[5].content, 10, 8, 400, "Counts include supplies in the backpack and equipment.")
     addSection(5, "Bombs")
+    addSection(5, "Invention")
     local function buildRow(index, rule, item, group, rowPage, y)
         pageIndex = rowPage
         currentSection = group.section
