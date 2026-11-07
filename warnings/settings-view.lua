@@ -166,7 +166,7 @@ function view.build(host, rules, onChange, prettyui)
     text(pages[2].content, 10, 8, 400, "Counts include loose supplies and the nexus.")
     for _, name in ipairs({ "Necrotic Runes", "Ectoplasm" }) do addSection(2, name) end
     pageIndex = 3
-    text(pages[3].content, 10, 8, 400, "Counts include loose ammunition.")
+    text(pages[3].content, 10, 8, 400, "Quivers unreadable; only arrows/bolts outside count.")
     addSection(3, "Ammunition")
     pageIndex = 4
     text(pages[4].content, 10, 8, 400, "Counts include loose spikes and one harness.")

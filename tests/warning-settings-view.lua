@@ -318,6 +318,7 @@ customLow.simulateProgrammaticChange, customCritical.simulateProgrammaticChange 
 tabs.active = 4
 ranged.sections[1]:SetExpanded(true)
 refresh()
+assert(find(ranged.content, "text", 10, 8).content == "Quivers unreadable; only arrows/bolts outside count.")
 local arrow = ranged.sections[1].content
 assert(find(arrow, "sprite", 8, 3).itemId == 52299)
 assert(not find(arrow, "button", -251, 5).hidden)
