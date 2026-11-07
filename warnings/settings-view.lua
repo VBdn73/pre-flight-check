@@ -253,6 +253,16 @@ function view.build(host, rules, onChange, prettyui)
     addSection(5, "God Books")
     addSection(5, "Other")
     do
+        local group = sections[5]["God Books"]
+        currentSection = group.section
+        local note = text(group.section.content, 8, 8, 400,
+            "Only equipped books are checked; backpack timers are unavailable.")
+        note:SetSize(-16, 25, 1, 0)
+        note.clickthrough = true
+        group.count = 1
+        currentSection = nil
+    end
+    do
         local group = sections[5]["Other"]
         currentSection = group.section
         local parent = group.section.content
