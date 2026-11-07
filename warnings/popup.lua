@@ -68,7 +68,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows)
         title:SetPos(10, 6); title:SetSize(320, 24)
         title.font = id.Font.MUSEO_SANS_15PT_REGULAR
         title.clickthrough = true
-        title.content = "Supply Check"
+        title.content = "Supply Check (" .. #alerts .. ")"
         local listParent, rowWidth = root, 324
         if #alerts * rowHeight > listHeight then
             assert(prettyui and prettyui.SimpleView and prettyui.SimpleView.new, "PrettyUI SimpleView is required")

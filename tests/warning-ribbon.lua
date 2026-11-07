@@ -33,11 +33,11 @@ end } }
 local ribbon = require("warnings/ribbon")
 local parent = { width = 250, height = 144 }
 ribbon.open(parent, prettyui)
-assert(controls[1].content == "Last notifications: none yet")
+assert(controls[1].content == "Last notifications (0): none yet")
 local alerts = {}
 for i = 1, 7 do alerts[i] = { name = "Rune", count = i, level = "low" } end
 ribbon.record(alerts, 12)
-assert(controls[1].content == "Last notifications: 09:42")
+assert(controls[1].content == "Last notifications (7): 09:42")
 assert(views[1].scrollbarVisible and views[1].contentHeight == 252)
 assert(controls[4].content == "Rune: 1")
 assert(controls[2].colour[2] == 0.20 and controls[3].colour[2] == 0.58)
@@ -54,6 +54,7 @@ parent.height = 216
 ribbon.update()
 assert(views[1].height == 180, "view follows panel size")
 ribbon.record({ { message = "Sign of life: 3 min", level = "critical" } }, 20)
+assert(controls[1].content == "Last notifications (1): 09:42")
 assert(views[1].scrollY == 0 and not views[1].scrollbarVisible)
 assert(controls[4].content == "Sign of life: 3 min" and controls[7].hidden)
 assert(controls[2].colour[2] == 0.08 and controls[3].colour[2] == 0.25)
@@ -64,5 +65,5 @@ ribbon.open(parent, prettyui)
 assert(controls[4].content == "Sign of life: 3 min", "reopening retains the batch")
 gameClock = ""
 ribbon.record({ { name = "Rune", count = 1, level = "low" } })
-assert(controls[1].content == "Last notifications: unavailable")
+assert(controls[1].content == "Last notifications (1): unavailable")
 print("Warning ribbon tests passed.")

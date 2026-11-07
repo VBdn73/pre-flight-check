@@ -74,7 +74,7 @@ function ribbon.open(parent, prettyui)
             scroll:SetContentHeight(count * rowHeight)
             if reset then scroll:SetScrollPosition(0) end
         end
-        title.content = "Last notifications: " .. (timestamp or "none yet")
+        title.content = "Last notifications (" .. count .. "): " .. (timestamp or "none yet")
         -- Reuse only enough native controls for the viewport, even for large batches.
         local needed = math.min(count, math.ceil(height / rowHeight) + 1)
         while #rows < needed do addRow() end
