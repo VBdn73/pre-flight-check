@@ -2,6 +2,24 @@
 local popup = {}
 local root, expires
 
+local function displayName(name, count)
+    -- Some catalogue names are already plural, including enchanted bolts.
+    local base, suffix = name:match("^(.-)( %(%a+%))$")
+    base, suffix = base or name, suffix or ""
+    if count == 1 then
+        base = base:gsub(" arrows$", " arrow"):gsub(" bolts$", " bolt")
+            :gsub(" spines$", " spine"):gsub(" spikes$", " spike")
+    else
+        base = base:gsub(" rune$", " runes"):gsub(" arrow$", " arrows")
+            :gsub(" bolt(%s*%+%d*)$", " bolts%1"):gsub(" bolt$", " bolts")
+            :gsub(" bomb$", " bombs"):gsub(" charge$", " charges")
+            :gsub(" chinchompa$", " chinchompas"):gsub("^Chinchompa$", "Chinchompas")
+            :gsub(" brutal$", " brutals"):gsub(" rack$", " racks")
+            :gsub("^Dinarrow$", "Dinarrows")
+    end
+    return base .. suffix
+end
+
 function popup.clear()
     local old = root
     root, expires = nil, nil
@@ -45,7 +63,7 @@ function popup.show(alerts, now, duration)
             label.font = id.Font.MUSEO_SANS_15PT_REGULAR
             label.alignVertical = ui.AlignMode.CENTRE
             label.clickthrough = true
-            label.content = alert.message or (alert.name .. ": " .. alert.count)
+            label.content = alert.message or (displayName(alert.name, alert.count) .. ": " .. alert.count)
             local severity = ui.Text.new(root)
             severity:SetPos(247, y); severity:SetSize(75, 32)
             severity.font = id.Font.MUSEO_SANS_11PT_REGULAR

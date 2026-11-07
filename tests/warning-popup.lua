@@ -26,7 +26,7 @@ assert(root.clickthrough == false)
 for i = 2, #components do assert(components[i].clickthrough) end
 assert(red.fill and orange.fill and redAccent.fill and orangeAccent.fill)
 assert(red.colour[1] > red.colour[2] and orange.colour[2] > red.colour[2])
-assert(critical.content == "Law rune: 10" and low.content == "Blood rune: 50")
+assert(critical.content == "Law runes: 10" and low.content == "Blood runes: 50")
 assert(criticalSeverity.content == "CRITICAL" and lowSeverity.content == "LOW")
 for _, label in ipairs({ critical, low, criticalSeverity, lowSeverity }) do
     assert(label.alignVertical == ui.AlignMode.CENTRE and label.size[2] == 32)
@@ -68,4 +68,17 @@ popup.update(155)
 assert(leftEarly.destroyed)
 popup.clear()
 assert(replacement.destroyed)
+local cases = {
+    { "Fire rune", 1, "Fire rune: 1" }, { "Fire rune", 100, "Fire runes: 100" },
+    { "Ectoplasm", 10, "Ectoplasm: 10" }, { "Ruby bolts (e)", 1, "Ruby bolt (e): 1" },
+    { "Ruby bolts (e)", 10, "Ruby bolts (e): 10" }, { "Havensilver bolt +1", 10, "Havensilver bolts +1: 10" },
+    { "Armour spikes", 1, "Armour spike: 1" }, { "Chinchompa", 10, "Chinchompas: 10" },
+    { "Invention charge", 10, "Invention charges: 10" },
+}
+for _, case in ipairs(cases) do
+    local start = #components
+    assert(popup.show({ { name = case[1], count = case[2], level = "low" } }, 200))
+    assert(components[start + 5].content == case[3])
+end
+popup.clear()
 print("Warning popup tests passed.")
