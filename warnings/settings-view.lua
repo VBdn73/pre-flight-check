@@ -163,7 +163,7 @@ function view.build(host, rules, onChange, prettyui)
             end
             onChange()
             layoutChanged = true
-            status.content = "Saved."
+            status.content = ""
         end
         onSubmit(low, saveDefaults)
         onSubmit(critical, saveDefaults)

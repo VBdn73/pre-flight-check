@@ -187,6 +187,7 @@ find(style, "input", 165, 38).hooks.change(nil, ui.InputFieldActionResult.CONTEN
 assert(rules.styles.Magic.low ~= 5000)
 find(style, "input", 165, 38).hooks.change(nil, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
 assert(saved.styles.Magic.low == 5000 and rules.styles.Magic.low == 5000)
+assert(find(style, "text", 302, 38).content == "", "successful saves do not display a status message")
 host.height = 600
 magic.sections[1]:SetExpanded(true)
 refresh()
