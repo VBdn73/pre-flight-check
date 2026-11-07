@@ -18,13 +18,14 @@ end
 ui = { Text = { new = function(parent) return control("text", parent) end },
     Sprite = { new = function(parent) return control("sprite", parent) end },
     Rectangle = { new = function(parent) return control("rectangle", parent) end },
+    Check = { new = function(parent) return control("check", parent) end },
     Button = { new = function(parent) return control("button", parent) end },
     InputField = { new = function(parent) return control("input", parent) end },
     Hook = { ONBUTTONPRESSED = "press", ONCLICK = "click", ONSCROLLWHEEL = "wheel", ONCONTENTCHANGED = "change" },
     InputFieldActionResult = { SUBMIT = 1, SUBMIT_ON_FOCUS_LOSS = 2, CONTENT_CHANGE = 3 },
     TextContentVisibilityMode = { VISIBLE = 1 }, InputFieldFilterMode = { NUMBERS_AS_TEXT = 1 } }
 id = { Font = { MUSEO_SANS_11PT_REGULAR = 1 }, StyleSheet = {
-    BUTTON_DEFAULT = 1, INPUT_DEFAULT = 2, CHECKBOX_DEFAULT_LEFT_ALIGNED = 3 } }
+    BUTTON_DEFAULT = 1, INPUT_DEFAULT = 2, CHECKBOX_DEFAULT_LEFT_ALIGNED = 3, CHECKBOX_DEFAULT = 4 } }
 local tabs
 local prettyui = { Tooltip = { attach = function(target, _, value)
     target.tooltip = value
@@ -154,10 +155,10 @@ host.height = 600
 magic.sections[1]:SetExpanded(true)
 refresh()
 local fire = magic.sections[1].content
-local override = find(fire, "iconButton", -220, 5)
-local customLow = find(fire, "input", -138, 5)
-local customCritical = find(fire, "input", -71, 5)
-local mode = find(fire, "text", -190, 8)
+local override = find(fire, "iconButton", -253, 5)
+local customLow = find(fire, "input", -171, 5)
+local customCritical = find(fire, "input", -104, 5)
+local mode = find(fire, "text", -223, 8)
 assert(override.xAnchor == 1 and customLow.xAnchor == 1 and customCritical.xAnchor == 1)
 assert(customLow.tooltip:find("Low") and customCritical.tooltip:find("Critical"))
 assert(find(fire, "text", 48, 8).widthAnchor == 1)
@@ -165,6 +166,10 @@ assert(mode.content == "Style" and not customLow.hidden and not customLow.enable
 assert(customLow.content == "5000")
 local frame = find(fire, "rectangle", 0, 0)
 local background = find(fire, "rectangle", 1, 1)
+local switch = find(fire, "check", -30, 7)
+assert(switch.xAnchor == 1 and switch.stylesheetID == id.StyleSheet.CHECKBOX_DEFAULT)
+assert(switch.tooltip:find("Enable or disable") and switch.value)
+assert(not background.hooks.click and not find(fire, "rectangle", -171, 5).hooks.click)
 assert(frame and background and frame.height == 36 and background.height == 34)
 assert(fire.x == 0 and frame.x == 0 and frame.width == 0 and background.width == -2)
 magic.scrollY = magic.sections[1].root.y + fire.y + 20
@@ -205,21 +210,28 @@ refresh()
 assert(customLow.content == "7000")
 local activeColor = background.rgba
 local before = changes
-background.hooks.click()
+switch.value = false
+switch.hooks.press()
 assert(not customLow.enabled)
 assert(not saved["554"].enabled and changes == before + 1 and background.rgba ~= activeColor)
+assert(not switch.value)
+assert(not require("warnings/settings").load()[4].enabled)
 PersistentDB.SetStructuredData = function() return false end
-background.hooks.click()
+switch.value = true
+switch.hooks.press()
 assert(not rules[4].enabled and background.rgba ~= activeColor and mode.content == "Failed")
+assert(not switch.value and changes == before + 1)
 PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
-background.hooks.click()
+switch.value = true
+switch.hooks.press()
 assert(saved["554"].enabled and customLow.enabled and background.rgba == activeColor)
+assert(switch.value)
 tabs.active = 4
 ranged.sections[1]:SetExpanded(true)
 refresh()
 local arrow = ranged.sections[1].content
 assert(find(arrow, "sprite", 8, 3).itemId == 52299)
-assert(not find(arrow, "iconButton", -220, 5).hidden)
+assert(not find(arrow, "iconButton", -253, 5).hidden)
 tabs.active = 5
 melee.sections[1]:SetExpanded(true)
 refresh()

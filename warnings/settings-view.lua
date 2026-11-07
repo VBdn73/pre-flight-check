@@ -191,15 +191,15 @@ function view.build(host, rules, onChange, prettyui)
         controls[pageIndex][#controls[pageIndex]].background = { x = 0, y = y, width = 0, height = rowHeight - 4 }
         local background = track(ui.Rectangle.new(parent))
         background:SetPos(1, y + 1); background:SetSize(-2, rowHeight - 6, 1, 0)
-        background.fill = true
+        background.fill, background.clickthrough = true, true
         controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
         icon(parent, 8, y + 3, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId).clickthrough = true
         local itemLabel = text(parent, 48, y + 8, 90, item.name)
-        itemLabel:SetSize(-270, 22, 1, 0)
+        itemLabel:SetSize(-303, 22, 1, 0)
         itemLabel.clickthrough = true
         local enabled, custom = rule.enabled, rule.custom
         local draft = { tostring(rule.low), tostring(rule.critical) }
-        local fields, mode, overlays
+        local fields, mode, overlays, switch
         local function updateRow()
             local shared = rules.styles[settings.style(rule.itemId)]
             local values = custom and draft or { shared.low, shared.critical }
@@ -211,12 +211,14 @@ function view.build(host, rules, onChange, prettyui)
             for _, overlay in ipairs(overlays) do overlay.hidden = custom and enabled end
             mode.content = custom and "Custom" or "Style"
             background.rgba = enabled and 0x23412DE8 or 0x492626E8
+            switch.value = enabled
         end
         local function toggleEnabled()
             local old = rules[index].enabled
             rules[index].enabled = not old
             if not settings.save(rules) then
                 rules[index].enabled = old
+                switch.value = old
                 mode.content = "Failed"
                 return true
             end
@@ -226,8 +228,13 @@ function view.build(host, rules, onChange, prettyui)
             onChange()
             return true
         end
-        background:Subscribe(ui.Hook.ONCLICK, toggleEnabled)
-        local pencil = iconButton(parent, -220, y + 5, "PENCIL", "Switch between style defaults and custom settings", function(b, active)
+        switch = track(ui.Check.new(parent))
+        switch:SetPos(-30, y + 7, 1, 0); switch:SetSize(22, 22)
+        switch.stylesheetID = id.StyleSheet.CHECKBOX_DEFAULT
+        switch.buttonSize = 22
+        switch:Subscribe(ui.Hook.ONBUTTONPRESSED, toggleEnabled)
+        tooltip(switch, parent, "Enable or disable this warning")
+        local pencil = iconButton(parent, -253, y + 5, "PENCIL", "Switch between style defaults and custom settings", function(b, active)
             if custom then
                 for i, field in ipairs(fields) do draft[i] = field.content end
             end
@@ -245,14 +252,14 @@ function view.build(host, rules, onChange, prettyui)
             layoutChanged = true
             onChange()
         end, true, not custom)
-        pencil.root:SetPos(-220, y + 5, 1, 0)
-        mode = text(parent, -190, y + 8, 48, custom and "Custom" or "Style")
-        mode:SetPos(-190, y + 8, 1, 0)
+        pencil.root:SetPos(-253, y + 5, 1, 0)
+        mode = text(parent, -223, y + 8, 48, custom and "Custom" or "Style")
+        mode:SetPos(-223, y + 8, 1, 0)
         mode.clickthrough = true
-        local low = input(parent, -138, y + 5, rule.low)
-        local critical = input(parent, -71, y + 5, rule.critical)
-        low:SetPos(-138, y + 5, 1, 0)
-        critical:SetPos(-71, y + 5, 1, 0)
+        local low = input(parent, -171, y + 5, rule.low)
+        local critical = input(parent, -104, y + 5, rule.critical)
+        low:SetPos(-171, y + 5, 1, 0)
+        critical:SetPos(-104, y + 5, 1, 0)
         fields = { low, critical }
         overlays = {}
         for i, field in ipairs(fields) do
@@ -260,10 +267,9 @@ function view.build(host, rules, onChange, prettyui)
                 or "Critical warning quantity: warns below this value"
             tooltip(field, parent, description)
             local overlay = track(ui.Rectangle.new(parent))
-            overlay:SetPos(i == 1 and -138 or -71, y + 5, 1, 0)
+            overlay:SetPos(i == 1 and -171 or -104, y + 5, 1, 0)
             overlay:SetSize(64, 25)
             overlay.fill, overlay.rgba = true, 0
-            overlay:Subscribe(ui.Hook.ONCLICK, toggleEnabled)
             tooltip(overlay, parent, description)
             controls[pageIndex][#controls[pageIndex]].visibleWhen = function() return not (custom and enabled) end
             overlays[i] = overlay
