@@ -5,6 +5,11 @@ assert(catalogue[52299].name == "Deathspore arrows" and catalogue[52299].categor
 assert(catalogue[28465].name == "Ascension bolts" and catalogue[53065].name == "Bik arrow")
 assert(catalogue[41633].group == "Enchanted Bakriminel Bolts")
 assert(catalogue[41684].group == "Bakriminel Bolts")
+for itemId, name in pairs({ [10033] = "Chinchompa", [10034] = "Red chinchompa",
+    [60791] = "Black chinchompa", [36391] = "Mechanised chinchompa" }) do
+    local item = catalogue[itemId]
+    assert(item.name == name and item.category == "ammunition" and item.group == "Chinchompas")
+end
 local count = 0
 for _, item in pairs(catalogue) do
     if item.combatVar then count = count + 1 end

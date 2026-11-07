@@ -65,7 +65,7 @@ catalytic and combination runes, all four necrotic runes and ectoplasm.
 Magic tab groups runes into collapsible Elemental, Catalytic and Combination sections.
 The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
 The Melee tab provides one Armour Spikes warning for all six variants combined,
-and the Ranged tab groups arrows and bolts into collapsible sections, with commonly
+and the Ranged tab groups arrows, bolts and chinchompas into collapsible sections, with commonly
 used ammunition first. Each ammunition variant has its own warning. Each tab has always-visible
 style defaults above the item sections for thresholds. Every item
 starts enabled and uses its style defaults. Use an item's checkbox to toggle

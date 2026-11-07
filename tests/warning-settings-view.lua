@@ -346,7 +346,7 @@ for _, c in ipairs(controls) do
 end
 ranged.sections[1]:SetExpanded(true)
 refresh()
-assert(find(ranged.content, "text", 10, 8).content == "Quivers unreadable; only arrows/bolts outside count.")
+assert(find(ranged.content, "text", 10, 8).content == "Quivers unreadable; only loose supplies count.")
 assert(find(ranged.sections[1].content, "sprite", 8, 3).itemId == 53055)
 ranged.sections[2]:SetExpanded(true)
 refresh()
@@ -361,6 +361,11 @@ end
 ranged.sections[2]:SetExpanded(true)
 refresh()
 assert(find(arrow, "sprite", 8, 3).itemId == 52299)
+local chinchompas = ranged.sections[11]
+chinchompas:SetExpanded(true)
+refresh()
+assert(not ranged.sections[2].expanded)
+assert(find(chinchompas.content, "sprite", 8, 3).itemId == 60791)
 tabs.active = 5
 melee.sections[1]:SetExpanded(true)
 refresh()
