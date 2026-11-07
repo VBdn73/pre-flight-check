@@ -2,6 +2,15 @@
 local popup = {}
 local root, expires
 
+local function formatCount(count)
+    local formatted = tostring(count)
+    while true do
+        local replacements
+        formatted, replacements = formatted:gsub("^(%-?%d+)(%d%d%d)", "%1,%2")
+        if replacements == 0 then return formatted end
+    end
+end
+
 local function displayName(name, count)
     -- Some catalogue names are already plural, including enchanted bolts.
     local base, suffix = name:match("^(.-)( %(%a+%))$")
@@ -63,7 +72,7 @@ function popup.show(alerts, now, duration)
             label.font = id.Font.MUSEO_SANS_15PT_REGULAR
             label.alignVertical = ui.AlignMode.CENTRE
             label.clickthrough = true
-            label.content = alert.message or (displayName(alert.name, alert.count) .. ": " .. alert.count)
+            label.content = alert.message or (displayName(alert.name, alert.count) .. ": " .. formatCount(alert.count))
             local severity = ui.Text.new(root)
             severity:SetPos(247, y); severity:SetSize(75, 32)
             severity.font = id.Font.MUSEO_SANS_11PT_REGULAR

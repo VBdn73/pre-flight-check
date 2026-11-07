@@ -74,11 +74,17 @@ local cases = {
     { "Ruby bolts (e)", 10, "Ruby bolts (e): 10" }, { "Havensilver bolt +1", 10, "Havensilver bolts +1: 10" },
     { "Armour spikes", 1, "Armour spike: 1" }, { "Chinchompa", 10, "Chinchompas: 10" },
     { "Invention charge", 10, "Invention charges: 10" },
+    { "Invention charge", 999, "Invention charges: 999" },
+    { "Invention charge", 1000, "Invention charges: 1,000" },
+    { "Invention charge", 1234567, "Invention charges: 1,234,567" },
 }
 for _, case in ipairs(cases) do
     local start = #components
     assert(popup.show({ { name = case[1], count = case[2], level = "low" } }, 200))
     assert(components[start + 5].content == case[3])
 end
+local start = #components
+assert(popup.show({ { message = "Cooldown: 1000 minutes", level = "low" } }, 200))
+assert(components[start + 5].content == "Cooldown: 1000 minutes")
 popup.clear()
 print("Warning popup tests passed.")
