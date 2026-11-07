@@ -16,7 +16,7 @@ local key = "supplyWarnings.v2"
 local styles = { "Magic", "Necromancy", "Ranged", "Melee" }
 
 local function defaults()
-    return { enabled = true, warnAtZero = false, low = 1000, critical = 250 }
+    return { enabled = true, low = 1000, critical = 250 }
 end
 
 function settings.style(itemId)
@@ -40,7 +40,6 @@ end
 
 function settings.valid(rule)
     return type(rule) == "table" and type(rule.enabled) == "boolean"
-        and type(rule.warnAtZero) == "boolean"
         and validInteger(rule.low, 1, 2147483647)
         and validInteger(rule.critical, 1, rule.low)
 end
@@ -54,7 +53,8 @@ function settings.load()
     rules.styles = {}
     for _, style in ipairs(styles) do
         local value = type(saved.styles) == "table" and saved.styles[style]
-        rules.styles[style] = settings.valid(value) and value or defaults()
+        rules.styles[style] = settings.valid(value) and
+            { enabled = true, low = value.low, critical = value.critical } or defaults()
     end
     for _, itemId in ipairs(ids) do
         local rule = saved[tostring(itemId)]
@@ -62,7 +62,7 @@ function settings.load()
             rule = defaults()
         end
         rules[#rules + 1] = { itemId = itemId, enabled = rule.enabled,
-            warnAtZero = rule.warnAtZero, low = rule.low, critical = rule.critical,
+            low = rule.low, critical = rule.critical,
             custom = rule.custom == true }
     end
     return rules
@@ -74,12 +74,11 @@ function settings.save(rules)
     for _, style in ipairs(styles) do
         if not rules.styles or not settings.valid(rules.styles[style]) then return false end
         local value = rules.styles[style]
-        data.styles[style] = { enabled = true, warnAtZero = value.warnAtZero,
-            low = value.low, critical = value.critical }
+        data.styles[style] = { enabled = true, low = value.low, critical = value.critical }
     end
     for _, rule in ipairs(rules) do
         if not settings.valid(rule) then return false end
-        data[tostring(rule.itemId)] = { enabled = rule.enabled, warnAtZero = rule.warnAtZero,
+        data[tostring(rule.itemId)] = { enabled = rule.enabled,
             low = rule.low, critical = rule.critical, custom = rule.custom == true }
     end
     local ok, result = pcall(function() return PersistentDB:SetStructuredData(key, data) end)

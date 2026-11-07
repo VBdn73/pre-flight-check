@@ -30,12 +30,10 @@ function monitor.new(rules)
                     + (snapshot.equipment.counts[rule.itemId] or 0)
                 if item.nexus then count = count + (snapshot.nexus.counts[rule.itemId] or 0) end
             end
-            if rule.enabled and count ~= nil then
+            if rule.enabled and count ~= nil and count > 0 then
                 local level
-                if count > 0 or effective.warnAtZero then
-                    if count < effective.critical then level = "critical"
-                    elseif count < effective.low then level = "low" end
-                end
+                if count < effective.critical then level = "critical"
+                elseif count < effective.low then level = "low" end
                 if level then
                     alerts[#alerts + 1] = { itemId = rule.itemId,
                         name = item.name, count = count, level = level }

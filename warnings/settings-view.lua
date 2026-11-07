@@ -120,19 +120,13 @@ function view.build(host, rules, onChange, prettyui)
         pageIndex = i
         local parent = pages[i].content
         local rule = rules.styles[style]
-        local zero = rule.warnAtZero
-        local zeroButton
         text(parent, 10, 40, 200, style .. " defaults")
-        zeroButton = button(parent, 227, 39, 80, zero and "Zero: on" or "Zero: off", function()
-            zero = not zero
-            zeroButton.label = zero and "Zero: on" or "Zero: off"
-        end)
         text(parent, 10, 68, 140, "Low / critical below")
         local low = input(parent, 10, 87, rule.low)
         local critical = input(parent, 80, 87, rule.critical)
         local status = text(parent, 300, 88, 85, "")
-        saveButton(parent, 312, 39, function()
-            local candidate = { enabled = true, warnAtZero = zero, low = tonumber(low.content),
+        saveButton(parent, 227, 39, function()
+            local candidate = { enabled = true, low = tonumber(low.content),
                 critical = tonumber(critical.content) }
             if not settings.valid(candidate) then
                 status.content = "Invalid"
@@ -194,9 +188,9 @@ function view.build(host, rules, onChange, prettyui)
         controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
         icon(parent, 8, y + 3, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId)
         text(parent, 48, y + 8, 100, item.name)
-        local enabled, zero, custom = rule.enabled, rule.warnAtZero, rule.custom
+        local enabled, custom = rule.enabled, rule.custom
         local draft = { tostring(rule.low), tostring(rule.critical) }
-        local fields, zeroButton, mode
+        local fields, mode
         local function updateRow()
             local shared = rules.styles[settings.style(rule.itemId)]
             local values = custom and draft or { shared.low, shared.critical }
@@ -205,8 +199,6 @@ function view.build(host, rules, onChange, prettyui)
                 field.enabled = custom and enabled
                 field.clickthrough = not field.enabled
             end
-            zeroButton.label = (custom and zero or (not custom and shared.warnAtZero)) and "Zero: on" or "Zero: off"
-            zeroButton.enabled = custom and enabled
             mode.content = custom and "Custom" or "Style"
             background.rgba = enabled and (custom and 0x211F1BE8 or 0x171512D8) or 0x252525B0
         end
@@ -223,19 +215,14 @@ function view.build(host, rules, onChange, prettyui)
             updateRow()
         end, true, not custom)
         mode = text(parent, 210, y + 8, 55, custom and "Custom" or "Style")
-        zeroButton = button(parent, 265, y + 5, 80, "", function()
-            if not custom or not enabled then return end
-            zero = not zero
-            updateRow()
-        end)
         text(parent, 10, y + 35, 140, "Low / critical below")
         local low = input(parent, 10, y + 54, rule.low)
         local critical = input(parent, 80, y + 54, rule.critical)
         fields = { low, critical }
         local status = text(parent, 300, y + 55, 85, "")
-        saveButton(parent, 350, y + 5, function()
+        saveButton(parent, 265, y + 5, function()
             if custom then for i, field in ipairs(fields) do draft[i] = field.content end end
-            local candidate = { itemId = rule.itemId, enabled = enabled, custom = custom, warnAtZero = zero,
+            local candidate = { itemId = rule.itemId, enabled = enabled, custom = custom,
                 low = tonumber(draft[1]), critical = tonumber(draft[2]) }
             if not settings.valid(candidate) then
                 status.content = "Invalid"

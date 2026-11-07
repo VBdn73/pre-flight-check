@@ -140,8 +140,8 @@ refresh()
 assert(not find(style, "input", 10, 87).hidden)
 assert(find(style, "text", 10, 40).content == "Magic defaults")
 find(style, "input", 10, 87).content = "5000"
-assert(find(style, "button", 312, 39).label == "Save")
-find(style, "button", 312, 39).hooks.press()
+assert(find(style, "button", 227, 39).label == "Save")
+find(style, "button", 227, 39).hooks.press()
 assert(saved.styles.Magic.low == 5000 and rules.styles.Magic.low == 5000)
 host.height = 600
 magic.sections[1]:SetExpanded(true)
@@ -167,11 +167,11 @@ override.hooks.press()
 refresh()
 assert(not customLow.hidden and customLow.enabled and mode.content == "Custom")
 customLow.content = "7000"
-find(fire, "button", 350, 5).hooks.press()
+find(fire, "button", 265, 5).hooks.press()
 assert(saved["554"].custom and saved["554"].low == 7000)
 override.hooks.press()
 assert(customLow.content == "5000" and not customLow.enabled)
-find(fire, "button", 350, 5).hooks.press()
+find(fire, "button", 265, 5).hooks.press()
 assert(not saved["554"].custom and saved["554"].low == 7000)
 rules.styles.Magic.low = 6000
 host.width = 401
@@ -183,7 +183,7 @@ assert(customLow.content == "7000")
 local enabled = find(fire, "iconButton", 150, 5)
 enabled.hooks.press()
 assert(not customLow.enabled)
-find(fire, "button", 350, 5).hooks.press()
+find(fire, "button", 265, 5).hooks.press()
 assert(not saved["554"].enabled)
 tabs.active = 4
 ranged.sections[1]:SetExpanded(true)

@@ -25,8 +25,7 @@ assert(check(10, 500)[1].level == "critical")
 rule.enabled = false
 assert(#check(10, 501) == 0)
 rule.enabled, rule.warnAtZero = true, true
-assert(check(0, 502)[1].count == 0)
-assert(check(0, 503)[1].level == "critical")
+assert(#check(0, 502) == 0, "legacy zero setting must not enable zero warnings")
 snapshot.backpack.counts[565] = 10000
 assert(check(10, 504)[1].count == 10, "combat count must not be added to loose runes")
 snapshot.runeCounts[565] = nil
@@ -58,7 +57,7 @@ snapshot.backpack.available = false
 assert(#spikes.update(snapshot, 200) == 0)
 snapshot.backpack.available = true
 snapshot.backpack.counts, snapshot.equipment.counts = {}, {}
-assert(spikes.update(snapshot, 201)[1].count == 0)
+assert(#spikes.update(snapshot, 201) == 0)
 local sharedRules = { styles = { Magic = { enabled = true, low = 5000, critical = 1000,
     warnAtZero = true } },
     { itemId = 554, enabled = true, custom = false, low = 100, critical = 25,
@@ -71,7 +70,7 @@ assert(#sharedMonitor.update(snapshot, 2) == 0)
 snapshot.runeCounts[554] = 0
 assert(#sharedMonitor.update(snapshot, 3) == 0)
 sharedRules[1].custom = false
-assert(sharedMonitor.update(snapshot, 4)[1].level == "critical")
+assert(#sharedMonitor.update(snapshot, 4) == 0)
 sharedRules[1].enabled = false
 assert(#sharedMonitor.update(snapshot, 5) == 0)
 print("Warning monitor tests passed.")
