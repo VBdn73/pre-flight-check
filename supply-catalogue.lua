@@ -41,6 +41,8 @@ return {
     [19157] = { name = "Guthix arrows", category = "ammunition", group = "Special Arrows" },
     [19162] = { name = "Zamorak arrows", category = "ammunition", group = "Special Arrows" },
     [58036] = { name = "Primal arrow", category = "ammunition", group = "Standard Arrows" },
+    -- TODO: Revisit these four arrow IDs and the matching bolt IDs below; their
+    -- icons do not match in the beta client. Verify IDs and counts in-client.
     [63284] = { name = "Elder rune arrow", category = "ammunition", group = "Standard Arrows" },
     [63279] = { name = "Bane arrow", category = "ammunition", group = "Standard Arrows" },
     [63274] = { name = "Necronium arrow", category = "ammunition", group = "Standard Arrows" },
@@ -132,6 +134,7 @@ return {
     [8882] = { name = "Bone bolts", category = "ammunition", group = "Special Bolts" },
     [4740] = { name = "Bolt rack", category = "ammunition", group = "Special Bolts" },
     [58041] = { name = "Primal bolts", category = "ammunition", group = "Standard Bolts" },
+    -- TODO: Verify these four bolt IDs and their icons in the beta client.
     [63304] = { name = "Elder rune bolts", category = "ammunition", group = "Standard Bolts" },
     [63299] = { name = "Bane bolts", category = "ammunition", group = "Standard Bolts" },
     [63294] = { name = "Necronium bolts", category = "ammunition", group = "Standard Bolts" },
