@@ -26,6 +26,11 @@ id = { Component = { TOPLEVEL_V2__PLUGIN_BUILD_LAYER_TOP = 1 },
 Vector4 = { new = function(r, g, b, a) return { r, g, b, a } end }
 
 local popup = require("warnings/popup")
+local customBackground, customAccent = popup.colours("low", { lowColour = "#0080FF" })
+assert(customAccent[1] == 0 and customAccent[2] == 128 / 255 and customAccent[3] == 1)
+assert(customBackground[3] == 0.36)
+local _, defaultCritical = popup.colours("critical", { lowColour = "#0080FF" })
+assert(defaultCritical[1] == 0.95 and defaultCritical[2] == 0.25)
 assert(popup.show({ { name = "Law rune", count = 10, level = "critical" },
     { name = "Blood rune", count = 50, level = "low" } }, 100))
 local root, title, red, redAccent, critical, criticalSeverity, orange, orangeAccent, low, lowSeverity = table.unpack(components)

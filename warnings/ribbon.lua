@@ -28,7 +28,7 @@ function ribbon.record(alerts)
     if refresh and not pcall(refresh, true) then ribbon.close() end
 end
 
-function ribbon.open(parent, prettyui)
+function ribbon.open(parent, prettyui, rules)
     ribbon.close()
     assert(prettyui and prettyui.SimpleView and prettyui.SimpleView.new, "PrettyUI SimpleView is required")
     local function text(y, height)
@@ -91,7 +91,7 @@ function ribbon.open(parent, prettyui)
             row.accent:SetPos(5, y); row.accent:SetSize(4, 32)
             row.label:SetPos(17, y); row.label:SetSize(math.max(1, scroll.contentWidth - 27), 32)
             row.label.content = alert and popup.formatAlert(alert) or ""
-            if alert then row.background.colour, row.accent.colour = popup.colours(alert.level) end
+            if alert then row.background.colour, row.accent.colour = popup.colours(alert.level, rules) end
         end
     end
     refresh = render

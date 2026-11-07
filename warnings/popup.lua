@@ -51,8 +51,19 @@ function popup.formatAlert(alert)
     return alert.message or (displayName(alert.name, alert.count) .. ": " .. formatCount(alert.count))
 end
 
-function popup.colours(level)
+function popup.colours(level, rules)
     local critical = level == "critical"
+    local hex
+    if rules then
+        if critical then hex = rules.criticalColour else hex = rules.lowColour end
+    end
+    if hex then
+        local rgb = require("warnings/colour").vector(hex)
+        if rgb then
+            return Vector4.new(rgb[1] * 0.36, rgb[2] * 0.36, rgb[3] * 0.36, 1),
+                Vector4.new(rgb[1], rgb[2], rgb[3], 1)
+        end
+    end
     return critical and Vector4.new(0.34, 0.08, 0.08, 1) or Vector4.new(0.38, 0.20, 0.06, 1),
         critical and Vector4.new(0.95, 0.25, 0.20, 1) or Vector4.new(1, 0.58, 0.16, 1)
 end
@@ -65,7 +76,7 @@ function popup.clear()
     if old then pcall(function() old:Destroy() end) end
 end
 
-function popup.show(alerts, now, duration, prettyui, maxRows)
+function popup.show(alerts, now, duration, prettyui, maxRows, rules)
     local parent = ui.Interfaces:GetComponent(id.Component.TOPLEVEL_V2__PLUGIN_BUILD_LAYER_TOP)
     if not parent then return false end
     popup.clear()
@@ -140,7 +151,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows)
         end
         for i, alert in ipairs(alerts) do
             local critical = alert.level == "critical"
-            local backgroundColour, accentColour = popup.colours(alert.level)
+            local backgroundColour, accentColour = popup.colours(alert.level, rules)
             local y = (scroll and 0 or 32) + (i - 1) * rowHeight
             local x = scroll and 0 or 5
             local box = ui.Rectangle.new(listParent)

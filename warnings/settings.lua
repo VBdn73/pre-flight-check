@@ -31,6 +31,7 @@ for _, itemId in ipairs(ammunition) do ids[#ids + 1] = itemId end
 ids[#ids + 1] = spikes.ruleId
 local key = "supplyWarnings.v2"
 local styles = { "Magic", "Necromancy", "Ranged", "Melee", "Misc" }
+local colourValue = require("warnings/colour")
 
 local function defaults()
     return { enabled = true, low = 1000, critical = 250 }
@@ -83,6 +84,8 @@ local function fromSaved(saved)
     rules.signOfLife = saved.signOfLife ~= false
     rules.popupDuration = settings.validDuration(saved.popupDuration) and saved.popupDuration or 4
     rules.popupRows = settings.validPopupRows(saved.popupRows) and saved.popupRows or 8
+    rules.lowColour = colourValue.normalize(saved.lowColour)
+    rules.criticalColour = colourValue.normalize(saved.criticalColour)
     rules.styles = {}
     for _, style in ipairs(styles) do
         local value = type(saved.styles) == "table" and saved.styles[style]
@@ -124,7 +127,9 @@ function settings.save(rules)
     if not settings.validDuration(rules.popupDuration) or not settings.validPopupRows(rules.popupRows) then return false end
     local data = { styles = {}, checkOnPreset = rules.checkOnPreset == true,
         checkOnBankClose = rules.checkOnBankClose == true, signOfLife = rules.signOfLife == true,
-        popupDuration = rules.popupDuration, popupRows = rules.popupRows }
+        popupDuration = rules.popupDuration, popupRows = rules.popupRows,
+        lowColour = colourValue.normalize(rules.lowColour), criticalColour = colourValue.normalize(rules.criticalColour) }
+    if (rules.lowColour and not data.lowColour) or (rules.criticalColour and not data.criticalColour) then return false end
     for _, style in ipairs(styles) do
         if not rules.styles or not settings.valid(rules.styles[style]) then return false end
         local value = rules.styles[style]

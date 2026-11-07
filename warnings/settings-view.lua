@@ -1,6 +1,7 @@
 local catalogue = require("supply-catalogue")
 local settings = require("warnings/settings")
 local spikes = require("armour-spikes")
+local colourValue = require("warnings/colour")
 local view = {}
 local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
 local combination = { [4694] = true, [4695] = true, [4696] = true,
@@ -38,6 +39,8 @@ function view.build(host, rules, onChange, prettyui)
         "PrettyUI CheckboxButton is required for warning settings")
     assert(prettyui.Tooltip and prettyui.Tooltip.attach,
         "PrettyUI Tooltip is required for warning settings")
+    assert(prettyui.ColourPicker and prettyui.ColourPicker.new,
+        "PrettyUI ColourPicker is required for warning settings")
     local tabs = prettyui.Tabs.new(host, {
         { text = "General" }, { text = "Magic" }, { text = "Necromancy" },
         { text = "Ranged" }, { text = "Melee" }, { text = "Misc" },
@@ -50,6 +53,10 @@ function view.build(host, rules, onChange, prettyui)
     local pageIndex, currentSection, currentRow = 1, nil, nil
     local layoutChanged = true
     local resetControls = { {}, {}, {}, {}, {}, {} }
+    local colourPickers = {}
+    local function dismissPicker()
+        for _, picker in ipairs(colourPickers) do picker:Close() end
+    end
     local function track(control)
         local scroll = pages[pageIndex]
         local list = controls[pageIndex]
@@ -171,7 +178,61 @@ function view.build(host, rules, onChange, prettyui)
         rows.content = tostring(rules.popupRows)
         rowsStatus.content = ""
     end
-    pages[6]:SetContentHeight(185)
+    local function colourControl(y, key, label, defaultHex)
+        local title = text(pages[6].content, 10, y, 190, label)
+        title:SetSize(190, 25); title.alignVertical = ui.AlignMode.CENTRE
+        local status = text(pages[6].content, 274, y, 110, "")
+        local picker
+        picker = prettyui.ColourPicker.new(pages[6].content, {
+            x = 205, y = y, width = 64, height = 25,
+            windowParent = host, windowTitle = label,
+            value = colourValue.rgba(rules[key] or defaultHex),
+            onChange = function(_, value)
+                local old = rules[key]
+                rules[key] = string.format("#%06X", (value >> 8) & 0xFFFFFF)
+                if not settings.save(rules) then
+                    rules[key] = old
+                    picker:SetValue(colourValue.rgba(old or defaultHex), false)
+                    status.content = "Save failed"
+                else
+                    status.content = ""
+                    onChange()
+                end
+            end,
+        })
+        picker.swatchFrame:SetPos(3, 3); picker.swatchFrame:SetSize(58, 19)
+        picker.swatch:SetPos(4, 4); picker.swatch:SetSize(56, 17)
+        -- PrettyUI's picker does not expose a draggable option, so adjust its
+        -- window after opening while leaving the selector itself unchanged.
+        local open = picker.Open
+        function picker:Open()
+            if not self.pickerWindow then
+                local position, origin = self.root.xyGlobal, host.xyGlobal
+                if position and origin then
+                    local _, _, width, height = self:_PickerWindowBounds()
+                    local x, y = position.x - origin.x, position.y - origin.y
+                    local right = x + self.root.width + 8
+                    if right + width > host.width then right = x - width - 8 end
+                    self.options.windowX = math.max(0, math.min(right, host.width - width))
+                    self.options.windowY = math.max(0, math.min(y, host.height - height))
+                end
+            end
+            local result = open(self)
+            if self.pickerWindow and self.pickerWindow.titleDrag then
+                self.pickerWindow.titleDrag.hidden = true
+            end
+            return result
+        end
+        colourPickers[#colourPickers + 1] = picker
+        track(picker.root)
+        resetControls[6][#resetControls[6] + 1] = function()
+            picker:SetValue(colourValue.rgba(rules[key] or defaultHex), false)
+            status.content = ""
+        end
+    end
+    colourControl(185, "lowColour", "Low warning colour", "#FF9429")
+    colourControl(220, "criticalColour", "Critical warning colour", "#F24033")
+    pages[6]:SetContentHeight(255)
     pageIndex = 1
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
     local sections = { {}, {}, {}, {}, {} }
@@ -598,7 +659,8 @@ function view.build(host, rules, onChange, prettyui)
             local defaults = settings.defaults()
             local old = {}
             if i == 6 then
-                for _, key in ipairs({ "checkOnPreset", "checkOnBankClose", "popupDuration" }) do
+                dismissPicker()
+                for _, key in ipairs({ "checkOnPreset", "checkOnBankClose", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do
                     old[key], rules[key] = rules[key], defaults[key]
                 end
             else
@@ -613,7 +675,7 @@ function view.build(host, rules, onChange, prettyui)
             end
             if not settings.save(rules) then
                 if i == 6 then
-                    for _, key in ipairs({ "checkOnPreset", "checkOnBankClose", "popupDuration" }) do rules[key] = old[key] end
+                    for _, key in ipairs({ "checkOnPreset", "checkOnBankClose", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do rules[key] = old[key] end
                 else
                     rules.styles[styleNames[i]] = old.style
                     if i == 5 then rules.signOfLife = old.signOfLife end
@@ -635,6 +697,7 @@ function view.build(host, rules, onChange, prettyui)
         local h = math.max(1, host.height - 42)
         local selected = tabs:GetActiveIndex()
         local active = selected == 1 and 6 or selected - 1
+        if active ~= 6 then dismissPicker() end
         if active ~= activeIndex then activeIndex, layoutChanged = active, true end
         if w ~= width or h ~= height then
             width, height, scrollPositions = w, h, {}
@@ -670,6 +733,8 @@ function view.build(host, rules, onChange, prettyui)
     end
     refresh()
     return refresh, function()
+        dismissPicker()
+        for _, picker in ipairs(colourPickers) do picker:Destroy() end
         for _, tip in ipairs(tooltips) do tip:Destroy() end
         for _, checkbox in ipairs(checkboxes) do
             if checkbox.Destroy then checkbox:Destroy() end

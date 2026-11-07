@@ -41,7 +41,7 @@ local function refresh()
     local alerts = monitor.update(snapshot)
     if #alerts > 0 then
         ribbon.record(alerts, now)
-        popup.show(alerts, now, rules.popupDuration, prettyUILibrary, rules.popupRows)
+        popup.show(alerts, now, rules.popupDuration, prettyUILibrary, rules.popupRows, rules)
     end
 end
 
@@ -96,7 +96,7 @@ Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
     end
 end)
 Event.ContentLayerReady.Subscribe("supplyCheck.content", function(event)
-    local ok, err = pcall(ribbon.open, event.component, prettyUILibrary)
+    local ok, err = pcall(ribbon.open, event.component, prettyUILibrary, rules)
     if not ok then print("[supply-check] Ribbon creation failed: " .. tostring(err)) end
 end)
 Event.MiniMenuEntrySelected.Subscribe("supplyCheck.preset", function(event)

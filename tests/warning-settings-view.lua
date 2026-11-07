@@ -116,8 +116,25 @@ local saved
 PersistentDB = { GetStructuredData = function() return saved end,
     SetStructuredData = function(_, _, data) saved = data; return true end }
 local rules = require("warnings/settings").load()
-local host = { width = 400, height = 600 }
+local host = { width = 400, height = 600, xyGlobal = { x = 100, y = 100 } }
 local changes = 0
+local pickers = {}
+prettyui.ColourPicker = { new = function(parent, options)
+    local root = control("colourPicker", parent)
+    root:SetPos(options.x, options.y); root:SetSize(options.width, options.height)
+    local picker = { root = root, value = options.value, options = options,
+        swatch = control("swatch", root), swatchFrame = control("swatchFrame", root) }
+    function picker:_PickerWindowBounds() return 0, 0, 180, 280 end
+    function picker:Open() self.pickerWindow = { titleDrag = {} }; return true end
+    function picker:SetValue(value, notify)
+        self.value = value
+        if notify ~= false then options.onChange(self, value) end
+    end
+    function picker:Close() self.closed = true end
+    function picker:Destroy() self.destroyed = true end
+    pickers[#pickers + 1] = picker
+    return picker
+end }
 local refresh, destroy = require("warnings/settings-view").build(host, rules, function() changes = changes + 1 end, prettyui)
 local general, magic, necro, ranged, melee, misc = table.unpack(tabs.pages)
 assert(tabs.entries[1].text == "General" and tabs.entries[5].text == "Melee")
@@ -191,6 +208,30 @@ local duration = find(general.content, "input", 205, 115)
 local durationStatus = find(general.content, "text", 274, 115)
 local rows = find(general.content, "input", 205, 150)
 local rowsStatus = find(general.content, "text", 274, 150)
+local lowColour, criticalColour = table.unpack(pickers)
+assert(lowColour.root == find(general.content, "colourPicker", 205, 185))
+assert(criticalColour.root == find(general.content, "colourPicker", 205, 220))
+assert(lowColour.value == 0xFF9429FF and criticalColour.value == 0xF24033FF)
+assert(lowColour.swatch.width == 56 and lowColour.swatch.height == 17)
+assert(criticalColour.swatchFrame.width == 58 and criticalColour.swatchFrame.height == 19)
+lowColour.root.xyGlobal = { x = 305, y = 285 }
+assert(lowColour:Open())
+assert(lowColour.options.windowX == 17 and lowColour.options.windowY == 185)
+assert(lowColour.pickerWindow.titleDrag.hidden)
+criticalColour.root.xyGlobal = { x = 110, y = 320 }
+assert(criticalColour:Open())
+assert(criticalColour.options.windowX == 82 and criticalColour.options.windowY == 220)
+assert(criticalColour.pickerWindow.titleDrag.hidden)
+lowColour:SetValue(0x123456FF)
+assert(rules.lowColour == "#123456" and saved.lowColour == "#123456")
+assert(require("warnings/settings").load().lowColour == "#123456")
+PersistentDB.SetStructuredData = function() return false end
+criticalColour:SetValue(0xABCDEFFF)
+assert(rules.criticalColour == nil and find(general.content, "text", 274, 220).content == "Save failed")
+assert(criticalColour.value == 0xF24033FF)
+PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
+criticalColour:SetValue(0xABCDEFFF)
+assert(saved.criticalColour == "#ABCDEF")
 assert(rows.content == "8")
 rows.content = "10"
 rows.hooks.change(rows, ui.InputFieldActionResult.SUBMIT)
@@ -231,6 +272,7 @@ assert(preset.checkbox.items[1].selected and rules.checkOnPreset, "failed save r
 PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
 destroy()
 assert(preset.checkbox.destroyed and bank.checkbox.destroyed)
+assert(lowColour.destroyed and criticalColour.destroyed)
 controls = {}
 rules = require("warnings/settings").load()
 assert(rules.checkOnPreset and rules.checkOnBankClose, "checkbox choices survive a settings reload")

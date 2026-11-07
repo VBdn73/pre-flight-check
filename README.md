@@ -134,7 +134,10 @@ with no nexus they count loose supplies only. Switching nexuses and inventory
 freshness need further in-client testing. Ammunition warnings count
 loose backpack plus equipment only, excluding quivers. Unavailable relevant sources
 suppress warnings.
-The popup shows critical alerts in red and low warnings in orange. Its duration
+The popup shows critical alerts in red and low warnings in orange by default.
+Choose custom colours for each level on the General settings tab; they also apply
+to the last notifications panel. Restore General defaults to return to the original colours.
+Its duration
 can be set in the General tab from 1 to 3600 seconds (default: four seconds).
 Hovering over a popup keeps it visible after its duration expires; it disappears
 when the pointer leaves. The popup captures mouse input while it is visible.
