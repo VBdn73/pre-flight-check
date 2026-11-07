@@ -8,6 +8,7 @@ local function control(kind, parent)
         self.hooks[hook] = callback
     end
     function c:Setup() end
+    function c:Destroy() self.destroyed = true end
     function c:SetAssociatedObject(itemId, ...)
         assert(select("#", ...) == 0, "SetAssociatedObject takes one argument")
         self.itemId = itemId
@@ -122,11 +123,20 @@ local general, magic, necro, ranged, melee = table.unpack(tabs.pages)
 assert(tabs.entries[1].text == "General" and tabs.entries[5].text == "Melee")
 assert(tabs.options.contentLayout.startY == 80)
 assert(magic.sections[1].name == "Elemental" and magic.sections[2].name == "Catalytic")
-assert(necro.sections[1].name == "Necrotic Runes" and ranged.sections[1].name == "Ammunition")
+assert(necro.sections[1].name == "Necrotic Runes" and ranged.sections[1].name == "Elder God Arrows")
+assert(ranged.sections[2].name == "Special Arrows" and ranged.sections[3].name == "Enchanted Bakriminel Bolts")
 assert(melee.sections[1].name == "Armour Spikes")
+magic.sections[1]:SetExpanded(true)
+magic.sections[2]:SetExpanded(true)
+assert(not magic.sections[1].expanded and magic.sections[2].expanded)
+magic.sections[2]:SetExpanded(false)
+necro.sections[1]:SetExpanded(true)
+necro.sections[2]:SetExpanded(true)
+assert(not necro.sections[1].expanded and necro.sections[2].expanded)
+necro.sections[2]:SetExpanded(false)
 local function find(parent, kind, x, y)
     for _, c in ipairs(controls) do
-        if c.parent == parent and c.kind == kind and c.x == x and c.y == y then return c end
+        if not c.destroyed and c.parent == parent and c.kind == kind and c.x == x and c.y == y then return c end
     end
     error("control not found: " .. kind .. " " .. x .. "," .. y)
 end
@@ -316,12 +326,28 @@ local reloadedFire = require("warnings/settings").load()[4]
 assert(reloadedFire.custom and reloadedFire.low == 7000 and reloadedFire.critical == 300)
 customLow.simulateProgrammaticChange, customCritical.simulateProgrammaticChange = false, false
 tabs.active = 4
+for _, c in ipairs(controls) do
+    for _, section in ipairs(ranged.sections) do
+        assert(c.parent ~= section.content, "collapsed ranged sections must not allocate rows")
+    end
+end
 ranged.sections[1]:SetExpanded(true)
 refresh()
 assert(find(ranged.content, "text", 10, 8).content == "Quivers unreadable; only arrows/bolts outside count.")
-local arrow = ranged.sections[1].content
+assert(find(ranged.sections[1].content, "sprite", 8, 3).itemId == 53055)
+ranged.sections[2]:SetExpanded(true)
+refresh()
+assert(not ranged.sections[1].expanded, "only one ranged section stays open")
+local arrow = ranged.sections[2].content
 assert(find(arrow, "sprite", 8, 3).itemId == 52299)
 assert(not find(arrow, "button", -251, 5).hidden)
+ranged.sections[2]:SetExpanded(false)
+for _, c in ipairs(controls) do
+    if c.parent == arrow then assert(c.destroyed, "collapsed ranged rows must be released") end
+end
+ranged.sections[2]:SetExpanded(true)
+refresh()
+assert(find(arrow, "sprite", 8, 3).itemId == 52299)
 tabs.active = 5
 melee.sections[1]:SetExpanded(true)
 refresh()

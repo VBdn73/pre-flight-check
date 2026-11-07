@@ -119,9 +119,21 @@ function view.build(host, rules, onChange, prettyui)
     pageIndex = 1
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
     local sections = { {}, {}, {}, {} }
+    local toggleRanged
     local function addSection(page, name)
         sections[page][name] = { count = 0, section = pages[page]:AddCollapseButton(name, {
-            expanded = false, indent = 0, onToggle = function() layoutChanged = true end,
+            expanded = false, indent = 0, onToggle = function(section, expanded)
+                layoutChanged = true
+                if page == 3 and toggleRanged then
+                    toggleRanged(section, expanded)
+                elseif expanded then
+                    for _, group in pairs(sections[page]) do
+                        if group.section ~= section and group.section.expanded then
+                            group.section:SetExpanded(false)
+                        end
+                    end
+                end
+            end,
         }) }
     end
     for i, style in ipairs(styleNames) do
@@ -167,31 +179,16 @@ function view.build(host, rules, onChange, prettyui)
     for _, name in ipairs({ "Necrotic Runes", "Ectoplasm" }) do addSection(2, name) end
     pageIndex = 3
     text(pages[3].content, 10, 8, 400, "Quivers unreadable; only arrows/bolts outside count.")
-    addSection(3, "Ammunition")
+    for _, name in ipairs({ "Elder God Arrows", "Special Arrows", "Enchanted Bakriminel Bolts",
+        "Special Bolts", "Enchanted Gem Bolts", "Standard Arrows", "Slayer and Other Arrows",
+        "Bakriminel Bolts", "Gem Bolts", "Standard Bolts" }) do addSection(3, name) end
     pageIndex = 4
     text(pages[4].content, 10, 8, 400, "Counts include loose spikes and one harness.")
     addSection(4, "Armour Spikes")
-    for index, rule in ipairs(rules) do
-        local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
-        pageIndex = rule.itemId == spikes.ruleId and 4
-            or item.category == "rune" and 1 or item.category == "necromancy" and 2
-            or item.category == "ammunition" and 3 or nil
-        if pageIndex then
-        local name
-        if pageIndex == 1 then
-            name = elemental[rule.itemId] and "Elemental"
-                or combination[rule.itemId] and "Combination" or "Catalytic"
-        elseif pageIndex == 2 then
-            name = rule.itemId == 55336 and "Ectoplasm" or "Necrotic Runes"
-        elseif pageIndex == 3 then
-            name = "Ammunition"
-        else
-            name = "Armour Spikes"
-        end
-        local group = sections[pageIndex][name]
+    local function buildRow(index, rule, item, group, rowPage, y)
+        pageIndex = rowPage
         currentSection = group.section
-        local parent, y = currentSection.content, group.count * rowHeight
-        group.count = group.count + 1
+        local parent = currentSection.content
         -- PrettyUI's list uses a framed rectangle; use the same treatment for each row.
         local frame = track(ui.Rectangle.new(parent))
         local frameEntry = controls[pageIndex][#controls[pageIndex]]
@@ -313,7 +310,71 @@ function view.build(host, rules, onChange, prettyui)
         onSubmit(critical, saveItem, editItem)
         frameEntry.update = updateRow
         updateRow()
+    end
+    for index, rule in ipairs(rules) do
+        local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
+        pageIndex = rule.itemId == spikes.ruleId and 4
+            or item.category == "rune" and 1 or item.category == "necromancy" and 2
+            or item.category == "ammunition" and 3 or nil
+        if pageIndex then
+        local name
+        if pageIndex == 1 then
+            name = elemental[rule.itemId] and "Elemental"
+                or combination[rule.itemId] and "Combination" or "Catalytic"
+        elseif pageIndex == 2 then
+            name = rule.itemId == 55336 and "Ectoplasm" or "Necrotic Runes"
+        elseif pageIndex == 3 then
+            name = item.group
+        else
+            name = "Armour Spikes"
         end
+        local group = sections[pageIndex][name]
+        local y = group.count * rowHeight
+        group.count = group.count + 1
+        if pageIndex == 3 then
+            group.rows = group.rows or {}
+            group.rows[#group.rows + 1] = { index = index, y = y }
+        else
+            buildRow(index, rule, item, group, pageIndex, y)
+        end
+        end
+    end
+    -- Ranged has many items. Keep only the open section's controls alive so the
+    -- client does not exhaust its limited dynamic UI IDs, even after repeated use.
+    toggleRanged = function(section, expanded)
+        if expanded then
+            for _, group in pairs(sections[3]) do
+                if group.section ~= section and group.section.expanded then
+                    group.section:SetExpanded(false)
+                end
+            end
+            for _, group in pairs(sections[3]) do
+                if group.section == section then
+                    for _, row in ipairs(group.rows or {}) do
+                        local rule = rules[row.index]
+                        buildRow(row.index, rule, catalogue[rule.itemId], group, 3, row.y)
+                    end
+                    break
+                end
+            end
+        else
+            for i = #controls[3], 1, -1 do
+                local entry = controls[3][i]
+                if entry.section == section then
+                    local tip = tooltipTargets[entry.control]
+                    if tip then
+                        tip:Destroy()
+                        tooltipTargets[entry.control] = nil
+                        for j = #tooltips, 1, -1 do
+                            if tooltips[j] == tip then table.remove(tooltips, j); break end
+                        end
+                    end
+                    entry.control:Destroy()
+                    table.remove(controls[3], i)
+                end
+            end
+        end
+        currentSection = nil
     end
     for _, pageSections in ipairs(sections) do
         for _, group in pairs(pageSections) do

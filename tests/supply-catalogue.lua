@@ -2,7 +2,9 @@ local catalogue = require("supply-catalogue")
 assert(catalogue[563].name == "Law rune" and catalogue[563].category == "rune")
 assert(catalogue[565].name == "Blood rune" and catalogue[565].category == "rune")
 assert(catalogue[52299].name == "Deathspore arrows" and catalogue[52299].category == "ammunition")
-assert(catalogue[28465] == nil and catalogue[53065] == nil)
+assert(catalogue[28465].name == "Ascension bolts" and catalogue[53065].name == "Bik arrow")
+assert(catalogue[41633].group == "Enchanted Bakriminel Bolts")
+assert(catalogue[41684].group == "Bakriminel Bolts")
 local count = 0
 for _, item in pairs(catalogue) do
     if item.combatVar then count = count + 1 end

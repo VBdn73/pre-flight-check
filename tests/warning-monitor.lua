@@ -73,4 +73,12 @@ sharedRules[1].custom = false
 assert(#sharedMonitor.update(snapshot, 4) == 0)
 sharedRules[1].enabled = false
 assert(#sharedMonitor.update(snapshot, 5) == 0)
+local ammo = monitor.new({ { itemId = 53065, enabled = true, low = 100, critical = 25 },
+    { itemId = 41633, enabled = true, low = 100, critical = 25 } })
+snapshot.backpack.counts = { [53065] = 10, [41633] = 30, [41684] = 500 }
+snapshot.equipment.counts = { [53065] = 5, [41633] = 20 }
+local alerts = ammo.update(snapshot, 1)
+assert(#alerts == 2 and alerts[1].count == 15 and alerts[2].count == 50)
+snapshot.equipment.available = false
+assert(#ammo.update(snapshot, 2) == 0)
 print("Warning monitor tests passed.")

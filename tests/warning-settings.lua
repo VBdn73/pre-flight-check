@@ -7,7 +7,10 @@ local settings = require("warnings/settings")
 local rules = settings.load()
 assert(not rules.checkOnBankClose and not rules.checkOnPreset)
 rules.checkOnBankClose, rules.checkOnPreset = true, true
-assert(#rules == 29)
+local seen = {}
+for _, rule in ipairs(rules) do seen[rule.itemId] = (seen[rule.itemId] or 0) + 1 end
+for itemId in pairs(require("supply-catalogue")) do assert(seen[itemId] == 1) end
+assert(seen["armour-spikes"] == 1)
 for _, rule in ipairs(rules) do
     assert(rule.enabled and not rule.custom)
     assert(settings.effective(rules, rule).low == 1000)
@@ -19,11 +22,17 @@ rules.styles.Magic.low = 5000
 rules[1].custom, rules[1].low, rules[1].critical = true, 70, 10
 rules[2].enabled = false
 assert(settings.save(rules))
+saved["53065"].enabled, saved["41633"].custom = false, true
+saved["41633"].low, saved["41633"].critical = 77, 12
 saved.styles.Magic.lowCooldown, saved.styles.Magic.criticalCooldown = 300, 60
 saved.styles.Magic.warnAtZero = true
 saved[tostring(rules[1].itemId)].warnAtZero = true
 saved[tostring(rules[1].itemId)].lowCooldown = 300
 local loaded = settings.load()
+for _, rule in ipairs(loaded) do
+    if rule.itemId == 53065 then assert(not rule.enabled) end
+    if rule.itemId == 41633 then assert(rule.custom and rule.low == 77 and rule.critical == 12) end
+end
 assert(loaded.checkOnBankClose and loaded.checkOnPreset)
 assert(loaded.styles.Magic.warnAtZero == nil and loaded[1].warnAtZero == nil)
 assert(settings.effective(loaded, loaded[1]).low == 70)

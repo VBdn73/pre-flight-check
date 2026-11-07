@@ -65,7 +65,8 @@ catalytic and combination runes, all four necrotic runes and ectoplasm.
 Magic tab groups runes into collapsible Elemental, Catalytic and Combination sections.
 The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
 The Melee tab provides one Armour Spikes warning for all six variants combined,
-and the Ranged tab provides a Deathspore arrow warning. Each tab has always-visible
+and the Ranged tab groups arrows and bolts into collapsible sections, with commonly
+used ammunition first. Each ammunition variant has its own warning. Each tab has always-visible
 style defaults above the item sections for thresholds. Every item
 starts enabled and uses its style defaults. Use an item's checkbox to toggle
 its warning immediately: green means enabled and red means disabled. Use the
@@ -76,6 +77,8 @@ The two fields are low and critical
 thresholds, respectively, and show descriptions on hover. Threshold changes are
 saved when you leave a field or press Enter. Invalid values or save failures are
 shown beside the fields; correct the values and leave the field to retry.
+Only one section per combat style can be open at a time. Ranged sections load
+their rows on demand to keep the panel within the client's UI resource limits.
 
 Each style starts with a low threshold of 1000 and a critical threshold of 250.
 Thresholds mean strictly below; zero counts do not trigger warnings.
@@ -89,7 +92,7 @@ An unavailable rune variable suppresses its warning. Necromancy warnings add
 loose backpack and equipped supplies to inventory 953 when exactly one nexus
 is carried. Multiple nexuses or an unavailable inventory suppress these warnings;
 with no nexus they count loose supplies only. Switching nexuses and inventory
-freshness need further in-client testing. Deathspore warnings count
+freshness need further in-client testing. Ammunition warnings count
 loose backpack plus equipment only, excluding quivers. Unavailable relevant sources
 suppress warnings.
 The popup shows critical alerts in red and low warnings in orange, and disappears

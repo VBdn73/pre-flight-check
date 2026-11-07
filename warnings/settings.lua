@@ -4,13 +4,28 @@ local ids = { 563, 565, 52299 }
 local catalogue = require("supply-catalogue")
 local spikes = require("armour-spikes")
 local additional = {}
+local ammunition = {}
 for itemId, item in pairs(catalogue) do
     if (item.combatVar and itemId ~= 563 and itemId ~= 565) or item.nexus then
         additional[#additional + 1] = itemId
+    elseif item.category == "ammunition" and itemId ~= 52299 then
+        ammunition[#ammunition + 1] = itemId
     end
 end
 table.sort(additional)
 for _, itemId in ipairs(additional) do ids[#ids + 1] = itemId end
+-- Put widely used ammunition first within each section; sort the rest by name.
+local priority = { [53055] = 1, [53065] = 2, [53060] = 3, [53050] = 4, [53043] = 5,
+    [52289] = 1, [47501] = 2, [31737] = 3,
+    [41633] = 1, [41629] = 2, [41630] = 3, [41632] = 4,
+    [28465] = 1, [42748] = 2, [24336] = 3, [35989] = 4,
+    [31881] = 1, [9242] = 2, [9243] = 3 }
+table.sort(ammunition, function(a, b)
+    local pa, pb = priority[a] or 100, priority[b] or 100
+    if pa ~= pb then return pa < pb end
+    return catalogue[a].name < catalogue[b].name
+end)
+for _, itemId in ipairs(ammunition) do ids[#ids + 1] = itemId end
 ids[#ids + 1] = spikes.ruleId
 local key = "supplyWarnings.v2"
 local styles = { "Magic", "Necromancy", "Ranged", "Melee" }
