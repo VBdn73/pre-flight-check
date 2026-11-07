@@ -75,8 +75,10 @@ drain and update timing still need in-client verification. An unavailable variab
 the warning. Thresholds are in pack charges, not divine charge items.
 The Misc tab's Other section has an optional Sign of life cooldown warning, on by
 default. It reports the shared revive cooldown during the same preset/bank checks,
-without a quantity threshold. It reads `COMBATV2_REVIVE_LIFE_EFFECT_COOLDOWN`;
-its availability and nonzero-on-cooldown interpretation still need in-client verification.
+without a quantity threshold. It reads VarPlayer `DIV_LIFE_COOLDOWN`: a proc was
+observed setting it to 30, and a cooldown refresh returned it to 0. If the variable
+is unavailable, the warning is suppressed. The notification displays the reported
+cooldown in minutes.
 Each tab has always-visible style defaults above the item sections for thresholds. Every item
 starts enabled and uses its style defaults. Use an item's checkbox to toggle
 its warning immediately: green means enabled and red means disabled. Use the

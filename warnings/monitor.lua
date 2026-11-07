@@ -8,8 +8,9 @@ function monitor.new(rules)
 
     function instance.update(snapshot)
         local alerts = {}
-        if rules.signOfLife and snapshot.signOfLifeCooldown == true then
-            alerts[#alerts + 1] = { name = "Sign of life", message = "Sign of life: on cooldown", level = "critical" }
+        if rules.signOfLife and type(snapshot.signOfLifeCooldown) == "number" and snapshot.signOfLifeCooldown > 0 then
+            alerts[#alerts + 1] = { name = "Sign of life",
+                message = "Sign of life: " .. snapshot.signOfLifeCooldown .. " min", level = "critical" }
         end
         for _, rule in ipairs(rules) do
             local effective = settings.effective(rules, rule)
