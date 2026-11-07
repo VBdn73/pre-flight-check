@@ -144,7 +144,34 @@ function view.build(host, rules, onChange, prettyui)
         duration.content = tostring(rules.popupDuration)
         durationStatus.content = ""
     end
-    pages[6]:SetContentHeight(150)
+    local rowsLabel = text(pages[6].content, 10, 150, 190, "Visible notifications")
+    rowsLabel:SetSize(190, 25)
+    rowsLabel.alignVertical = ui.AlignMode.CENTRE
+    local rows = input(pages[6].content, 205, 150, rules.popupRows)
+    local rowsStatus = text(pages[6].content, 274, 150, 110, "")
+    rowsStatus:SetSize(110, 25)
+    rowsStatus.alignVertical = ui.AlignMode.CENTRE
+    tooltip(rows, pages[6].content, "Maximum visible notifications in the popup, from 1 to 20")
+    onSubmit(rows, function()
+        local value = tonumber(rows.content)
+        if not settings.validPopupRows(value) then
+            rowsStatus.content = "Invalid (1-20)"
+            return
+        end
+        local old = rules.popupRows
+        rules.popupRows = value
+        if not settings.save(rules) then
+            rules.popupRows = old
+            rowsStatus.content = "Save failed"
+            return
+        end
+        rowsStatus.content = ""
+    end)
+    resetControls[6][#resetControls[6] + 1] = function()
+        rows.content = tostring(rules.popupRows)
+        rowsStatus.content = ""
+    end
+    pages[6]:SetContentHeight(185)
     pageIndex = 1
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
     local sections = { {}, {}, {}, {}, {} }

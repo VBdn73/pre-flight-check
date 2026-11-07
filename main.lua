@@ -43,7 +43,7 @@ local function refresh()
     local alerts = monitor.update(snapshot)
     if #alerts > 0 then
         ribbon.record(alerts, now)
-        popup.show(alerts, now, rules.popupDuration)
+        popup.show(alerts, now, rules.popupDuration, prettyUILibrary, rules.popupRows)
     end
 end
 

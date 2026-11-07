@@ -5,12 +5,13 @@ local function new(kind, host)
     function control:SetPos(...) self.pos = { ... } end
     function control:SetSize(...) self.size = { ... } end
     function control:SetHeaderLayout() end
+    function control:Subscribe(hook, _, callback) self.hooks = self.hooks or {}; self.hooks[hook] = callback end
     function control:Destroy() self.destroyed = true end
     components[#components + 1] = control
     return control
 end
 ui = { Interfaces = { GetComponent = function() return parent end },
-    AlignMode = { CENTRE = 1, BOTTOMRIGHT = 2 },
+    AlignMode = { CENTRE = 1, BOTTOMRIGHT = 2 }, Hook = { ONSCROLLWHEEL = "wheel" },
     GroupBox = { new = function(host) return new("group", host) end },
     Rectangle = { new = function(host) return new("rectangle", host) end },
     Text = { new = function(host) return new("text", host) end } }
@@ -86,5 +87,60 @@ end
 local start = #components
 assert(popup.show({ { message = "Cooldown: 1000 minutes", level = "low" } }, 200))
 assert(components[start + 5].content == "Cooldown: 1000 minutes")
+popup.clear()
+local views = {}
+local prettyui = { SimpleView = { new = function(host, options)
+    local view = { parent = host, content = {}, width = options.width, height = options.height, scrollY = 0 }
+    for _, key in ipairs({ "root", "viewport", "upArrow", "downArrow", "track", "trackTop",
+        "trackCentre", "trackBottom", "thumbDrag" }) do view[key] = {} end
+    function view:SetContentHeight(height)
+        self.contentHeight = height
+        self.scrollbarVisible = height > self.height
+        self.contentWidth = self.width - (self.scrollbarVisible and 18 or 0)
+    end
+    function view:ScrollBy(delta) self.scrollY = math.max(0, math.min(self.contentHeight - self.height, self.scrollY + delta)) end
+    function view:Destroy() self.destroyed = true end
+    views[#views + 1] = view
+    return view
+end } }
+local alerts = {}
+for i = 1, 11 do alerts[i] = { name = "Rune", count = i, level = "low" } end
+start = #components
+assert(popup.show({ table.unpack(alerts, 1, 8) }, 200, 4, prettyui))
+assert(components[start + 1].size[2] == 330 and #views == 0, "eight rows need no scrollbar by default")
+start = #components
+assert(popup.show({ table.unpack(alerts, 1, 9) }, 200, 4, prettyui))
+assert(components[start + 1].size[2] == 330 and views[1].scrollbarVisible)
+popup.clear()
+views = {}
+start = #components
+assert(popup.show({ table.unpack(alerts, 1, 10) }, 200, 4, prettyui, 10))
+assert(components[start + 1].size[2] == 402 and #views == 0, "ten rows need no scrollbar")
+start = #components
+assert(popup.show(alerts, 200, 4, prettyui, 10))
+local view = views[1]
+assert(components[start + 1].size[2] == 402 and view.height == 360)
+assert(view.scrollbarVisible and view.contentHeight == 396)
+assert(components[start + 5].parent == view.content)
+components[start + 5].hooks.wheel(nil, 1)
+assert(view.scrollY == 36 and components[start + 45].content == "Rune: 11")
+local scrollingRoot, scrollingLabel = components[start + 1], components[start + 5]
+for _, target in ipairs({ scrollingLabel, view.content, view.viewport, view.root, view.upArrow,
+    view.downArrow, view.track, view.trackTop, view.trackCentre, view.trackBottom, view.thumbDrag }) do
+    target.isMouseOver = true
+    popup.update(204)
+    assert(not scrollingRoot.destroyed, "hovering a scroll control keeps the popup open")
+    target.isMouseOver = false
+end
+view.dragStart = {}
+popup.update(204)
+assert(not scrollingRoot.destroyed, "dragging the scrollbar keeps the popup open")
+view.dragStart = nil
+popup.update(204)
+assert(scrollingRoot.destroyed, "popup closes after the pointer leaves")
+assert(view.destroyed)
+parent.height = 250
+assert(popup.show({ table.unpack(alerts, 1, 10) }, 200, 4, prettyui))
+assert(views[2].height == 163 and views[2].scrollbarVisible, "small screens limit popup height")
 popup.clear()
 print("Warning popup tests passed.")

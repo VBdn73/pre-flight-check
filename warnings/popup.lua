@@ -1,6 +1,7 @@
 -- Short-lived, non-blocking warning overlay.
 local popup = {}
-local root, expires
+local root, expires, scroll, hoverTargets
+local rowHeight = 36
 
 local function formatCount(count)
     local formatted = tostring(count)
@@ -41,11 +42,13 @@ end
 
 function popup.clear()
     local old = root
-    root, expires = nil, nil
+    local oldScroll = scroll
+    root, expires, scroll, hoverTargets = nil, nil, nil, nil
+    if oldScroll then pcall(function() oldScroll:Destroy() end) end
     if old then pcall(function() old:Destroy() end) end
 end
 
-function popup.show(alerts, now, duration)
+function popup.show(alerts, now, duration, prettyui, maxRows)
     local parent = ui.Interfaces:GetComponent(id.Component.TOPLEVEL_V2__PLUGIN_BUILD_LAYER_TOP)
     if not parent then return false end
     popup.clear()
@@ -54,7 +57,11 @@ function popup.show(alerts, now, duration)
         root.stylesheetID = id.StyleSheet.DEFAULT
         root:SetHeaderLayout(0, 0, 0, 0, 0)
         root:SetPos(-170, 45, 0.5, 0)
-        root:SetSize(340, 42 + #alerts * 36)
+        local listHeight = math.min(#alerts, maxRows or 8) * rowHeight
+        if type(parent.height) == "number" and parent.height > 0 then
+            listHeight = math.min(listHeight, math.max(1, parent.height - 45 - 42))
+        end
+        root:SetSize(340, 42 + listHeight)
         -- The root must receive mouse input for isMouseOver to detect hover.
         root.clickthrough = false
         local title = ui.Text.new(root)
@@ -62,28 +69,52 @@ function popup.show(alerts, now, duration)
         title.font = id.Font.MUSEO_SANS_15PT_REGULAR
         title.clickthrough = true
         title.content = "Supply Check"
+        local listParent, rowWidth = root, 324
+        if #alerts * rowHeight > listHeight then
+            assert(prettyui and prettyui.SimpleView and prettyui.SimpleView.new, "PrettyUI SimpleView is required")
+            scroll = prettyui.SimpleView.new(root, {
+                x = 5, y = 32, width = 324, height = listHeight, scrollStep = rowHeight,
+            })
+            scroll:SetContentHeight(#alerts * rowHeight)
+            listParent, rowWidth = scroll.content, scroll.contentWidth
+            -- Interactive scroll children can receive hover instead of the popup root.
+            hoverTargets = {}
+            for _, key in ipairs({ "root", "viewport", "content", "upArrow", "downArrow",
+                "track", "trackTop", "trackCentre", "trackBottom", "thumbDrag" }) do
+                if scroll[key] then hoverTargets[#hoverTargets + 1] = scroll[key] end
+            end
+        end
         for i, alert in ipairs(alerts) do
             local critical = alert.level == "critical"
             local backgroundColour, accentColour = popup.colours(alert.level)
-            local y = 32 + (i - 1) * 36
-            local box = ui.Rectangle.new(root)
-            box:SetPos(5, y); box:SetSize(324, 32)
+            local y = (scroll and 0 or 32) + (i - 1) * rowHeight
+            local x = scroll and 0 or 5
+            local box = ui.Rectangle.new(listParent)
+            box:SetPos(x, y); box:SetSize(rowWidth, 32)
             box.fill = true
             box.colour = backgroundColour
             box.clickthrough = true
-            local accent = ui.Rectangle.new(root)
-            accent:SetPos(5, y); accent:SetSize(4, 32)
+            local accent = ui.Rectangle.new(listParent)
+            accent:SetPos(x, y); accent:SetSize(4, 32)
             accent.fill = true
             accent.colour = accentColour
             accent.clickthrough = true
-            local label = ui.Text.new(root)
-            label:SetPos(17, y); label:SetSize(220, 32)
+            local label = ui.Text.new(listParent)
+            label:SetPos(x + 12, y); label:SetSize(rowWidth - 104, 32)
             label.font = id.Font.MUSEO_SANS_15PT_REGULAR
             label.alignVertical = ui.AlignMode.CENTRE
-            label.clickthrough = true
+            label.clickthrough = not scroll
+            if scroll then
+                hoverTargets[#hoverTargets + 1] = label
+                label:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.popupScroll", function(_, delta)
+                    if not scroll or not scroll.scrollbarVisible then return true end
+                    scroll:ScrollBy(delta * rowHeight)
+                    return false
+                end)
+            end
             label.content = popup.formatAlert(alert)
-            local severity = ui.Text.new(root)
-            severity:SetPos(247, y); severity:SetSize(75, 32)
+            local severity = ui.Text.new(listParent)
+            severity:SetPos(x + rowWidth - 82, y); severity:SetSize(75, 32)
             severity.font = id.Font.MUSEO_SANS_11PT_REGULAR
             severity.alignHorizontal = ui.AlignMode.BOTTOMRIGHT
             severity.alignVertical = ui.AlignMode.CENTRE
@@ -101,7 +132,14 @@ function popup.show(alerts, now, duration)
 end
 
 function popup.update(now)
-    if expires and now >= expires and not root.isMouseOver then popup.clear() end
+    if not expires or now < expires then return end
+    if root.isMouseOver or (scroll and scroll.dragStart) then return end
+    if hoverTargets then
+        for _, target in pairs(hoverTargets) do
+            if target.isMouseOver then return end
+        end
+    end
+    popup.clear()
 end
 
 return popup

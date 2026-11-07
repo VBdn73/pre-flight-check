@@ -4,6 +4,9 @@ A planned RuneScape plugin for warning when supplies such as runes or ammunition
 are running low, potentially when entering a boss arena or loading a preset.
 
 Configure supply warnings in the plugin settings; alerts appear as popups.
+Popups show up to 8 notifications at once by default, with a scrollbar for longer
+lists or when the available screen height is smaller. Set the visible notification
+limit (1–20) in General settings.
 The ribbon displays the most recent batch of notifications and the client clock time in its heading,
 with a scrollbar for longer lists. A new notification replaces the batch;
 checks without warnings leave it unchanged. The batch is kept in memory until the

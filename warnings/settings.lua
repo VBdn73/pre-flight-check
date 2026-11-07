@@ -66,6 +66,10 @@ function settings.validDuration(value)
     return validInteger(value, 1, 3600)
 end
 
+function settings.validPopupRows(value)
+    return validInteger(value, 1, 20)
+end
+
 local function fromSaved(saved)
     if type(saved) ~= "table" then saved = {} end
     local rules = {}
@@ -73,6 +77,7 @@ local function fromSaved(saved)
     rules.checkOnBankClose = saved.checkOnBankClose == true
     rules.signOfLife = saved.signOfLife ~= false
     rules.popupDuration = settings.validDuration(saved.popupDuration) and saved.popupDuration or 4
+    rules.popupRows = settings.validPopupRows(saved.popupRows) and saved.popupRows or 8
     rules.styles = {}
     for _, style in ipairs(styles) do
         local value = type(saved.styles) == "table" and saved.styles[style]
@@ -105,10 +110,10 @@ function settings.load()
 end
 
 function settings.save(rules)
-    if not settings.validDuration(rules.popupDuration) then return false end
+    if not settings.validDuration(rules.popupDuration) or not settings.validPopupRows(rules.popupRows) then return false end
     local data = { styles = {}, checkOnPreset = rules.checkOnPreset == true,
         checkOnBankClose = rules.checkOnBankClose == true, signOfLife = rules.signOfLife == true,
-        popupDuration = rules.popupDuration }
+        popupDuration = rules.popupDuration, popupRows = rules.popupRows }
     for _, style in ipairs(styles) do
         if not rules.styles or not settings.valid(rules.styles[style]) then return false end
         local value = rules.styles[style]

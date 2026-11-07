@@ -8,7 +8,9 @@ local rules = settings.load()
 assert(not rules.checkOnBankClose and rules.checkOnPreset and settings.defaults().checkOnPreset)
 assert(rules.signOfLife and settings.defaults().signOfLife)
 assert(rules.popupDuration == 4)
+assert(rules.popupRows == 8)
 rules.popupDuration = 12
+rules.popupRows = 10
 rules.checkOnBankClose, rules.checkOnPreset = true, true
 local seen = {}
 for _, rule in ipairs(rules) do seen[rule.itemId] = (seen[rule.itemId] or 0) + 1 end
@@ -54,6 +56,17 @@ for _, rule in ipairs(loaded) do
 end
 assert(loaded.checkOnBankClose and loaded.checkOnPreset)
 assert(loaded.popupDuration == 12)
+assert(loaded.popupRows == 10)
+saved.popupRows = 0
+assert(settings.load().popupRows == 8)
+saved.popupRows = 21
+assert(settings.load().popupRows == 8)
+saved.popupRows = 20
+assert(settings.load().popupRows == 20)
+saved.popupRows = 10
+loaded.popupRows = 1.5
+assert(not settings.save(loaded))
+loaded.popupRows = 10
 saved.popupDuration = 0
 assert(settings.load().popupDuration == 4)
 saved.popupDuration = 3601
