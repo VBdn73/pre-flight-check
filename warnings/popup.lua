@@ -40,13 +40,16 @@ function popup.show(alerts, now)
                 or Vector4.new(1, 0.58, 0.16, 1)
             accent.clickthrough = true
             local label = ui.Text.new(root)
-            label:SetPos(17, y + 5); label:SetSize(220, 22)
+            label:SetPos(17, y); label:SetSize(220, 32)
             label.font = id.Font.MUSEO_SANS_15PT_REGULAR
+            label.alignVertical = ui.AlignMode.CENTRE
             label.clickthrough = true
             label.content = alert.name .. ": " .. alert.count
             local severity = ui.Text.new(root)
-            severity:SetPos(247, y + 5); severity:SetSize(75, 22)
+            severity:SetPos(247, y); severity:SetSize(75, 32)
             severity.font = id.Font.MUSEO_SANS_11PT_REGULAR
+            severity.alignHorizontal = ui.AlignMode.BOTTOMRIGHT
+            severity.alignVertical = ui.AlignMode.CENTRE
             severity.clickthrough = true
             severity.content = critical and "CRITICAL" or "LOW"
         end
