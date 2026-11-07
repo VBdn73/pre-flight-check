@@ -33,7 +33,7 @@ end } }
 local ribbon = require("warnings/ribbon")
 local parent = { width = 250, height = 144 }
 ribbon.open(parent, prettyui)
-assert(controls[1].content == "Last notifications (0): none yet")
+assert(controls[1].content == "Last notifications (0)")
 local alerts = {}
 for i = 1, 7 do alerts[i] = { name = "Rune", count = i, level = "low" } end
 ribbon.record(alerts, 12)
