@@ -40,12 +40,12 @@ function view.build(host, rules, onChange, prettyui)
         "PrettyUI Tooltip is required for warning settings")
     local tabs = prettyui.Tabs.new(host, {
         { text = "General" }, { text = "Magic" }, { text = "Necromancy" },
-        { text = "Ranged" }, { text = "Melee" },
+        { text = "Ranged" }, { text = "Melee" }, { text = "Misc" },
     }, { width = 0, height = 0, widthAnchor = 1, heightAnchor = 1,
         contentLayout = { startY = 80 } })
-    local pages = { tabs:GetPage(2), tabs:GetPage(3), tabs:GetPage(4), tabs:GetPage(5), tabs:GetPage(1) }
-    local styleNames = { "Magic", "Necromancy", "Ranged", "Melee" }
-    local controls = { {}, {}, {}, {}, {} }
+    local pages = { tabs:GetPage(2), tabs:GetPage(3), tabs:GetPage(4), tabs:GetPage(5), tabs:GetPage(6), tabs:GetPage(1) }
+    local styleNames = { "Magic", "Necromancy", "Ranged", "Melee", "Misc" }
+    local controls = { {}, {}, {}, {}, {}, {} }
     local checkboxes, tooltips, tooltipTargets = {}, {}, {}
     local pageIndex, currentSection = 1, nil
     local layoutChanged = true
@@ -91,11 +91,11 @@ function view.build(host, rules, onChange, prettyui)
             return false
         end)
     end
-    pageIndex = 5
-    text(pages[5].content, 10, 8, 380, "Additional supply checks")
+    pageIndex = 6
+    text(pages[6].content, 10, 8, 380, "Additional supply checks")
     local function triggerToggle(y, key, label)
         local checkbox
-        checkbox = prettyui.CheckboxButton.new(pages[5].content, {
+        checkbox = prettyui.CheckboxButton.new(pages[6].content, {
             { text = label, value = key, selected = rules[key] },
         }, { width = 300, onChange = function(_, _, _, selected)
             local old = rules[key]
@@ -115,7 +115,7 @@ function view.build(host, rules, onChange, prettyui)
     triggerToggle(75, "checkOnBankClose", "Check on bank close")
     pageIndex = 1
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
-    local sections = { {}, {}, {}, {} }
+    local sections = { {}, {}, {}, {}, {} }
     local toggleRanged
     local function addSection(page, name)
         sections[page][name] = { count = 0, section = pages[page]:AddCollapseButton(name, {
@@ -182,6 +182,9 @@ function view.build(host, rules, onChange, prettyui)
     pageIndex = 4
     text(pages[4].content, 10, 8, 400, "Counts include loose spikes and one harness.")
     addSection(4, "Armour Spikes")
+    pageIndex = 5
+    text(pages[5].content, 10, 8, 400, "Counts include supplies in the backpack and equipment.")
+    addSection(5, "Bombs")
     local function buildRow(index, rule, item, group, rowPage, y)
         pageIndex = rowPage
         currentSection = group.section
@@ -313,7 +316,7 @@ function view.build(host, rules, onChange, prettyui)
         local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
         pageIndex = rule.itemId == spikes.ruleId and 4
             or item.category == "rune" and 1 or item.category == "necromancy" and 2
-            or item.category == "ammunition" and 3 or nil
+            or item.category == "ammunition" and 3 or item.category == "misc" and 5 or nil
         if pageIndex then
         local name
         if pageIndex == 1 then
@@ -321,7 +324,7 @@ function view.build(host, rules, onChange, prettyui)
                 or combination[rule.itemId] and "Combination" or "Catalytic"
         elseif pageIndex == 2 then
             name = rule.itemId == 55336 and "Ectoplasm" or "Necrotic Runes"
-        elseif pageIndex == 3 then
+        elseif pageIndex == 3 or pageIndex == 5 then
             name = item.group
         else
             name = "Armour Spikes"
@@ -384,11 +387,11 @@ function view.build(host, rules, onChange, prettyui)
         local w = math.max(1, host.width)
         local h = math.max(1, host.height - 42)
         local selected = tabs:GetActiveIndex()
-        local active = selected == 1 and 5 or selected - 1
+        local active = selected == 1 and 6 or selected - 1
         if active ~= activeIndex then activeIndex, layoutChanged = active, true end
         if w ~= width or h ~= height then
             width, height, scrollPositions = w, h, {}
-            for i = 1, 5 do tabs:GetPage(i)._scroll:Refresh() end
+            for i = 1, 6 do tabs:GetPage(i)._scroll:Refresh() end
         end
         for i, page in ipairs(pages) do
             if layoutChanged or page.scrollY ~= scrollPositions[i] then

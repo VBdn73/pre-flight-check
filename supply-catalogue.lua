@@ -1,5 +1,8 @@
 -- Exact item IDs only; variants and container contents are not interchangeable.
 return {
+    [48951] = { name = "Vulnerability bomb", category = "misc", group = "Bombs" },
+    [48954] = { name = "Poison bomb", category = "misc", group = "Bombs" },
+    [48957] = { name = "Sticky bomb", category = "misc", group = "Bombs" },
     [554] = { name = "Fire rune", category = "rune", combatVar = "COMBATV2_RUNECOUNT_FIRE" },
     [555] = { name = "Water rune", category = "rune", combatVar = "COMBATV2_RUNECOUNT_WATER" },
     [556] = { name = "Air rune", category = "rune", combatVar = "COMBATV2_RUNECOUNT_AIR" },

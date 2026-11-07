@@ -10,6 +10,8 @@ for itemId, item in pairs(catalogue) do
         additional[#additional + 1] = itemId
     elseif item.category == "ammunition" and itemId ~= 52299 then
         ammunition[#ammunition + 1] = itemId
+    elseif item.category == "misc" then
+        additional[#additional + 1] = itemId
     end
 end
 table.sort(additional)
@@ -28,7 +30,7 @@ end)
 for _, itemId in ipairs(ammunition) do ids[#ids + 1] = itemId end
 ids[#ids + 1] = spikes.ruleId
 local key = "supplyWarnings.v2"
-local styles = { "Magic", "Necromancy", "Ranged", "Melee" }
+local styles = { "Magic", "Necromancy", "Ranged", "Melee", "Misc" }
 
 local function defaults()
     return { enabled = true, low = 1000, critical = 250 }
@@ -39,6 +41,7 @@ function settings.style(itemId)
     local item = catalogue[itemId]
     if item.category == "rune" then return "Magic" end
     if item.category == "necromancy" then return "Necromancy" end
+    if item.category == "misc" then return "Misc" end
     return "Ranged"
 end
 

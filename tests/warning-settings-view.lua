@@ -77,7 +77,7 @@ end }, SpriteButton = { new = function(parent, sprite, action, options)
     return result
 end }, Tabs = { new = function(host, entries, options)
     tabs = { entries = entries, options = options, pages = {}, active = 1 }
-    for i = 1, 5 do
+    for i = 1, 6 do
         local page = { content = {}, scrollY = 0, contentHeight = 0, sections = {} }
         page._scroll = { Refresh = function()
             page.height = math.max(1, host.height - 42)
@@ -119,13 +119,14 @@ local rules = require("warnings/settings").load()
 local host = { width = 400, height = 600 }
 local changes = 0
 local refresh, destroy = require("warnings/settings-view").build(host, rules, function() changes = changes + 1 end, prettyui)
-local general, magic, necro, ranged, melee = table.unpack(tabs.pages)
+local general, magic, necro, ranged, melee, misc = table.unpack(tabs.pages)
 assert(tabs.entries[1].text == "General" and tabs.entries[5].text == "Melee")
 assert(tabs.options.contentLayout.startY == 80)
 assert(magic.sections[1].name == "Elemental" and magic.sections[2].name == "Catalytic")
 assert(necro.sections[1].name == "Necrotic Runes" and ranged.sections[1].name == "Elder God Arrows")
 assert(ranged.sections[2].name == "Special Arrows" and ranged.sections[3].name == "Enchanted Bakriminel Bolts")
 assert(melee.sections[1].name == "Armour Spikes")
+assert(tabs.entries[6].text == "Misc" and misc.sections[1].name == "Bombs")
 magic.sections[1]:SetExpanded(true)
 magic.sections[2]:SetExpanded(true)
 assert(not magic.sections[1].expanded and magic.sections[2].expanded)
@@ -164,7 +165,7 @@ controls = {}
 rules = require("warnings/settings").load()
 assert(rules.checkOnPreset and rules.checkOnBankClose, "checkbox choices survive a settings reload")
 refresh, destroy = require("warnings/settings-view").build(host, rules, function() changes = changes + 1 end, prettyui)
-general, magic, necro, ranged, melee = table.unpack(tabs.pages)
+general, magic, necro, ranged, melee, misc = table.unpack(tabs.pages)
 style = magic.content
 preset = find(general.content, "checkbox", 10, 40)
 bank = find(general.content, "checkbox", 10, 75)
@@ -370,6 +371,13 @@ tabs.active = 5
 melee.sections[1]:SetExpanded(true)
 refresh()
 assert(find(melee.sections[1].content, "sprite", 8, 3).itemId == 59925)
+tabs.active = 6
+misc.sections[1]:SetExpanded(true)
+refresh()
+assert(find(misc.sections[1].content, "sprite", 8, 3).itemId == 48951)
+assert(find(misc.sections[1].content, "sprite", 8, 43).itemId == 48954)
+assert(find(misc.sections[1].content, "sprite", 8, 83).itemId == 48957)
+assert(not find(misc.sections[1].content, "sprite", 8, 3).hidden)
 destroy()
 assert(tabs.destroyed)
 print("Warning settings view tests passed.")

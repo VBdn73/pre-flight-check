@@ -15,9 +15,10 @@ for _, rule in ipairs(rules) do
     assert(rule.enabled and not rule.custom)
     assert(settings.effective(rules, rule).low == 1000)
 end
-for _, name in ipairs({ "Magic", "Necromancy", "Ranged", "Melee" }) do
+for _, name in ipairs({ "Magic", "Necromancy", "Ranged", "Melee", "Misc" }) do
     assert(rules.styles[name].low == 1000 and rules.styles[name].critical == 250)
 end
+assert(settings.style(48951) == "Misc")
 rules.styles.Magic.low = 5000
 rules[1].custom, rules[1].low, rules[1].critical = true, 70, 10
 rules[2].enabled = false

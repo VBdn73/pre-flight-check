@@ -66,8 +66,9 @@ Magic tab groups runes into collapsible Elemental, Catalytic and Combination sec
 The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
 The Melee tab provides one Armour Spikes warning for all six variants combined,
 and the Ranged tab groups arrows, bolts and chinchompas into collapsible sections, with commonly
-used ammunition first. Each ammunition variant has its own warning. Each tab has always-visible
-style defaults above the item sections for thresholds. Every item
+used ammunition first. Each ammunition variant has its own warning.
+The Misc tab includes vulnerability, poison and sticky bombs, counted in the backpack and equipment.
+Each tab has always-visible style defaults above the item sections for thresholds. Every item
 starts enabled and uses its style defaults. Use an item's checkbox to toggle
 its warning immediately: green means enabled and red means disabled. Use the
 Defaults/Custom button to switch threshold modes; that change is saved immediately.

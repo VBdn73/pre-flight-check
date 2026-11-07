@@ -81,4 +81,11 @@ local alerts = ammo.update(snapshot, 1)
 assert(#alerts == 2 and alerts[1].count == 15 and alerts[2].count == 50)
 snapshot.equipment.available = false
 assert(#ammo.update(snapshot, 2) == 0)
+local bombs = monitor.new({ { itemId = 48951, enabled = true, low = 100, critical = 25 } })
+snapshot.equipment.available = true
+snapshot.backpack.counts = { [48951] = 10 }
+snapshot.equipment.counts = {}
+assert(bombs.update(snapshot)[1].count == 10 and bombs.update(snapshot)[1].level == "critical")
+snapshot.backpack.available = false
+assert(#bombs.update(snapshot) == 0)
 print("Warning monitor tests passed.")
