@@ -396,6 +396,7 @@ function view.build(host, rules, onChange, prettyui)
         end
         currentSection = nil
     end
+    local rowDrafts = {}
     local function buildRow(index, rule, item, group, rowPage, y)
         pageIndex = rowPage
         currentSection = group.section
@@ -416,7 +417,8 @@ function view.build(host, rules, onChange, prettyui)
         itemLabel.alignVertical = ui.AlignMode.CENTRE
         itemLabel.clickthrough = true
         local enabled, custom = rule.enabled, rule.custom
-        local draft = { tostring(rule.low), tostring(rule.critical) }
+        local draft = rowDrafts[index] or { tostring(rule.low), tostring(rule.critical) }
+        rowDrafts[index] = draft
         local fields, mode, switch
         local settingFields = false
         local function setField(field, value)
@@ -484,8 +486,8 @@ function view.build(host, rules, onChange, prettyui)
         mode:SetPos(-251, y + 5, 1, 0); mode:SetSize(75, 25)
         mode.alignHorizontal, mode.alignVertical = ui.AlignMode.CENTRE, ui.AlignMode.CENTRE
         mode.clickthrough = true
-        local low = input(parent, -171, y + 5, rule.low)
-        local critical = input(parent, -104, y + 5, rule.critical)
+        local low = input(parent, -171, y + 5, draft[1])
+        local critical = input(parent, -104, y + 5, draft[2])
         low:SetPos(-171, y + 5, 1, 0)
         critical:SetPos(-104, y + 5, 1, 0)
         fields = { low, critical }
@@ -532,6 +534,7 @@ function view.build(host, rules, onChange, prettyui)
             local value = rules[index]
             enabled, custom = value.enabled, value.custom
             draft = { tostring(value.low), tostring(value.critical) }
+            rowDrafts[index] = draft
             for i, field in ipairs(fields) do setField(field, draft[i]) end
             updateRow()
         end
@@ -594,21 +597,14 @@ function view.build(host, rules, onChange, prettyui)
             end
         end
     end
-    -- Ranged sections create controls only while open to conserve dynamic UI IDs.
+    -- Ranged sections create only viewport rows to conserve dynamic UI IDs.
     toggleLazy = function(page, section, expanded)
         local selected
         for _, group in pairs(sections[page]) do
             if group.section == section then selected = group; break end
         end
         if not selected or not selected.rows then return end
-        if expanded and page == 3 then
-            for _, row in ipairs(selected.rows) do
-                currentRow = row.index
-                local rule = rules[row.index]
-                buildRow(row.index, rule, catalogue[rule.itemId], selected, page, row.y)
-            end
-            currentRow = nil
-        elseif not expanded then
+        if not expanded then
             destroyRows(page, section, {})
         end
         currentSection = nil
@@ -684,6 +680,9 @@ function view.build(host, rules, onChange, prettyui)
                 label.content = "Save failed"
                 return true
             end
+            if i ~= 6 then
+                for index in pairs(old) do if type(index) == "number" then rowDrafts[index] = nil end end
+            end
             for _, update in ipairs(resetControls[i]) do update() end
             for _, entry in ipairs(controls[i]) do if entry.reset then entry.reset() end end
             layoutChanged = true
@@ -702,6 +701,33 @@ function view.build(host, rules, onChange, prettyui)
         if w ~= width or h ~= height then
             width, height, scrollPositions = w, h, {}
             for i = 1, 6 do tabs:GetPage(i)._scroll:Refresh() end
+        end
+        if active == 3 then
+            local page = pages[3]
+            for _, group in pairs(sections[3]) do
+                if group.rows and group.section.expanded then
+                    local keep, existing = {}, {}
+                    local offset = group.section.root.y + group.section.content.y - page.scrollY
+                    for _, row in ipairs(group.rows) do
+                        if offset + row.y < h and offset + row.y + rowHeight > 0 then
+                            keep[row.index] = true
+                        end
+                    end
+                    for _, entry in ipairs(controls[3]) do
+                        if entry.section == group.section and entry.row then existing[entry.row] = true end
+                    end
+                    destroyRows(3, group.section, keep)
+                    for _, row in ipairs(group.rows) do
+                        if keep[row.index] and not existing[row.index] then
+                            currentRow = row.index
+                            local rule = rules[row.index]
+                            buildRow(row.index, rule, catalogue[rule.itemId], group, 3, row.y)
+                            layoutChanged = true
+                        end
+                    end
+                    currentRow, currentSection = nil, nil
+                end
+            end
         end
         for i, page in ipairs(pages) do
             if layoutChanged or page.scrollY ~= scrollPositions[i] then

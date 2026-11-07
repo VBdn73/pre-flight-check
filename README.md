@@ -113,7 +113,7 @@ thresholds, respectively, and show descriptions on hover. Threshold changes are
 saved when you leave a field or press Enter. Invalid values or save failures are
 shown beside the fields; correct the values and leave the field to retry.
 Only one section per combat style can be open at a time. Ranged sections load
-their rows on demand to keep the panel within the client's UI resource limits.
+only visible rows to keep the panel within the client's UI resource limits.
 Each tab has a **Restore to defaults** button. Confirm the action to reset only
 that tab's settings, including its item overrides; Cancel leaves them unchanged.
 

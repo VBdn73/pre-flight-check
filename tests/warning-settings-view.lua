@@ -481,6 +481,38 @@ chinchompas:SetExpanded(true)
 refresh()
 assert(not ranged.sections[2].expanded)
 assert(find(chinchompas.content, "sprite", 8, 3).itemId == 60791)
+local large = ranged.sections[7] -- Slayer and Other Arrows
+large:SetExpanded(true)
+ranged.scrollY = large.root.y + large.content.y
+refresh()
+local firstIcon = find(large.content, "sprite", 8, 3)
+local firstSwitch = find(large.content, "check", -30, 7)
+firstSwitch.hooks.press()
+local firstId = firstIcon.itemId
+assert(not saved[tostring(firstId)].enabled)
+find(large.content, "button", -251, 5).hooks.press()
+local draftLow = find(large.content, "input", -171, 5)
+draftLow.content = "1234"
+draftLow.hooks.change(draftLow, ui.InputFieldActionResult.CONTENT_CHANGE)
+local function liveRows()
+    local count = 0
+    for _, c in ipairs(controls) do
+        if c.parent == large.content and c.kind == "sprite" and not c.destroyed then count = count + 1 end
+    end
+    return count
+end
+assert(liveRows() <= math.ceil((host.height - 42) / 40) + 1)
+ranged.scrollY = large.root.y + large.content.y + large.contentHeight - (host.height - 42)
+refresh()
+assert(firstIcon.destroyed, "offscreen rows must release their controls")
+assert(find(large.content, "sprite", 8, large.contentHeight - 37))
+assert(liveRows() <= math.ceil((host.height - 42) / 40) + 1)
+ranged.scrollY = large.root.y + large.content.y
+refresh()
+assert(not find(large.content, "check", -30, 7).value, "recreated rows retain saved settings")
+assert(find(large.content, "input", -171, 5).content == "1234", "scrolling retains an unsaved draft")
+large:SetExpanded(false)
+assert(liveRows() == 0)
 tabs.active = 5
 melee.sections[1]:SetExpanded(true)
 refresh()
