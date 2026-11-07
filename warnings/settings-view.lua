@@ -197,8 +197,9 @@ function view.build(host, rules, onChange, prettyui)
         background.fill, background.clickthrough = true, true
         controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
         icon(parent, 8, y + 3, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId).clickthrough = true
-        local itemLabel = text(parent, 48, y + 8, 90, item.name)
-        itemLabel:SetSize(-300, 22, 1, 0)
+        local itemLabel = text(parent, 48, y + 3, 90, item.name)
+        itemLabel:SetSize(-300, 32, 1, 0)
+        itemLabel.alignVertical = ui.AlignMode.CENTRE
         itemLabel.clickthrough = true
         local enabled, custom = rule.enabled, rule.custom
         local draft = { tostring(rule.low), tostring(rule.critical) }

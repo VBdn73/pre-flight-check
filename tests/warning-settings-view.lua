@@ -214,7 +214,7 @@ override.x = 200
 override.hooks.over()
 assert(override.tooltip.x == 35 and override.tooltip.y == -61)
 override.x = -251
-assert(find(fire, "text", 48, 8).widthAnchor == 1)
+assert(find(fire, "text", 48, 3).widthAnchor == 1)
 assert(mode.content == "Defaults" and not customLow.hidden and not customLow.enabled and customLow.clickthrough)
 assert(customLow.content == "1000")
 local frame = find(fire, "rectangle", 0, 0)
@@ -230,7 +230,9 @@ end
 assert(frame and background and frame.height == 36 and background.height == 34)
  assert(fire.x == 0 and frame.x == 0 and frame.width == 0 and background.width == -2)
 local fireIcon = find(fire, "sprite", 8, 3)
-local itemLabel = find(fire, "text", 48, 8)
+local itemLabel = find(fire, "text", 48, 3)
+assert(itemLabel.y == fireIcon.y and itemLabel.height == fireIcon.height
+    and itemLabel.alignVertical == ui.AlignMode.CENTRE)
 host.height = magic.sections[1].root.y + fire.y + 15 + 42
 refresh()
 assert(not fireIcon.hidden, "partially visible icon at the bottom remains visible")
