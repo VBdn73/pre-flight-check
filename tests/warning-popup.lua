@@ -1,8 +1,13 @@
 local components = {}
-local parent = {}
+local parent = { xyGlobal = { x = 0, y = 0 } }
+local savedPosition
+PersistentDB = {
+    GetStructuredData = function() return savedPosition end,
+    SetStructuredData = function(_, _, value) savedPosition = value; return true end,
+}
 local function new(kind, host)
     local control = { kind = kind, parent = host }
-    function control:SetPos(...) self.pos = { ... } end
+    function control:SetPos(...) self.pos = { ... }; self.xyGlobal = { x = self.pos[1], y = self.pos[2] } end
     function control:SetSize(...) self.size = { ... } end
     function control:SetHeaderLayout() end
     function control:Subscribe(hook, _, callback) self.hooks = self.hooks or {}; self.hooks[hook] = callback end
@@ -11,7 +16,8 @@ local function new(kind, host)
     return control
 end
 ui = { Interfaces = { GetComponent = function() return parent end },
-    AlignMode = { CENTRE = 1, BOTTOMRIGHT = 2 }, Hook = { ONSCROLLWHEEL = "wheel" },
+    AlignMode = { CENTRE = 1, BOTTOMRIGHT = 2 }, Hook = { ONSCROLLWHEEL = "wheel",
+        ONCLICK = "click", ONHOLD = "hold", ONRELEASE = "release", ONDRAGCOMPLETE = "dragComplete" },
     GroupBox = { new = function(host) return new("group", host) end },
     Rectangle = { new = function(host) return new("rectangle", host) end },
     Text = { new = function(host) return new("text", host) end } }
@@ -25,7 +31,8 @@ assert(popup.show({ { name = "Law rune", count = 10, level = "critical" },
 local root, title, red, redAccent, critical, criticalSeverity, orange, orangeAccent, low, lowSeverity = table.unpack(components)
 assert(title.content == "Supply Check (2)")
 assert(root.clickthrough == false)
-for i = 2, #components do assert(components[i].clickthrough) end
+assert(not title.clickthrough)
+for i = 3, #components do assert(components[i].clickthrough) end
 assert(red.fill and orange.fill and redAccent.fill and orangeAccent.fill)
 assert(red.colour[1] > red.colour[2] and orange.colour[2] > red.colour[2])
 assert(critical.content == "Law runes: 10" and low.content == "Blood runes: 50")
@@ -39,6 +46,10 @@ for _, severity in ipairs({ criticalSeverity, lowSeverity }) do
 end
 assert(red.parent == root and critical.parent == root and orange.parent == root and low.parent == root)
 assert(red.pos[2] ~= orange.pos[2])
+title.isMouseOver = true
+popup.update(104)
+assert(not root.destroyed, "hovering the title keeps the popup open")
+title.isMouseOver = false
 popup.update(103.9)
 assert(not root.destroyed)
 popup.update(104)
@@ -144,5 +155,27 @@ assert(view.destroyed)
 parent.height = 250
 assert(popup.show({ table.unpack(alerts, 1, 10) }, 200, 4, prettyui))
 assert(views[2].height == 163 and views[2].scrollbarVisible, "small screens limit popup height")
+popup.clear()
+parent.width, parent.height = 800, 600
+start = #components
+assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 300))
+local draggable, handle = components[start + 1], components[start + 2]
+draggable.xyGlobal = { x = 230, y = 45 }
+handle.hooks.click(handle, 20, 10)
+popup.update(305)
+assert(not draggable.destroyed, "dragging keeps the popup open")
+handle.hooks.hold(handle, 120, 60)
+assert(draggable.pos[1] == 330 and draggable.pos[2] == 95)
+handle.hooks.release()
+assert(savedPosition.x == 330 and savedPosition.y == 95)
+popup.clear()
+start = #components
+assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 310))
+assert(components[start + 1].pos[1] == 330 and components[start + 1].pos[2] == 95)
+popup.clear()
+parent.width, parent.height = 400, 150
+assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 320))
+assert(components[#components - 5].pos[1] == 60 and components[#components - 5].pos[2] == 72,
+    "saved positions are clamped to the available screen")
 popup.clear()
 print("Warning popup tests passed.")

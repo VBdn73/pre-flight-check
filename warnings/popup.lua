@@ -1,7 +1,24 @@
 -- Short-lived, non-blocking warning overlay.
 local popup = {}
-local root, expires, scroll, hoverTargets
+local root, expires, scroll, hoverTargets, drag
 local rowHeight = 36
+local positionKey = "supplyWarnings.popupPosition"
+
+local function validPosition(value)
+    return type(value) == "table" and type(value.x) == "number" and type(value.y) == "number"
+        and value.x == value.x and value.y == value.y
+        and math.abs(value.x) < 100000 and math.abs(value.y) < 100000
+end
+
+local function clampPosition(x, y, parent, height)
+    if type(parent.width) == "number" and parent.width > 0 then
+        x = math.max(0, math.min(x, math.max(0, parent.width - 340)))
+    end
+    if type(parent.height) == "number" and parent.height > 0 then
+        y = math.max(0, math.min(y, math.max(0, parent.height - height)))
+    end
+    return x, y
+end
 
 local function formatCount(count)
     local formatted = tostring(count)
@@ -43,7 +60,7 @@ end
 function popup.clear()
     local old = root
     local oldScroll = scroll
-    root, expires, scroll, hoverTargets = nil, nil, nil, nil
+    root, expires, scroll, hoverTargets, drag = nil, nil, nil, nil, nil
     if oldScroll then pcall(function() oldScroll:Destroy() end) end
     if old then pcall(function() old:Destroy() end) end
 end
@@ -56,19 +73,57 @@ function popup.show(alerts, now, duration, prettyui, maxRows)
         root = ui.GroupBox.new(parent)
         root.stylesheetID = id.StyleSheet.DEFAULT
         root:SetHeaderLayout(0, 0, 0, 0, 0)
-        root:SetPos(-170, 45, 0.5, 0)
         local listHeight = math.min(#alerts, maxRows or 8) * rowHeight
         if type(parent.height) == "number" and parent.height > 0 then
             listHeight = math.min(listHeight, math.max(1, parent.height - 45 - 42))
         end
         root:SetSize(340, 42 + listHeight)
+        local loaded, position = pcall(function() return PersistentDB:GetStructuredData(positionKey) end)
+        if loaded and validPosition(position) then
+            local x, y = clampPosition(position.x, position.y, parent, 42 + listHeight)
+            root:SetPos(x, y)
+        else
+            root:SetPos(-170, 45, 0.5, 0)
+        end
         -- The root must receive mouse input for isMouseOver to detect hover.
         root.clickthrough = false
         local title = ui.Text.new(root)
         title:SetPos(10, 6); title:SetSize(320, 24)
         title.font = id.Font.MUSEO_SANS_15PT_REGULAR
-        title.clickthrough = true
+        title.clickthrough = false
         title.content = "Supply Check (" .. #alerts .. ")"
+        hoverTargets = { title }
+        title:Subscribe(ui.Hook.ONCLICK, "supplyCheck.popupDragStart", function(_, x, y)
+            if type(x) ~= "number" or type(y) ~= "number" then return false end
+            local origin, parentOrigin = root.xyGlobal, parent.xyGlobal
+            if not origin or not parentOrigin then return false end
+            drag = { x = x, y = y, rootX = origin.x - parentOrigin.x,
+                rootY = origin.y - parentOrigin.y }
+            return false
+        end)
+        title:Subscribe(ui.Hook.ONHOLD, "supplyCheck.popupDragMove", function(_, x, y)
+            if not drag or type(x) ~= "number" or type(y) ~= "number" then return false end
+            local origin, parentOrigin = root.xyGlobal, parent.xyGlobal
+            if not origin or not parentOrigin then return false end
+            local nextX = origin.x - parentOrigin.x + x - drag.x
+            local nextY = origin.y - parentOrigin.y + y - drag.y
+            nextX, nextY = clampPosition(nextX, nextY, parent, 42 + listHeight)
+            root:SetPos(nextX, nextY)
+            drag.moved = nextX ~= drag.rootX or nextY ~= drag.rootY
+            drag.lastX, drag.lastY = nextX, nextY
+            return false
+        end)
+        local function finishDrag()
+            if drag and drag.moved then
+                local position = { x = drag.lastX, y = drag.lastY }
+                local ok, saved = pcall(function() return PersistentDB:SetStructuredData(positionKey, position) end)
+                if not ok or saved ~= true then print("[supply-check] Could not save popup position") end
+            end
+            drag = nil
+            return false
+        end
+        title:Subscribe(ui.Hook.ONRELEASE, "supplyCheck.popupDragEnd", finishDrag)
+        title:Subscribe(ui.Hook.ONDRAGCOMPLETE, "supplyCheck.popupDragComplete", finishDrag)
         local listParent, rowWidth = root, 324
         if #alerts * rowHeight > listHeight then
             assert(prettyui and prettyui.SimpleView and prettyui.SimpleView.new, "PrettyUI SimpleView is required")
@@ -78,7 +133,6 @@ function popup.show(alerts, now, duration, prettyui, maxRows)
             scroll:SetContentHeight(#alerts * rowHeight)
             listParent, rowWidth = scroll.content, scroll.contentWidth
             -- Interactive scroll children can receive hover instead of the popup root.
-            hoverTargets = {}
             for _, key in ipairs({ "root", "viewport", "content", "upArrow", "downArrow",
                 "track", "trackTop", "trackCentre", "trackBottom", "thumbDrag" }) do
                 if scroll[key] then hoverTargets[#hoverTargets + 1] = scroll[key] end
@@ -133,7 +187,7 @@ end
 
 function popup.update(now)
     if not expires or now < expires then return end
-    if root.isMouseOver or (scroll and scroll.dragStart) then return end
+    if drag or root.isMouseOver or (scroll and scroll.dragStart) then return end
     if hoverTargets then
         for _, target in pairs(hoverTargets) do
             if target.isMouseOver then return end
