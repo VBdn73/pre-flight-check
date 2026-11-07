@@ -148,8 +148,11 @@ local sign = find(misc.sections[3].content, "check", -30, 7)
 local flask = find(misc.sections[3].content, "text", 48, 43)
 assert(flask.content == "Blessed flask: warning unavailable")
 assert(find(misc.sections[3].content, "sprite", 8, 43).itemId == 48680)
-assert(misc.sections[3].contentHeight == 80)
-for _, rule in ipairs(rules) do assert(rule.itemId ~= 48680) end
+local grace = find(misc.sections[3].content, "text", 48, 83)
+assert(grace.content == "Grace of the elves: warning unavailable")
+assert(find(misc.sections[3].content, "sprite", 8, 83).itemId == 44548)
+assert(misc.sections[3].contentHeight == 120)
+for _, rule in ipairs(rules) do assert(rule.itemId ~= 48680 and rule.itemId ~= 44548) end
 local signBackground = find(misc.sections[3].content, "rectangle", 1, 1)
 assert(rules.signOfLife)
 assert(signBackground.rgba == 0x23412DE8 and sign.value)

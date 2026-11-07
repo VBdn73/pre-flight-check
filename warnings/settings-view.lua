@@ -294,19 +294,25 @@ function view.build(host, rules, onChange, prettyui)
         frameEntry.update = updateRow
         resetControls[5][#resetControls[5] + 1] = updateRow
         updateRow()
-        local unavailableFrame = track(ui.Rectangle.new(parent))
-        unavailableFrame:SetPos(0, rowHeight); unavailableFrame:SetSize(0, rowHeight - 4, 1, 0)
-        unavailableFrame.fill, unavailableFrame.rgba, unavailableFrame.clickthrough = true, 0x514D45C0, true
-        controls[pageIndex][#controls[pageIndex]].background = { x = 0, y = rowHeight, width = 0, height = rowHeight - 4 }
-        local unavailableBackground = track(ui.Rectangle.new(parent))
-        unavailableBackground:SetPos(1, rowHeight + 1); unavailableBackground:SetSize(-2, rowHeight - 6, 1, 0)
-        unavailableBackground.fill, unavailableBackground.rgba, unavailableBackground.clickthrough = true, 0x343434E8, true
-        controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = rowHeight + 1, width = -2, height = rowHeight - 6 }
-        icon(parent, 8, rowHeight + 3, 48680).clickthrough = true
-        local flask = text(parent, 48, rowHeight + 3, 300, "Blessed flask: warning unavailable")
-        flask:SetSize(-55, 32, 1, 0)
-        flask.alignVertical, flask.clickthrough = ui.AlignMode.CENTRE, true
-        group.count = 2
+        for i, item in ipairs({
+            { id = 48680, name = "Blessed flask" },
+            { id = 44548, name = "Grace of the elves" },
+        }) do
+            local y = i * rowHeight
+            local unavailableFrame = track(ui.Rectangle.new(parent))
+            unavailableFrame:SetPos(0, y); unavailableFrame:SetSize(0, rowHeight - 4, 1, 0)
+            unavailableFrame.fill, unavailableFrame.rgba, unavailableFrame.clickthrough = true, 0x514D45C0, true
+            controls[pageIndex][#controls[pageIndex]].background = { x = 0, y = y, width = 0, height = rowHeight - 4 }
+            local unavailableBackground = track(ui.Rectangle.new(parent))
+            unavailableBackground:SetPos(1, y + 1); unavailableBackground:SetSize(-2, rowHeight - 6, 1, 0)
+            unavailableBackground.fill, unavailableBackground.rgba, unavailableBackground.clickthrough = true, 0x343434E8, true
+            controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
+            icon(parent, 8, y + 3, item.id).clickthrough = true
+            local label = text(parent, 48, y + 3, 300, item.name .. ": warning unavailable")
+            label:SetSize(-55, 32, 1, 0)
+            label.alignVertical, label.clickthrough = ui.AlignMode.CENTRE, true
+        end
+        group.count = 3
         currentSection = nil
     end
     local function buildRow(index, rule, item, group, rowPage, y)
