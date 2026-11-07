@@ -76,13 +76,26 @@ function view.build(host, rules, onChange, prettyui)
         return b
     end
     local function tooltip(target, parent, value)
-        local tip = prettyui.Tooltip.attach(target, parent, value)
+        local tip
+        target:Subscribe(ui.Hook.ONMOUSEOVER, "supplyCheck.tooltipPosition", function()
+            if tip then
+                local x, y = target.x, target.y
+                if tip.context and tip.context.active then x, y = tip.context.position(target) end
+                tip.options.x = math.max(0, x + target.width - tip.width)
+                tip.options.y = y - tip.height - 6
+            end
+            return true
+        end)
+        tip = prettyui.Tooltip.attach(target, parent, {
+            text = value, placement = "above", constrainToParent = false,
+        })
         tooltips[#tooltips + 1] = tip
         tooltipTargets[target] = tip
         return tip
     end
-    local function onSubmit(field, callback)
+    local function onSubmit(field, callback, onEdit)
         field:Subscribe(ui.Hook.ONCONTENTCHANGED, function(_, reason)
+            if onEdit and reason == ui.InputFieldActionResult.CONTENT_CHANGE then onEdit() end
             if reason == ui.InputFieldActionResult.SUBMIT
                 or reason == ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS then callback() end
             return false
@@ -199,16 +212,20 @@ function view.build(host, rules, onChange, prettyui)
         itemLabel.clickthrough = true
         local enabled, custom = rule.enabled, rule.custom
         local draft = { tostring(rule.low), tostring(rule.critical) }
-        local fields, mode, overlays, switch
+        local fields, mode, switch
+        local settingFields = false
+        local function setField(field, value)
+            value = tostring(value)
+            if field.content == value then return end
+            settingFields = true
+            field.content = value
+            settingFields = false
+        end
         local function updateRow()
-            local shared = rules.styles[settings.style(rule.itemId)]
-            local values = custom and draft or { shared.low, shared.critical }
-            for i, field in ipairs(fields) do
-                if not custom then field.content = tostring(values[i]) end
-                field.enabled = custom and enabled
-                field.clickthrough = not field.enabled
+            for _, field in ipairs(fields) do
+                field.enabled = true
+                field.clickthrough = false
             end
-            for _, overlay in ipairs(overlays) do overlay.hidden = custom and enabled end
             mode.content = custom and "Custom" or "Style"
             background.rgba = enabled and 0x23412DE8 or 0x492626E8
             switch.value = enabled
@@ -234,7 +251,7 @@ function view.build(host, rules, onChange, prettyui)
         switch.buttonSize = 22
         switch:Subscribe(ui.Hook.ONBUTTONPRESSED, toggleEnabled)
         tooltip(switch, parent, "Enable or disable this warning")
-        local pencil = iconButton(parent, -253, y + 5, "PENCIL", "Switch between style defaults and custom settings", function(b, active)
+        local pencil = iconButton(parent, -253, y + 5, "PENCIL", nil, function(b, active)
             if custom then
                 for i, field in ipairs(fields) do draft[i] = field.content end
             end
@@ -247,12 +264,13 @@ function view.build(host, rules, onChange, prettyui)
                 return
             end
             custom = active
-            if custom then for i, field in ipairs(fields) do field.content = draft[i] end end
+            if custom then for i, field in ipairs(fields) do setField(field, draft[i]) end end
             updateRow()
             layoutChanged = true
             onChange()
         end, true, not custom)
         pencil.root:SetPos(-253, y + 5, 1, 0)
+        tooltip(pencil.root, parent, "Switch between style defaults and custom settings")
         mode = text(parent, -223, y + 8, 48, custom and "Custom" or "Style")
         mode:SetPos(-223, y + 8, 1, 0)
         mode.clickthrough = true
@@ -261,20 +279,24 @@ function view.build(host, rules, onChange, prettyui)
         low:SetPos(-171, y + 5, 1, 0)
         critical:SetPos(-104, y + 5, 1, 0)
         fields = { low, critical }
-        overlays = {}
         for i, field in ipairs(fields) do
             local description = i == 1 and "Low warning quantity: warns below this value"
                 or "Critical warning quantity: warns below this value"
+            description = description .. ". Item values are used in Custom mode."
             tooltip(field, parent, description)
-            local overlay = track(ui.Rectangle.new(parent))
-            overlay:SetPos(i == 1 and -171 or -104, y + 5, 1, 0)
-            overlay:SetSize(64, 25)
-            overlay.fill, overlay.rgba = true, 0
-            tooltip(overlay, parent, description)
-            controls[pageIndex][#controls[pageIndex]].visibleWhen = function() return not (custom and enabled) end
-            overlays[i] = overlay
+        end
+        local function editItem()
+            if settingFields then return end
+            if not custom then
+                if fields[1].content == draft[1] and fields[2].content == draft[2] then return end
+                custom = true
+                pencil:SetDisabled(false)
+                mode.content = "Custom"
+            end
+            for i, field in ipairs(fields) do draft[i] = field.content end
         end
         local function saveItem()
+            if settingFields then return end
             if custom then for i, field in ipairs(fields) do draft[i] = field.content end end
             local candidate = { itemId = rule.itemId, enabled = enabled, custom = custom,
                 low = tonumber(draft[1]), critical = tonumber(draft[2]) }
@@ -290,10 +312,10 @@ function view.build(host, rules, onChange, prettyui)
                 return
             end
             onChange()
-            mode.content = "Saved"
+            mode.content = custom and "Custom" or "Style"
         end
-        onSubmit(low, saveItem)
-        onSubmit(critical, saveItem)
+        onSubmit(low, saveItem, editItem)
+        onSubmit(critical, saveItem, editItem)
         frameEntry.update = updateRow
         updateRow()
         end

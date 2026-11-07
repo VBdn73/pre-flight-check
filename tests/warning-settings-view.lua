@@ -12,6 +12,19 @@ local function control(kind, parent)
         assert(select("#", ...) == 0, "SetAssociatedObject takes one argument")
         self.itemId = itemId
     end
+    if kind == "input" then
+        setmetatable(c, {
+            __index = function(t, key) if key == "content" then return rawget(t, "_content") end end,
+            __newindex = function(t, key, value)
+                if key == "content" then
+                    rawset(t, "_content", value)
+                    if t.simulateProgrammaticChange and t.hooks.change then
+                        t.hooks.change(t, ui.InputFieldActionResult.CONTENT_CHANGE)
+                    end
+                else rawset(t, key, value) end
+            end,
+        })
+    end
     controls[#controls + 1] = c
     return c
 end
@@ -21,7 +34,7 @@ ui = { Text = { new = function(parent) return control("text", parent) end },
     Check = { new = function(parent) return control("check", parent) end },
     Button = { new = function(parent) return control("button", parent) end },
     InputField = { new = function(parent) return control("input", parent) end },
-    Hook = { ONBUTTONPRESSED = "press", ONCLICK = "click", ONSCROLLWHEEL = "wheel", ONCONTENTCHANGED = "change" },
+    Hook = { ONBUTTONPRESSED = "press", ONCLICK = "click", ONSCROLLWHEEL = "wheel", ONCONTENTCHANGED = "change", ONMOUSEOVER = "over" },
     InputFieldActionResult = { SUBMIT = 1, SUBMIT_ON_FOCUS_LOSS = 2, CONTENT_CHANGE = 3 },
     TextContentVisibilityMode = { VISIBLE = 1 }, InputFieldFilterMode = { NUMBERS_AS_TEXT = 1 } }
 id = { Font = { MUSEO_SANS_11PT_REGULAR = 1 }, StyleSheet = {
@@ -29,7 +42,9 @@ id = { Font = { MUSEO_SANS_11PT_REGULAR = 1 }, StyleSheet = {
 local tabs
 local prettyui = { Tooltip = { attach = function(target, _, value)
     target.tooltip = value
-    return { Hide = function() end, Destroy = function() end }
+    local tip = { options = value, width = 240, height = 60, Hide = function() end, Destroy = function() end }
+    target.attachment = tip
+    return tip
 end }, CheckboxButton = { new = function(parent, entries, options)
     local root = control("checkbox", parent)
     root:SetSize(options.width, 25)
@@ -50,6 +65,7 @@ end }, SpriteButton = { new = function(parent, sprite, action, options)
     root:SetPos(options.x, options.y); root:SetSize(options.size, options.size)
     root.spriteName, root.tooltip = sprite, options.tooltip
     local result = { root = root, disabled = options.disabled }
+    root.spriteButton = result
     root.hooks.press = function()
         if options.toggleable then result.disabled = not result.disabled end
         action(result, not result.disabled)
@@ -160,16 +176,35 @@ local customLow = find(fire, "input", -171, 5)
 local customCritical = find(fire, "input", -104, 5)
 local mode = find(fire, "text", -223, 8)
 assert(override.xAnchor == 1 and customLow.xAnchor == 1 and customCritical.xAnchor == 1)
-assert(customLow.tooltip:find("Low") and customCritical.tooltip:find("Critical"))
+assert(override.tooltip.placement == "above" and override.tooltip.text:find("style defaults"))
+assert(customLow.tooltip.text:find("Low") and customCritical.tooltip.text:find("Critical"))
+assert(customLow.tooltip.placement == "above" and customCritical.tooltip.placement == "above")
+assert(not customLow.tooltip.constrainToParent and not override.tooltip.constrainToParent)
+customLow.x = 280 -- The real client exposes resolved coordinates for anchored controls.
+customLow.hooks.over()
+assert(customLow.tooltip.x == 104 and customLow.tooltip.y == -61)
+customLow.attachment.context = { active = true, position = function() return 350, 180 end }
+customLow.hooks.over()
+assert(customLow.tooltip.x == 174 and customLow.tooltip.y == 114)
+customLow.attachment.context = nil
+customLow.x = -171
+override.x = 200
+override.hooks.over()
+assert(override.tooltip.x == 0 and override.tooltip.y == -61)
+override.x = -253
 assert(find(fire, "text", 48, 8).widthAnchor == 1)
-assert(mode.content == "Style" and not customLow.hidden and not customLow.enabled)
-assert(customLow.content == "5000")
+assert(mode.content == "Style" and not customLow.hidden and customLow.enabled and not customLow.clickthrough)
+assert(customLow.content == "1000")
 local frame = find(fire, "rectangle", 0, 0)
 local background = find(fire, "rectangle", 1, 1)
 local switch = find(fire, "check", -30, 7)
 assert(switch.xAnchor == 1 and switch.stylesheetID == id.StyleSheet.CHECKBOX_DEFAULT)
-assert(switch.tooltip:find("Enable or disable") and switch.value)
-assert(not background.hooks.click and not find(fire, "rectangle", -171, 5).hooks.click)
+assert(switch.tooltip.text:find("Enable or disable") and switch.tooltip.placement == "above" and switch.value)
+assert(not background.hooks.click)
+for _, c in ipairs(controls) do
+    assert(not (c.parent == fire and c.kind == "rectangle" and c.x == -171 and c.y == 5),
+        "no hover overlay should block the input")
+end
 assert(frame and background and frame.height == 36 and background.height == 34)
 assert(fire.x == 0 and frame.x == 0 and frame.width == 0 and background.width == -2)
 magic.scrollY = magic.sections[1].root.y + fire.y + 20
@@ -179,6 +214,14 @@ assert(not background.hidden and background.y == 20 and background.height == 15)
 magic.scrollY = 0
 refresh()
 assert(frame.y == 0 and frame.height == 36 and background.y == 1 and background.height == 34)
+customLow.content = "5500"
+customLow.hooks.change(nil, ui.InputFieldActionResult.CONTENT_CHANGE)
+assert(mode.content == "Custom" and not override.disabled and rules.styles.Magic.low == 5000)
+customLow.hooks.change(nil, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
+assert(saved["554"].custom and saved["554"].low == 5500)
+override.hooks.press()
+assert(mode.content == "Style" and customLow.content == "5500")
+assert(require("warnings/settings").effective(rules, rules[4]).low == 5000)
 override.hooks.press()
 refresh()
 assert(not customLow.hidden and customLow.enabled and mode.content == "Custom")
@@ -199,20 +242,22 @@ PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true 
 customLow.content = "7000"
 customLow.hooks.change(nil, ui.InputFieldActionResult.SUBMIT)
 override.hooks.press()
-assert(customLow.content == "5000" and not customLow.enabled)
+assert(customLow.content == "7000" and customLow.enabled)
 assert(not saved["554"].custom and saved["554"].low == 7000)
 rules.styles.Magic.low = 6000
 host.width = 401
 refresh()
-assert(customLow.content == "6000")
+assert(customLow.content == "7000")
+assert(require("warnings/settings").effective(rules, rules[4]).low == 6000)
 override.hooks.press()
 refresh()
 assert(customLow.content == "7000")
+assert(require("warnings/settings").effective(rules, rules[4]).low == 7000)
 local activeColor = background.rgba
 local before = changes
 switch.value = false
 switch.hooks.press()
-assert(not customLow.enabled)
+assert(customLow.enabled and not customLow.clickthrough)
 assert(not saved["554"].enabled and changes == before + 1 and background.rgba ~= activeColor)
 assert(not switch.value)
 assert(not require("warnings/settings").load()[4].enabled)
@@ -226,6 +271,26 @@ switch.value = true
 switch.hooks.press()
 assert(saved["554"].enabled and customLow.enabled and background.rgba == activeColor)
 assert(switch.value)
+customCritical.content = "300"
+customCritical.hooks.change(nil, ui.InputFieldActionResult.CONTENT_CHANGE)
+customCritical.hooks.change(nil, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
+customLow.simulateProgrammaticChange, customCritical.simulateProgrammaticChange = true, true
+override.hooks.press()
+assert(not saved["554"].custom and customLow.content == "7000" and customCritical.content == "300")
+assert(require("warnings/settings").effective(rules, rules[4]).low == 6000)
+-- Client input events can arrive after the pencil changes modes.
+customLow.hooks.change(customLow, ui.InputFieldActionResult.CONTENT_CHANGE)
+customCritical.hooks.change(customCritical, ui.InputFieldActionResult.CONTENT_CHANGE)
+customCritical.hooks.change(customCritical, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
+assert(mode.content ~= "Custom" and override.spriteButton.disabled and not saved["554"].custom)
+assert(saved["554"].low == 7000 and saved["554"].critical == 300)
+refresh()
+override.hooks.press()
+assert(saved["554"].custom and customLow.content == "7000" and customCritical.content == "300")
+assert(saved["554"].low == 7000 and saved["554"].critical == 300)
+local reloadedFire = require("warnings/settings").load()[4]
+assert(reloadedFire.custom and reloadedFire.low == 7000 and reloadedFire.critical == 300)
+customLow.simulateProgrammaticChange, customCritical.simulateProgrammaticChange = false, false
 tabs.active = 4
 ranged.sections[1]:SetExpanded(true)
 refresh()

@@ -70,8 +70,9 @@ style defaults above the item sections for thresholds. Every item
 starts enabled and uses its style defaults. Use an item's checkbox to toggle
 its warning immediately: green means enabled and red means disabled. Use the pencil
 icon to switch between Style and Custom; that change is saved immediately.
-Inherited fields show the style values but cannot be edited. Switching back
-retains the custom values for later use. The two fields are low and critical
+Item fields always show their custom values, even in Style mode, where the style
+defaults are used for warnings instead. Editing an item field switches it to
+Custom without changing the style defaults. The two fields are low and critical
 thresholds, respectively, and show descriptions on hover. Threshold changes are
 saved when you leave a field or press Enter. Invalid values or save failures are
 shown beside the fields; correct the values and leave the field to retry.
