@@ -87,6 +87,8 @@ without a quantity threshold. It reads VarPlayer `DIV_LIFE_COOLDOWN`: a proc was
 observed setting it to 30, and a cooldown refresh returned it to 0. If the variable
 is unavailable, the warning is suppressed. The notification displays the reported
 cooldown in minutes.
+The Blessed flask entry in Misc → Other is informational only: its warning is
+unavailable because the plugin API does not expose the remaining doses.
 Each tab has always-visible style defaults above the item sections for thresholds. Every item
 starts enabled and uses its style defaults. Use an item's checkbox to toggle
 its warning immediately: green means enabled and red means disabled. Use the

@@ -145,6 +145,11 @@ local function find(parent, kind, x, y)
 end
 local style = magic.content
 local sign = find(misc.sections[3].content, "check", -30, 7)
+local flask = find(misc.sections[3].content, "text", 48, 43)
+assert(flask.content == "Blessed flask: warning unavailable")
+assert(find(misc.sections[3].content, "sprite", 8, 43).itemId == 48680)
+assert(misc.sections[3].contentHeight == 80)
+for _, rule in ipairs(rules) do assert(rule.itemId ~= 48680) end
 local signBackground = find(misc.sections[3].content, "rectangle", 1, 1)
 assert(rules.signOfLife)
 assert(signBackground.rgba == 0x23412DE8 and sign.value)
