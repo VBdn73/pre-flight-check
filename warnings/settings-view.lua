@@ -5,7 +5,7 @@ local view = {}
 local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
 local combination = { [4694] = true, [4695] = true, [4696] = true,
     [4697] = true, [4698] = true, [4699] = true }
-local rowHeight = 90
+local rowHeight = 40
 
 local function text(parent, x, y, width, value)
     local label = ui.Text.new(parent)
@@ -184,10 +184,10 @@ function view.build(host, rules, onChange, prettyui)
         controls[pageIndex][#controls[pageIndex]].background = { x = 0, y = y, width = 0, height = rowHeight - 4 }
         local background = track(ui.Rectangle.new(parent))
         background:SetPos(1, y + 1); background:SetSize(-2, rowHeight - 6, 1, 0)
-        background.fill, background.clickthrough = true, true
+        background.fill = true
         controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
-        icon(parent, 8, y + 3, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId)
-        text(parent, 48, y + 8, 100, item.name)
+        icon(parent, 8, y + 3, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId).clickthrough = true
+        text(parent, 48, y + 8, 90, item.name).clickthrough = true
         local enabled, custom = rule.enabled, rule.custom
         local draft = { tostring(rule.low), tostring(rule.critical) }
         local fields, mode
@@ -200,13 +200,22 @@ function view.build(host, rules, onChange, prettyui)
                 field.clickthrough = not field.enabled
             end
             mode.content = custom and "Custom" or "Style"
-            background.rgba = enabled and (custom and 0x211F1BE8 or 0x171512D8) or 0x252525B0
+            background.rgba = enabled and 0x23412DE8 or 0x492626E8
         end
-        iconButton(parent, 150, y + 5, "EYE", "Enable or disable this warning", function(_, active)
-            enabled = active
+        background:Subscribe(ui.Hook.ONCLICK, function()
+            local old = rules[index].enabled
+            rules[index].enabled = not old
+            if not settings.save(rules) then
+                rules[index].enabled = old
+                mode.content = "Failed"
+                return true
+            end
+            enabled = rules[index].enabled
             updateRow()
-        end, true, not enabled)
-        iconButton(parent, 180, y + 5, "PENCIL", "Switch between style defaults and custom settings", function(_, active)
+            onChange()
+            return true
+        end)
+        iconButton(parent, 140, y + 5, "PENCIL", "Switch between style defaults and custom settings", function(_, active)
             if custom then
                 for i, field in ipairs(fields) do draft[i] = field.content end
             end
@@ -214,29 +223,28 @@ function view.build(host, rules, onChange, prettyui)
             if custom then for i, field in ipairs(fields) do field.content = draft[i] end end
             updateRow()
         end, true, not custom)
-        mode = text(parent, 210, y + 8, 55, custom and "Custom" or "Style")
-        text(parent, 10, y + 35, 140, "Low / critical below")
-        local low = input(parent, 10, y + 54, rule.low)
-        local critical = input(parent, 80, y + 54, rule.critical)
+        mode = text(parent, 168, y + 8, 42, custom and "Custom" or "Style")
+        mode.clickthrough = true
+        local low = input(parent, 210, y + 5, rule.low)
+        local critical = input(parent, 277, y + 5, rule.critical)
         fields = { low, critical }
-        local status = text(parent, 300, y + 55, 85, "")
-        saveButton(parent, 265, y + 5, function()
+        saveButton(parent, 344, y + 5, function()
             if custom then for i, field in ipairs(fields) do draft[i] = field.content end end
             local candidate = { itemId = rule.itemId, enabled = enabled, custom = custom,
                 low = tonumber(draft[1]), critical = tonumber(draft[2]) }
             if not settings.valid(candidate) then
-                status.content = "Invalid"
+                mode.content = "Invalid"
                 return
             end
             local old = rules[index]
             rules[index] = candidate
             if not settings.save(rules) then
                 rules[index] = old
-                status.content = "Save failed"
+                mode.content = "Failed"
                 return
             end
             onChange()
-            status.content = "Saved."
+            mode.content = "Saved"
         end)
         controls[pageIndex][#controls[pageIndex]].update = updateRow
         updateRow()

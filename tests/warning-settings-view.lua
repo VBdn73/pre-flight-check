@@ -93,7 +93,8 @@ PersistentDB = { GetStructuredData = function() return saved end,
     SetStructuredData = function(_, _, data) saved = data; return true end }
 local rules = require("warnings/settings").load()
 local host = { width = 400, height = 600 }
-local refresh, destroy = require("warnings/settings-view").build(host, rules, function() end, prettyui)
+local changes = 0
+local refresh, destroy = require("warnings/settings-view").build(host, rules, function() changes = changes + 1 end, prettyui)
 local general, magic, necro, ranged, melee = table.unpack(tabs.pages)
 assert(tabs.entries[1].text == "General" and tabs.entries[5].text == "Melee")
 assert(tabs.options.contentLayout.startY == 120)
@@ -129,7 +130,7 @@ assert(preset.checkbox.destroyed and bank.checkbox.destroyed)
 controls = {}
 rules = require("warnings/settings").load()
 assert(rules.checkOnPreset and rules.checkOnBankClose, "checkbox choices survive a settings reload")
-refresh, destroy = require("warnings/settings-view").build(host, rules, function() end, prettyui)
+refresh, destroy = require("warnings/settings-view").build(host, rules, function() changes = changes + 1 end, prettyui)
 general, magic, necro, ranged, melee = table.unpack(tabs.pages)
 style = magic.content
 preset = find(general.content, "checkbox", 10, 40)
@@ -147,31 +148,31 @@ host.height = 600
 magic.sections[1]:SetExpanded(true)
 refresh()
 local fire = magic.sections[1].content
-local override = find(fire, "iconButton", 180, 5)
-local customLow = find(fire, "input", 10, 54)
-local mode = find(fire, "text", 210, 8)
+local override = find(fire, "iconButton", 140, 5)
+local customLow = find(fire, "input", 210, 5)
+local mode = find(fire, "text", 168, 8)
 assert(mode.content == "Style" and not customLow.hidden and not customLow.enabled)
 assert(customLow.content == "5000")
 local frame = find(fire, "rectangle", 0, 0)
 local background = find(fire, "rectangle", 1, 1)
-assert(frame and background and frame.height == 86 and background.height == 84)
+assert(frame and background and frame.height == 36 and background.height == 34)
 assert(fire.x == 0 and frame.x == 0 and frame.width == 0 and background.width == -2)
 magic.scrollY = magic.sections[1].root.y + fire.y + 20
 refresh()
-assert(not frame.hidden and frame.y == 20 and frame.height == 66)
-assert(not background.hidden and background.y == 20 and background.height == 65)
+assert(not frame.hidden and frame.y == 20 and frame.height == 16)
+assert(not background.hidden and background.y == 20 and background.height == 15)
 magic.scrollY = 0
 refresh()
-assert(frame.y == 0 and frame.height == 86 and background.y == 1 and background.height == 84)
+assert(frame.y == 0 and frame.height == 36 and background.y == 1 and background.height == 34)
 override.hooks.press()
 refresh()
 assert(not customLow.hidden and customLow.enabled and mode.content == "Custom")
 customLow.content = "7000"
-find(fire, "button", 265, 5).hooks.press()
+find(fire, "button", 344, 5).hooks.press()
 assert(saved["554"].custom and saved["554"].low == 7000)
 override.hooks.press()
 assert(customLow.content == "5000" and not customLow.enabled)
-find(fire, "button", 265, 5).hooks.press()
+find(fire, "button", 344, 5).hooks.press()
 assert(not saved["554"].custom and saved["554"].low == 7000)
 rules.styles.Magic.low = 6000
 host.width = 401
@@ -180,17 +181,23 @@ assert(customLow.content == "6000")
 override.hooks.press()
 refresh()
 assert(customLow.content == "7000")
-local enabled = find(fire, "iconButton", 150, 5)
-enabled.hooks.press()
+local activeColor = background.rgba
+local before = changes
+background.hooks.click()
 assert(not customLow.enabled)
-find(fire, "button", 265, 5).hooks.press()
-assert(not saved["554"].enabled)
+assert(not saved["554"].enabled and changes == before + 1 and background.rgba ~= activeColor)
+PersistentDB.SetStructuredData = function() return false end
+background.hooks.click()
+assert(not rules[4].enabled and background.rgba ~= activeColor and mode.content == "Failed")
+PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
+background.hooks.click()
+assert(saved["554"].enabled and customLow.enabled and background.rgba == activeColor)
 tabs.active = 4
 ranged.sections[1]:SetExpanded(true)
 refresh()
 local arrow = ranged.sections[1].content
 assert(find(arrow, "sprite", 8, 3).itemId == 52299)
-assert(not find(arrow, "iconButton", 180, 5).hidden)
+assert(not find(arrow, "iconButton", 140, 5).hidden)
 tabs.active = 5
 melee.sections[1]:SetExpanded(true)
 refresh()
