@@ -62,12 +62,17 @@ function settings.valid(rule)
         and validInteger(rule.critical, 1, rule.low)
 end
 
+function settings.validDuration(value)
+    return validInteger(value, 1, 3600)
+end
+
 function settings.load()
     local ok, saved = pcall(function() return PersistentDB:GetStructuredData(key) end)
     if not ok or type(saved) ~= "table" then saved = {} end
     local rules = {}
     rules.checkOnPreset = saved.checkOnPreset == true
     rules.checkOnBankClose = saved.checkOnBankClose == true
+    rules.popupDuration = settings.validDuration(saved.popupDuration) and saved.popupDuration or 4
     rules.styles = {}
     for _, style in ipairs(styles) do
         local value = type(saved.styles) == "table" and saved.styles[style]
@@ -91,8 +96,9 @@ function settings.load()
 end
 
 function settings.save(rules)
+    if not settings.validDuration(rules.popupDuration) then return false end
     local data = { styles = {}, checkOnPreset = rules.checkOnPreset == true,
-        checkOnBankClose = rules.checkOnBankClose == true }
+        checkOnBankClose = rules.checkOnBankClose == true, popupDuration = rules.popupDuration }
     for _, style in ipairs(styles) do
         if not rules.styles or not settings.valid(rules.styles[style]) then return false end
         local value = rules.styles[style]

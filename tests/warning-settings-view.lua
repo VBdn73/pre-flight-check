@@ -145,6 +145,20 @@ end
 local style = magic.content
 local preset = find(general.content, "checkbox", 10, 40)
 local bank = find(general.content, "checkbox", 10, 75)
+local duration = find(general.content, "input", 205, 115)
+local durationStatus = find(general.content, "text", 274, 115)
+assert(duration.content == "4")
+duration.content = "15"
+duration.hooks.change(duration, ui.InputFieldActionResult.SUBMIT)
+assert(rules.popupDuration == 15 and saved.popupDuration == 15)
+duration.content = "0"
+duration.hooks.change(duration, ui.InputFieldActionResult.SUBMIT)
+assert(rules.popupDuration == 15 and durationStatus.content ~= "")
+duration.content = "20"
+PersistentDB.SetStructuredData = function() return false end
+duration.hooks.change(duration, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
+assert(rules.popupDuration == 15 and durationStatus.content == "Save failed")
+PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
 assert(preset.checkbox.items[1].label.content == "Check on preset load")
 assert(bank.checkbox.items[1].label.content == "Check on bank close")
 assert(not preset.checkbox.items[1].selected and not bank.checkbox.items[1].selected)
@@ -165,6 +179,7 @@ assert(preset.checkbox.destroyed and bank.checkbox.destroyed)
 controls = {}
 rules = require("warnings/settings").load()
 assert(rules.checkOnPreset and rules.checkOnBankClose, "checkbox choices survive a settings reload")
+assert(rules.popupDuration == 15)
 refresh, destroy = require("warnings/settings-view").build(host, rules, function() changes = changes + 1 end, prettyui)
 general, magic, necro, ranged, melee, misc = table.unpack(tabs.pages)
 style = magic.content

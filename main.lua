@@ -40,7 +40,7 @@ local function refresh()
     end
     checkAfter, checkDeadline = nil, nil
     local alerts = monitor.update(snapshot)
-    if #alerts > 0 then popup.show(alerts, now) end
+    if #alerts > 0 then popup.show(alerts, now, rules.popupDuration) end
 end
 
 Event.ServerLogic.Subscribe("supplyCheck.refresh", refresh)

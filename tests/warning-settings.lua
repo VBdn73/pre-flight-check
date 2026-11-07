@@ -6,6 +6,8 @@ PersistentDB = {
 local settings = require("warnings/settings")
 local rules = settings.load()
 assert(not rules.checkOnBankClose and not rules.checkOnPreset)
+assert(rules.popupDuration == 4)
+rules.popupDuration = 12
 rules.checkOnBankClose, rules.checkOnPreset = true, true
 local seen = {}
 for _, rule in ipairs(rules) do seen[rule.itemId] = (seen[rule.itemId] or 0) + 1 end
@@ -42,6 +44,12 @@ for _, rule in ipairs(loaded) do
     if rule.itemId == 36389 then assert(rule.custom and rule.low == 12345 and rule.critical == 1234) end
 end
 assert(loaded.checkOnBankClose and loaded.checkOnPreset)
+assert(loaded.popupDuration == 12)
+saved.popupDuration = 0
+assert(settings.load().popupDuration == 4)
+saved.popupDuration = 3601
+assert(settings.load().popupDuration == 4)
+saved.popupDuration = 12
 assert(loaded.styles.Magic.warnAtZero == nil and loaded[1].warnAtZero == nil)
 assert(settings.effective(loaded, loaded[1]).low == 70)
 assert(settings.effective(loaded, loaded[2]).low == 5000 and not loaded[2].enabled)

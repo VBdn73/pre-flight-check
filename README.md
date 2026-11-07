@@ -103,8 +103,8 @@ with no nexus they count loose supplies only. Switching nexuses and inventory
 freshness need further in-client testing. Ammunition warnings count
 loose backpack plus equipment only, excluding quivers. Unavailable relevant sources
 suppress warnings.
-The popup shows critical alerts in red and low warnings in orange, and disappears
-after four seconds.
+The popup shows critical alerts in red and low warnings in orange. Its duration
+can be set in the General tab from 1 to 3600 seconds (default: four seconds).
 The tester reports that warnings work in-client; individual settings and timing
 cases have not been documented separately. Warning modules live in `warnings/`.
 

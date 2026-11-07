@@ -113,6 +113,30 @@ function view.build(host, rules, onChange, prettyui)
     end
     triggerToggle(40, "checkOnPreset", "Check on preset load")
     triggerToggle(75, "checkOnBankClose", "Check on bank close")
+    local durationLabel = text(pages[6].content, 10, 115, 190, "Notification duration (seconds)")
+    durationLabel:SetSize(190, 25)
+    durationLabel.alignVertical = ui.AlignMode.CENTRE
+    local duration = input(pages[6].content, 205, 115, rules.popupDuration)
+    local durationStatus = text(pages[6].content, 274, 115, 110, "")
+    durationStatus:SetSize(110, 25)
+    durationStatus.alignVertical = ui.AlignMode.CENTRE
+    tooltip(duration, pages[6].content, "How long notifications remain visible, from 1 to 3600 seconds")
+    onSubmit(duration, function()
+        local value = tonumber(duration.content)
+        if not settings.validDuration(value) then
+            durationStatus.content = "Invalid (1-3600)"
+            return
+        end
+        local old = rules.popupDuration
+        rules.popupDuration = value
+        if not settings.save(rules) then
+            rules.popupDuration = old
+            durationStatus.content = "Save failed"
+            return
+        end
+        durationStatus.content = ""
+    end)
+    pages[6]:SetContentHeight(150)
     pageIndex = 1
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
     local sections = { {}, {}, {}, {}, {} }

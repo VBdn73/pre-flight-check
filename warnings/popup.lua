@@ -8,7 +8,7 @@ function popup.clear()
     if old then pcall(function() old:Destroy() end) end
 end
 
-function popup.show(alerts, now)
+function popup.show(alerts, now, duration)
     local parent = ui.Interfaces:GetComponent(id.Component.TOPLEVEL_V2__PLUGIN_BUILD_LAYER_TOP)
     if not parent then return false end
     popup.clear()
@@ -53,7 +53,7 @@ function popup.show(alerts, now)
             severity.clickthrough = true
             severity.content = critical and "CRITICAL" or "LOW"
         end
-        expires = now + 4
+        expires = now + (duration or 4)
     end)
     if not ok then
         popup.clear()
