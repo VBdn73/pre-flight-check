@@ -316,6 +316,7 @@ function view.build(host, rules, onChange, prettyui)
             { id = 48680, name = "Blessed flask" },
             { id = 44548, name = "Grace of the elves" },
             { id = 26295, name = "Scrimshaw" },
+            { id = 2347, name = "Item durability" }, -- Hammer represents equipment repair.
         }) do
             local y = group.count * rowHeight
             group.count = group.count + 1

@@ -96,10 +96,12 @@ without a quantity threshold. It reads VarPlayer `DIV_LIFE_COOLDOWN`: a proc was
 observed setting it to 30, and a cooldown refresh returned it to 0. If the variable
 is unavailable, the warning is suppressed. The notification displays the reported
 cooldown in minutes.
-The Blessed flask, Grace of the elves and Scrimshaw entries in Misc → Other are informational
+The Blessed flask, Grace of the elves, Scrimshaw and Item durability entries in Misc → Other are informational
 only. Their warnings are unavailable: the flask's remaining doses are not exposed,
 the Grace's porter charges have not yet been found in the plugin API, and the
-scrimshaw timer cannot reliably be attributed to the equipped item.
+scrimshaw timer cannot reliably be attributed to the equipped item. Per-item durability
+is not exposed by the documented inventory slot API; experimental reads of Cinderbane
+glove slot variables were unavailable in both the backpack and equipment.
 Each tab has always-visible style defaults above the item sections for thresholds. Every item
 starts enabled and uses its style defaults. Use an item's checkbox to toggle
 its warning immediately: green means enabled and red means disabled. Use the
