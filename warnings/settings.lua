@@ -82,6 +82,7 @@ local function fromSaved(saved)
     rules.checkOnPreset = saved.checkOnPreset ~= false
     rules.checkOnBankClose = saved.checkOnBankClose == true
     rules.signOfLife = saved.signOfLife ~= false
+    rules.deathReclaim = saved.deathReclaim ~= false
     rules.popupDuration = settings.validDuration(saved.popupDuration) and saved.popupDuration or 4
     rules.popupRows = settings.validPopupRows(saved.popupRows) and saved.popupRows or 8
     rules.lowColour = colourValue.normalize(saved.lowColour)
@@ -127,6 +128,7 @@ function settings.save(rules)
     if not settings.validDuration(rules.popupDuration) or not settings.validPopupRows(rules.popupRows) then return false end
     local data = { styles = {}, checkOnPreset = rules.checkOnPreset == true,
         checkOnBankClose = rules.checkOnBankClose == true, signOfLife = rules.signOfLife == true,
+        deathReclaim = rules.deathReclaim == true,
         popupDuration = rules.popupDuration, popupRows = rules.popupRows,
         lowColour = colourValue.normalize(rules.lowColour), criticalColour = colourValue.normalize(rules.criticalColour) }
     if (rules.lowColour and not data.lowColour) or (rules.criticalColour and not data.criticalColour) then return false end

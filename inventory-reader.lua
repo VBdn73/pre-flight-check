@@ -54,6 +54,15 @@ function reader.read()
     local runes = {}
     local charge
     local signOfLifeCooldown
+    local deathReclaim = false
+    local deathKnown = true
+    for _, name in ipairs({ "GRAVESTONE_TIMER_INV_SLOTS", "GRAVESTONE_TIMER_WORN_SLOTS",
+        "GRAVESTONE_TIMER_OVERFLOW_SLOTS" }) do
+        local ok, value = pcall(function() return var.VarPlayer[name].value end)
+        if not ok or not integer(value, 0) then deathKnown = false
+        elseif value > 0 then deathReclaim = true end
+    end
+    if not deathReclaim and not deathKnown then deathReclaim = nil end
     local bookOk, bookTicks = pcall(function() return var.VarPlayer.GOD_BOOK_TIMELEFT.value end)
     if not bookOk or not integer(bookTicks, 0) then bookTicks = nil end
     local cooldownOk, cooldown = pcall(function() return var.VarPlayer.DIV_LIFE_COOLDOWN.value end)
@@ -89,7 +98,7 @@ function reader.read()
     end
     return { backpack = backpack, equipment = equipment, runeCounts = runes, nexus = nexus,
         spikeHarness = spikeHarness, inventionCharge = charge, signOfLifeCooldown = signOfLifeCooldown,
-        godBookTicks = bookTicks }
+        godBookTicks = bookTicks, deathReclaim = deathReclaim }
 end
 
 return reader

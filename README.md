@@ -45,6 +45,16 @@ are experimental and never used for counts. Mock test: `lua tests/quiver-diagnos
 
 `supply-catalogue.lua` lists item IDs, names and combat-variable bindings.
 
+## Death reclaim warning
+
+The Misc → Other Death reclaim warning is enabled by default and checks the
+gravestone backpack, worn, and overflow slot counters during preset and bank-close
+checks, alongside other warnings. It repeats on each check while items are indicated.
+A client test showed the
+backpack and worn counters increasing after a death and returning to zero after
+reclaiming. Positive counters were also observed after lobbying and re-enabling the
+development plugin. Other death situations, overflow, and installed-plugin login behavior remain unverified;
+an absent warning does not guarantee that no items are awaiting reclaim.
 ## Experimental warnings
 
 The settings panel uses the required PrettyUI dependency for tabs and scrolling. After

@@ -7,6 +7,7 @@ local settings = require("warnings/settings")
 local rules = settings.load()
 assert(not rules.checkOnBankClose and rules.checkOnPreset and settings.defaults().checkOnPreset)
 assert(rules.signOfLife and settings.defaults().signOfLife)
+assert(rules.deathReclaim and settings.defaults().deathReclaim)
 assert(rules.popupDuration == 4)
 assert(rules.popupRows == 8)
 rules.popupDuration = 12

@@ -322,38 +322,39 @@ function view.build(host, rules, onChange, prettyui)
         group.count = 1
         currentSection = nil
     end
-    do
+    local function addOtherSwitch(key, name, itemId)
         local group = sections[5]["Other"]
         currentSection = group.section
         local parent = group.section.content
+        local y = group.count * rowHeight
         local frame = track(ui.Rectangle.new(parent))
         local frameEntry = controls[pageIndex][#controls[pageIndex]]
-        frame:SetPos(0, 0); frame:SetSize(0, rowHeight - 4, 1, 0)
+        frame:SetPos(0, y); frame:SetSize(0, rowHeight - 4, 1, 0)
         frame.fill, frame.rgba, frame.clickthrough = true, 0x514D45C0, true
-        frameEntry.background = { x = 0, y = 0, width = 0, height = rowHeight - 4 }
+        frameEntry.background = { x = 0, y = y, width = 0, height = rowHeight - 4 }
         local background = track(ui.Rectangle.new(parent))
-        background:SetPos(1, 1); background:SetSize(-2, rowHeight - 6, 1, 0)
+        background:SetPos(1, y + 1); background:SetSize(-2, rowHeight - 6, 1, 0)
         background.fill, background.clickthrough = true, true
-        controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = 1, width = -2, height = rowHeight - 6 }
-        icon(parent, 8, 3, 29290).clickthrough = true
-        local label = text(parent, 48, 3, 200, "Sign of life cooldown")
+        controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
+        icon(parent, 8, y + 3, itemId).clickthrough = true
+        local label = text(parent, 48, y + 3, 200, name)
         label:SetSize(-85, 32, 1, 0)
         label.alignVertical, label.clickthrough = ui.AlignMode.CENTRE, true
         local switch = track(ui.Check.new(parent))
-        switch:SetPos(-30, 7, 1, 0); switch:SetSize(22, 22)
+        switch:SetPos(-30, y + 7, 1, 0); switch:SetSize(22, 22)
         switch.stylesheetID = id.StyleSheet.CHECKBOX_DEFAULT
         switch.buttonSize = 22
         local function updateRow()
-            background.rgba = rules.signOfLife and 0x23412DE8 or 0x492626E8
-            switch.value = rules.signOfLife
+            background.rgba = rules[key] and 0x23412DE8 or 0x492626E8
+            switch.value = rules[key]
         end
         switch:Subscribe(ui.Hook.ONBUTTONPRESSED, function()
-            local old = rules.signOfLife
-            rules.signOfLife = not old
+            local old = rules[key]
+            rules[key] = not old
             if not settings.save(rules) then
-                rules.signOfLife = old
+                rules[key] = old
                 updateRow()
-                print("[supply-check] Could not save Sign of life setting.")
+                print("[supply-check] Could not save " .. name .. " setting.")
                 return true
             end
             updateRow()
@@ -365,9 +366,11 @@ function view.build(host, rules, onChange, prettyui)
         frameEntry.update = updateRow
         resetControls[5][#resetControls[5] + 1] = updateRow
         updateRow()
-        group.count = 1
+        group.count = group.count + 1
         currentSection = nil
     end
+    addOtherSwitch("signOfLife", "Sign of life cooldown", 29290)
+    addOtherSwitch("deathReclaim", "Death reclaim", 39559) -- Death's scythe.
     local function addUnavailableRows()
         pageIndex = 5
         local group = sections[5]["Other"]
@@ -662,7 +665,10 @@ function view.build(host, rules, onChange, prettyui)
             else
                 local style = styleNames[i]
                 old.style, rules.styles[style] = rules.styles[style], defaults.styles[style]
-                if style == "Misc" then old.signOfLife, rules.signOfLife = rules.signOfLife, defaults.signOfLife end
+                if style == "Misc" then
+                    old.signOfLife, rules.signOfLife = rules.signOfLife, defaults.signOfLife
+                    old.deathReclaim, rules.deathReclaim = rules.deathReclaim, defaults.deathReclaim
+                end
                 for index, rule in ipairs(rules) do
                     if settings.style(rule.itemId) == style then
                         old[index], rules[index] = rule, defaults[index]
@@ -674,7 +680,7 @@ function view.build(host, rules, onChange, prettyui)
                     for _, key in ipairs({ "checkOnPreset", "checkOnBankClose", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do rules[key] = old[key] end
                 else
                     rules.styles[styleNames[i]] = old.style
-                    if i == 5 then rules.signOfLife = old.signOfLife end
+                    if i == 5 then rules.signOfLife, rules.deathReclaim = old.signOfLife, old.deathReclaim end
                     for index, rule in pairs(old) do if type(index) == "number" then rules[index] = rule end end
                 end
                 label.content = "Save failed"

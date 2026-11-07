@@ -8,6 +8,10 @@ function monitor.new(rules)
 
     function instance.update(snapshot)
         local alerts = {}
+        if rules.deathReclaim and snapshot.deathReclaim then
+            alerts[#alerts + 1] = { name = "Death reclaim",
+                message = "Items may be awaiting reclaim from Death", level = "critical" }
+        end
         if rules.signOfLife and type(snapshot.signOfLifeCooldown) == "number" and snapshot.signOfLifeCooldown > 0 then
             alerts[#alerts + 1] = { name = "Sign of life",
                 message = "Sign of life: " .. snapshot.signOfLifeCooldown .. " min", level = "critical" }

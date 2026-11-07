@@ -98,6 +98,14 @@ assert(#charge.update(snapshot) == 0)
 snapshot.inventionCharge = nil
 assert(#charge.update(snapshot) == 0)
 local signRules = { signOfLife = true }
+local deathRules = { deathReclaim = true }
+local deathMonitor = require("warnings/monitor").new(deathRules)
+assert(#deathMonitor.update({ deathReclaim = false }) == 0)
+assert(#deathMonitor.update({}) == 0)
+assert(deathMonitor.update({ deathReclaim = true })[1].level == "critical")
+assert(#deathMonitor.update({ deathReclaim = true }) == 1, "every check repeats the warning")
+deathRules.deathReclaim = false
+assert(#deathMonitor.update({ deathReclaim = true }) == 0)
 local sign = monitor.new(signRules)
 snapshot.signOfLifeCooldown = 30
 assert(sign.update(snapshot)[1].message == "Sign of life: 30 min")

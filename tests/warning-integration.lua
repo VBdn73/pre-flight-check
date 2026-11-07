@@ -168,6 +168,28 @@ load()
 time(52.9)
 callbacks.server()
 assert(#alerts == 13, "disabled items do not alert on a triggered check")
+rules.deathReclaim = true
+var.VarPlayer.GRAVESTONE_TIMER_INV_SLOTS = { value = 2 }
+-- The reader mock supplies the same snapshot field as the real reader.
+package.loaded["inventory-reader"].read = function()
+    return { backpack = { available = true, counts = {} }, equipment = { available = true, counts = {} },
+        deathReclaim = true, runeCounts = {} }
+end
+callbacks.server()
+assert(#alerts == 13, "death reclaim does not warn without a check")
+load()
+time(54.2)
+callbacks.server()
+assert(#alerts == 14 and alerts[14][1].name == "Death reclaim")
+load()
+time(55.5)
+callbacks.server()
+assert(#alerts == 15, "unclaimed items warn on repeated checks")
+rules.deathReclaim = false
+load()
+time(56.8)
+callbacks.server()
+assert(#alerts == 15, "disabled death reclaim warning stays silent")
 callbacks.state({ newState = 40 })
 PluginShutdown()
 print("Warning integration tests passed.")

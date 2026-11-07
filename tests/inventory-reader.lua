@@ -18,6 +18,17 @@ assert(first.equipment.available and first.equipment.counts[52299] == 6872)
 assert(first.runeCounts[563] == 123 and first.runeCounts[565] == nil)
 assert(first.inventionCharge == 126399)
 assert(first.signOfLifeCooldown == nil)
+assert(first.deathReclaim == nil)
+var.VarPlayer.GRAVESTONE_TIMER_INV_SLOTS = { value = 0 }
+var.VarPlayer.GRAVESTONE_TIMER_WORN_SLOTS = { value = 0 }
+var.VarPlayer.GRAVESTONE_TIMER_OVERFLOW_SLOTS = { value = 0 }
+assert(reader.read().deathReclaim == false)
+var.VarPlayer.GRAVESTONE_TIMER_WORN_SLOTS.value = 11
+assert(reader.read().deathReclaim == true)
+var.VarPlayer.GRAVESTONE_TIMER_OVERFLOW_SLOTS = nil
+assert(reader.read().deathReclaim == true)
+var.VarPlayer.GRAVESTONE_TIMER_WORN_SLOTS.value = 0
+assert(reader.read().deathReclaim == nil)
 var.VarPlayer.GOD_BOOK_TIMELEFT = { value = 92184 }
 assert(reader.read().godBookTicks == 92184)
 var.VarPlayer.GOD_BOOK_TIMELEFT.value = -1
