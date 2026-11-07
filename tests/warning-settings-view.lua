@@ -1,8 +1,8 @@
 local controls = {}
 local function control(kind, parent)
     local c = { kind = kind, parent = parent, hooks = {} }
-    function c:SetPos(x, y) self.x, self.y = x, y end
-    function c:SetSize(w, h) self.width, self.height = w, h end
+    function c:SetPos(x, y, xa, ya) self.x, self.y, self.xAnchor, self.yAnchor = x, y, xa, ya end
+    function c:SetSize(w, h, wa, ha) self.width, self.height, self.widthAnchor, self.heightAnchor = w, h, wa, ha end
     function c:Subscribe(hook, id, callback)
         if type(id) == "function" then callback = id end
         self.hooks[hook] = callback
@@ -20,12 +20,16 @@ ui = { Text = { new = function(parent) return control("text", parent) end },
     Rectangle = { new = function(parent) return control("rectangle", parent) end },
     Button = { new = function(parent) return control("button", parent) end },
     InputField = { new = function(parent) return control("input", parent) end },
-    Hook = { ONBUTTONPRESSED = "press", ONCLICK = "click", ONSCROLLWHEEL = "wheel" },
+    Hook = { ONBUTTONPRESSED = "press", ONCLICK = "click", ONSCROLLWHEEL = "wheel", ONCONTENTCHANGED = "change" },
+    InputFieldActionResult = { SUBMIT = 1, SUBMIT_ON_FOCUS_LOSS = 2, CONTENT_CHANGE = 3 },
     TextContentVisibilityMode = { VISIBLE = 1 }, InputFieldFilterMode = { NUMBERS_AS_TEXT = 1 } }
 id = { Font = { MUSEO_SANS_11PT_REGULAR = 1 }, StyleSheet = {
     BUTTON_DEFAULT = 1, INPUT_DEFAULT = 2, CHECKBOX_DEFAULT_LEFT_ALIGNED = 3 } }
 local tabs
-local prettyui = { CheckboxButton = { new = function(parent, entries, options)
+local prettyui = { Tooltip = { attach = function(target, _, value)
+    target.tooltip = value
+    return { Hide = function() end, Destroy = function() end }
+end }, CheckboxButton = { new = function(parent, entries, options)
     local root = control("checkbox", parent)
     root:SetSize(options.width, 25)
     local item = { label = {}, selected = entries[1].selected }
@@ -50,6 +54,7 @@ end }, SpriteButton = { new = function(parent, sprite, action, options)
         action(result, not result.disabled)
     end
     function result:Destroy() self.destroyed = true end
+    function result:SetDisabled(disabled) self.disabled = disabled end
     return result
 end }, Tabs = { new = function(host, entries, options)
     tabs = { entries = entries, options = options, pages = {}, active = 1 }
@@ -141,16 +146,21 @@ refresh()
 assert(not find(style, "input", 10, 87).hidden)
 assert(find(style, "text", 10, 40).content == "Magic defaults")
 find(style, "input", 10, 87).content = "5000"
-assert(find(style, "button", 227, 39).label == "Save")
-find(style, "button", 227, 39).hooks.press()
+find(style, "input", 10, 87).hooks.change(nil, ui.InputFieldActionResult.CONTENT_CHANGE)
+assert(rules.styles.Magic.low ~= 5000)
+find(style, "input", 10, 87).hooks.change(nil, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
 assert(saved.styles.Magic.low == 5000 and rules.styles.Magic.low == 5000)
 host.height = 600
 magic.sections[1]:SetExpanded(true)
 refresh()
 local fire = magic.sections[1].content
-local override = find(fire, "iconButton", 140, 5)
-local customLow = find(fire, "input", 210, 5)
-local mode = find(fire, "text", 168, 8)
+local override = find(fire, "iconButton", -220, 5)
+local customLow = find(fire, "input", -138, 5)
+local customCritical = find(fire, "input", -71, 5)
+local mode = find(fire, "text", -190, 8)
+assert(override.xAnchor == 1 and customLow.xAnchor == 1 and customCritical.xAnchor == 1)
+assert(customLow.tooltip:find("Low") and customCritical.tooltip:find("Critical"))
+assert(find(fire, "text", 48, 8).widthAnchor == 1)
 assert(mode.content == "Style" and not customLow.hidden and not customLow.enabled)
 assert(customLow.content == "5000")
 local frame = find(fire, "rectangle", 0, 0)
@@ -167,12 +177,24 @@ assert(frame.y == 0 and frame.height == 36 and background.y == 1 and background.
 override.hooks.press()
 refresh()
 assert(not customLow.hidden and customLow.enabled and mode.content == "Custom")
+assert(saved["554"].custom)
 customLow.content = "7000"
-find(fire, "button", 344, 5).hooks.press()
+customLow.hooks.change(nil, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
 assert(saved["554"].custom and saved["554"].low == 7000)
+customLow.content = "1"
+customLow.hooks.change(nil, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
+assert(mode.content == "Invalid" and saved["554"].low == 7000)
+customLow.content = "8000"
+PersistentDB.SetStructuredData = function() return false end
+customLow.hooks.change(nil, ui.InputFieldActionResult.SUBMIT)
+assert(mode.content == "Failed" and rules[4].low == 7000)
+override.hooks.press()
+assert(rules[4].custom and not override.disabled)
+PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
+customLow.content = "7000"
+customLow.hooks.change(nil, ui.InputFieldActionResult.SUBMIT)
 override.hooks.press()
 assert(customLow.content == "5000" and not customLow.enabled)
-find(fire, "button", 344, 5).hooks.press()
 assert(not saved["554"].custom and saved["554"].low == 7000)
 rules.styles.Magic.low = 6000
 host.width = 401
@@ -197,7 +219,7 @@ ranged.sections[1]:SetExpanded(true)
 refresh()
 local arrow = ranged.sections[1].content
 assert(find(arrow, "sprite", 8, 3).itemId == 52299)
-assert(not find(arrow, "iconButton", 140, 5).hidden)
+assert(not find(arrow, "iconButton", -220, 5).hidden)
 tabs.active = 5
 melee.sections[1]:SetExpanded(true)
 refresh()

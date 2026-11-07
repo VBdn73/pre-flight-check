@@ -15,15 +15,6 @@ local function text(parent, x, y, width, value)
     return label
 end
 
-local function button(parent, x, y, width, label, callback)
-    local b = ui.Button.new(parent)
-    b:SetPos(x, y); b:SetSize(width, 25)
-    b.stylesheetID = id.StyleSheet.BUTTON_DEFAULT
-    b.label = label
-    b:Subscribe(ui.Hook.ONBUTTONPRESSED, callback)
-    return b
-end
-
 local function input(parent, x, y, value)
     local field = ui.InputField.new(parent)
     field:SetPos(x, y); field:SetSize(64, 25)
@@ -47,6 +38,8 @@ function view.build(host, rules, onChange, prettyui)
         "PrettyUI SpriteButton is required for warning settings")
     assert(prettyui.CheckboxButton and prettyui.CheckboxButton.new,
         "PrettyUI CheckboxButton is required for warning settings")
+    assert(prettyui.Tooltip and prettyui.Tooltip.attach,
+        "PrettyUI Tooltip is required for warning settings")
     local tabs = prettyui.Tabs.new(host, {
         { text = "General" }, { text = "Magic" }, { text = "Necromancy" },
         { text = "Ranged" }, { text = "Melee" },
@@ -55,7 +48,7 @@ function view.build(host, rules, onChange, prettyui)
     local pages = { tabs:GetPage(2), tabs:GetPage(3), tabs:GetPage(4), tabs:GetPage(5), tabs:GetPage(1) }
     local styleNames = { "Magic", "Necromancy", "Ranged", "Melee" }
     local controls = { {}, {}, {}, {}, {} }
-    local spriteButtons, checkboxes = {}, {}
+    local spriteButtons, checkboxes, tooltips, tooltipTargets = {}, {}, {}, {}
     local pageIndex, currentSection = 1, nil
     local layoutChanged = true
     local function track(control)
@@ -69,9 +62,8 @@ function view.build(host, rules, onChange, prettyui)
         end)
         return control
     end
-    local originalText, originalButton, originalInput, originalIcon = text, button, input, icon
+    local originalText, originalInput, originalIcon = text, input, icon
     local function text(...) return track(originalText(...)) end
-    local function button(...) return track(originalButton(...)) end
     local function input(...) return track(originalInput(...)) end
     local function icon(...) return track(originalIcon(...)) end
     local function iconButton(parent, x, y, sprite, tooltip, action, toggleable, disabled)
@@ -83,8 +75,18 @@ function view.build(host, rules, onChange, prettyui)
         track(b.root)
         return b
     end
-    local function saveButton(parent, x, y, action)
-        return button(parent, x, y, 48, "Save", action)
+    local function tooltip(target, parent, value)
+        local tip = prettyui.Tooltip.attach(target, parent, value)
+        tooltips[#tooltips + 1] = tip
+        tooltipTargets[target] = tip
+        return tip
+    end
+    local function onSubmit(field, callback)
+        field:Subscribe(ui.Hook.ONCONTENTCHANGED, function(_, reason)
+            if reason == ui.InputFieldActionResult.SUBMIT
+                or reason == ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS then callback() end
+            return false
+        end)
     end
     pageIndex = 5
     text(pages[5].content, 10, 8, 380, "Additional supply checks")
@@ -124,8 +126,10 @@ function view.build(host, rules, onChange, prettyui)
         text(parent, 10, 68, 140, "Low / critical below")
         local low = input(parent, 10, 87, rule.low)
         local critical = input(parent, 80, 87, rule.critical)
-        local status = text(parent, 300, 88, 85, "")
-        saveButton(parent, 227, 39, function()
+        tooltip(low, parent, "Low warning quantity: warns below this value")
+        tooltip(critical, parent, "Critical warning quantity: warns below this value")
+        local status = text(parent, 160, 88, 100, "")
+        local function saveDefaults()
             local candidate = { enabled = true, low = tonumber(low.content),
                 critical = tonumber(critical.content) }
             if not settings.valid(candidate) then
@@ -142,7 +146,9 @@ function view.build(host, rules, onChange, prettyui)
             onChange()
             layoutChanged = true
             status.content = "Saved."
-        end)
+        end
+        onSubmit(low, saveDefaults)
+        onSubmit(critical, saveDefaults)
     end
     currentSection = nil
     pageIndex = 1
@@ -179,6 +185,7 @@ function view.build(host, rules, onChange, prettyui)
         group.count = group.count + 1
         -- PrettyUI's list uses a framed rectangle; use the same treatment for each row.
         local frame = track(ui.Rectangle.new(parent))
+        local frameEntry = controls[pageIndex][#controls[pageIndex]]
         frame:SetPos(0, y); frame:SetSize(0, rowHeight - 4, 1, 0)
         frame.fill, frame.rgba, frame.clickthrough = true, 0x514D45C0, true
         controls[pageIndex][#controls[pageIndex]].background = { x = 0, y = y, width = 0, height = rowHeight - 4 }
@@ -187,10 +194,12 @@ function view.build(host, rules, onChange, prettyui)
         background.fill = true
         controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
         icon(parent, 8, y + 3, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId).clickthrough = true
-        text(parent, 48, y + 8, 90, item.name).clickthrough = true
+        local itemLabel = text(parent, 48, y + 8, 90, item.name)
+        itemLabel:SetSize(-270, 22, 1, 0)
+        itemLabel.clickthrough = true
         local enabled, custom = rule.enabled, rule.custom
         local draft = { tostring(rule.low), tostring(rule.critical) }
-        local fields, mode
+        local fields, mode, overlays
         local function updateRow()
             local shared = rules.styles[settings.style(rule.itemId)]
             local values = custom and draft or { shared.low, shared.critical }
@@ -199,10 +208,11 @@ function view.build(host, rules, onChange, prettyui)
                 field.enabled = custom and enabled
                 field.clickthrough = not field.enabled
             end
+            for _, overlay in ipairs(overlays) do overlay.hidden = custom and enabled end
             mode.content = custom and "Custom" or "Style"
             background.rgba = enabled and 0x23412DE8 or 0x492626E8
         end
-        background:Subscribe(ui.Hook.ONCLICK, function()
+        local function toggleEnabled()
             local old = rules[index].enabled
             rules[index].enabled = not old
             if not settings.save(rules) then
@@ -212,23 +222,53 @@ function view.build(host, rules, onChange, prettyui)
             end
             enabled = rules[index].enabled
             updateRow()
+            layoutChanged = true
             onChange()
             return true
-        end)
-        iconButton(parent, 140, y + 5, "PENCIL", "Switch between style defaults and custom settings", function(_, active)
+        end
+        background:Subscribe(ui.Hook.ONCLICK, toggleEnabled)
+        local pencil = iconButton(parent, -220, y + 5, "PENCIL", "Switch between style defaults and custom settings", function(b, active)
             if custom then
                 for i, field in ipairs(fields) do draft[i] = field.content end
+            end
+            local old = rules[index].custom
+            rules[index].custom = active
+            if not settings.save(rules) then
+                rules[index].custom = old
+                b:SetDisabled(not old)
+                mode.content = "Failed"
+                return
             end
             custom = active
             if custom then for i, field in ipairs(fields) do field.content = draft[i] end end
             updateRow()
+            layoutChanged = true
+            onChange()
         end, true, not custom)
-        mode = text(parent, 168, y + 8, 42, custom and "Custom" or "Style")
+        pencil.root:SetPos(-220, y + 5, 1, 0)
+        mode = text(parent, -190, y + 8, 48, custom and "Custom" or "Style")
+        mode:SetPos(-190, y + 8, 1, 0)
         mode.clickthrough = true
-        local low = input(parent, 210, y + 5, rule.low)
-        local critical = input(parent, 277, y + 5, rule.critical)
+        local low = input(parent, -138, y + 5, rule.low)
+        local critical = input(parent, -71, y + 5, rule.critical)
+        low:SetPos(-138, y + 5, 1, 0)
+        critical:SetPos(-71, y + 5, 1, 0)
         fields = { low, critical }
-        saveButton(parent, 344, y + 5, function()
+        overlays = {}
+        for i, field in ipairs(fields) do
+            local description = i == 1 and "Low warning quantity: warns below this value"
+                or "Critical warning quantity: warns below this value"
+            tooltip(field, parent, description)
+            local overlay = track(ui.Rectangle.new(parent))
+            overlay:SetPos(i == 1 and -138 or -71, y + 5, 1, 0)
+            overlay:SetSize(64, 25)
+            overlay.fill, overlay.rgba = true, 0
+            overlay:Subscribe(ui.Hook.ONCLICK, toggleEnabled)
+            tooltip(overlay, parent, description)
+            controls[pageIndex][#controls[pageIndex]].visibleWhen = function() return not (custom and enabled) end
+            overlays[i] = overlay
+        end
+        local function saveItem()
             if custom then for i, field in ipairs(fields) do draft[i] = field.content end end
             local candidate = { itemId = rule.itemId, enabled = enabled, custom = custom,
                 low = tonumber(draft[1]), critical = tonumber(draft[2]) }
@@ -245,8 +285,10 @@ function view.build(host, rules, onChange, prettyui)
             end
             onChange()
             mode.content = "Saved"
-        end)
-        controls[pageIndex][#controls[pageIndex]].update = updateRow
+        end
+        onSubmit(low, saveItem)
+        onSubmit(critical, saveItem)
+        frameEntry.update = updateRow
         updateRow()
         end
     end
@@ -287,6 +329,7 @@ function view.build(host, rules, onChange, prettyui)
                         or (entry.visibleWhen and not entry.visibleWhen())
                         or top < 0 or top + control.height > height
                     end
+                    if control.hidden and tooltipTargets[control] then tooltipTargets[control]:Hide() end
                 end
             end
         end
@@ -294,6 +337,7 @@ function view.build(host, rules, onChange, prettyui)
     end
     refresh()
     return refresh, function()
+        for _, tip in ipairs(tooltips) do tip:Destroy() end
         for _, b in ipairs(spriteButtons) do b:Destroy() end
         for _, checkbox in ipairs(checkboxes) do
             if checkbox.Destroy then checkbox:Destroy() end
