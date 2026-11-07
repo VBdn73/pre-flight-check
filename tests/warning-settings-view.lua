@@ -151,10 +151,15 @@ assert(find(misc.sections[4].content, "sprite", 8, 43).itemId == 48680)
 local grace = find(misc.sections[4].content, "text", 48, 83)
 assert(grace.content == "Grace of the elves: warning unavailable")
 assert(find(misc.sections[4].content, "sprite", 8, 83).itemId == 44548)
-assert(misc.sections[4].contentHeight == 120 and misc.sections[3].contentHeight == 40)
-assert(find(misc.sections[3].content, "text", 48, 3).content == "Scripture of Ful")
-local fulLow = find(misc.sections[3].content, "input", -171, 5)
-local fulCritical = find(misc.sections[3].content, "input", -104, 5)
+assert(misc.sections[4].contentHeight == 120 and misc.sections[3].contentHeight == 800)
+for i, name in ipairs({ "Scripture of Jas", "Scripture of Wen", "Scripture of Bik",
+    "Scripture of Ful", "Scripture of Amascut", "Scripture of Elidinis" }) do
+    assert(find(misc.sections[3].content, "text", 48, (i - 1) * 40 + 3).content == name)
+end
+assert(find(misc.sections[3].content, "text", 48, 243).content == "Erethdor's grimoire")
+assert(find(misc.sections[3].content, "text", 48, 283).content == "Chaotic grimoire")
+local fulLow = find(misc.sections[3].content, "input", -171, 125)
+local fulCritical = find(misc.sections[3].content, "input", -104, 125)
 assert(fulLow.content == "60" and fulCritical.content == "30")
 fulLow.content = "1441"
 fulLow.hooks.change(fulLow, ui.InputFieldActionResult.SUBMIT)

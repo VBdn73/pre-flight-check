@@ -46,7 +46,7 @@ function settings.style(itemId)
 end
 
 function settings.effective(rules, rule)
-    if rule.itemId == 52494 then return rule end
+    if catalogue[rule.itemId] and catalogue[rule.itemId].godBook then return rule end
     if not rule.custom and rules.styles then
         return rules.styles[settings.style(rule.itemId)]
     end
@@ -58,7 +58,7 @@ local function validInteger(n, min, max)
 end
 
 function settings.valid(rule)
-    if type(rule) == "table" and rule.itemId == 52494 then
+    if type(rule) == "table" and catalogue[rule.itemId] and catalogue[rule.itemId].godBook then
         return type(rule.enabled) == "boolean" and validInteger(rule.low, 0, 1440)
             and validInteger(rule.critical, 0, rule.low)
     end
@@ -96,7 +96,7 @@ local function fromSaved(saved)
         if not settings.valid(candidate) then
             if itemId == 36389 then
                 rule = { enabled = true, custom = true, low = 50000, critical = 10000 }
-            elseif itemId == 52494 then
+            elseif catalogue[itemId] and catalogue[itemId].godBook then
                 rule = { enabled = true, custom = true, low = 60, critical = 30 }
             else
                 rule = defaults()
@@ -104,7 +104,7 @@ local function fromSaved(saved)
         end
         rules[#rules + 1] = { itemId = itemId, enabled = rule.enabled,
             low = rule.low, critical = rule.critical,
-            custom = itemId == 52494 or rule.custom == true }
+            custom = (catalogue[itemId] and catalogue[itemId].godBook) or rule.custom == true }
     end
     return rules
 end

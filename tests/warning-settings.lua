@@ -21,7 +21,7 @@ for _, rule in ipairs(rules) do
     if rule.itemId == 36389 then
         assert(rule.custom and rule.low == 50000 and rule.critical == 10000)
         assert(settings.effective(rules, rule).low == 50000)
-    elseif rule.itemId == 52494 then
+    elseif require("supply-catalogue")[rule.itemId] and require("supply-catalogue")[rule.itemId].godBook then
         assert(rule.custom and rule.low == 60 and rule.critical == 30)
         assert(settings.effective(rules, rule).low == 60)
     else

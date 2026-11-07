@@ -81,11 +81,12 @@ and converted to whole charges by dividing by 3,000. Adding a divine charge incr
 raw value by 9,000,000 and the converted value matched the displayed pack charge; ongoing
 drain and update timing still need in-client verification. An unavailable variable suppresses
 the warning. Thresholds are in pack charges, not divine charge items.
-The Misc → God Books section includes Scripture of Ful with independent thresholds in
+The Misc → God Books section includes Erethdor's and chaotic grimoires, the six scriptures,
+and the six regular and six illuminated god books, each with independent thresholds in
 whole minutes (0–1440), defaulting to 60 low and 30 critical. It checks only when
-Ful is equipped, using `GOD_BOOK_TIMELEFT` at 0.6 seconds per tick; the displayed
-time matched this conversion in a client test. The shared variable's behavior
-when switching books and its update timing still need verification. Unavailable
+the corresponding book is equipped, using `GOD_BOOK_TIMELEFT` at 0.6 seconds per
+tick; the displayed time matched this conversion for Ful in a client test. Other
+books, switching books and update timing still need client verification. Unavailable
 values suppress the warning. An equipped book at zero time can warn.
 The Misc tab's Other section has an optional Sign of life cooldown warning, on by
 default. It reports the shared revive cooldown during the same preset/bank checks,

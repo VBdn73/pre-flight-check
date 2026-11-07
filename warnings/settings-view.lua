@@ -458,7 +458,17 @@ function view.build(host, rules, onChange, prettyui)
         frameEntry.reset = resetRow
         updateRow()
     end
-    for index, rule in ipairs(rules) do
+    local orderedRules = {}
+    local scriptureOrder = { [51814] = 1, [52117] = 2, [52347] = 3,
+        [52494] = 4, [57126] = 5, [57526] = 6, [42787] = 7, [61425] = 8 }
+    for index, rule in ipairs(rules) do orderedRules[#orderedRules + 1] = { index = index, rule = rule } end
+    table.sort(orderedRules, function(a, b)
+        local pa, pb = scriptureOrder[a.rule.itemId] or 100, scriptureOrder[b.rule.itemId] or 100
+        if pa ~= pb then return pa < pb end
+        return a.index < b.index
+    end)
+    for _, entry in ipairs(orderedRules) do
+        local index, rule = entry.index, entry.rule
         local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
         pageIndex = rule.itemId == spikes.ruleId and 4
             or item.category == "rune" and 1 or item.category == "necromancy" and 2
