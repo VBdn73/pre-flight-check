@@ -206,11 +206,21 @@ for _, c in ipairs(controls) do
         "no hover overlay should block the input")
 end
 assert(frame and background and frame.height == 36 and background.height == 34)
-assert(fire.x == 0 and frame.x == 0 and frame.width == 0 and background.width == -2)
-magic.scrollY = magic.sections[1].root.y + fire.y + 20
+ assert(fire.x == 0 and frame.x == 0 and frame.width == 0 and background.width == -2)
+local fireIcon = find(fire, "sprite", 8, 3)
+host.height = magic.sections[1].root.y + fire.y + fireIcon.y + 25 + 42
 refresh()
-assert(not frame.hidden and frame.y == 20 and frame.height == 16)
-assert(not background.hidden and background.y == 20 and background.height == 15)
+assert(not fireIcon.hidden, "partially visible icon at the bottom remains visible")
+host.height = 600
+refresh()
+ magic.scrollY = magic.sections[1].root.y + fire.y + 20
+ refresh()
+assert(not fireIcon.hidden, "partially visible icon at the top remains visible")
+ assert(not frame.hidden and frame.y == 20 and frame.height == 16)
+ assert(not background.hidden and background.y == 20 and background.height == 15)
+magic.scrollY = magic.sections[1].root.y + fire.y + fireIcon.y + fireIcon.height
+refresh()
+assert(fireIcon.hidden, "icon completely above the viewport is hidden")
 magic.scrollY = 0
 refresh()
 assert(frame.y == 0 and frame.height == 36 and background.y == 1 and background.height == 34)

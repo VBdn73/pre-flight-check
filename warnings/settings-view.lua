@@ -65,7 +65,11 @@ function view.build(host, rules, onChange, prettyui)
     local originalText, originalInput, originalIcon = text, input, icon
     local function text(...) return track(originalText(...)) end
     local function input(...) return track(originalInput(...)) end
-    local function icon(...) return track(originalIcon(...)) end
+    local function icon(...)
+        local sprite = track(originalIcon(...))
+        controls[pageIndex][#controls[pageIndex]].viewportClipped = true
+        return sprite
+    end
     local function iconButton(parent, x, y, sprite, tooltip, action, toggleable, disabled)
         local b = prettyui.SpriteButton.new(parent, sprite, action, {
             x = x, y = y, size = 25, tooltip = tooltip,
@@ -355,7 +359,8 @@ function view.build(host, rules, onChange, prettyui)
                     else
                     control.hidden = active ~= i or (section and not section.expanded)
                         or (entry.visibleWhen and not entry.visibleWhen())
-                        or top < 0 or top + control.height > height
+                        or (entry.viewportClipped and (top >= height or top + control.height <= 0))
+                        or (not entry.viewportClipped and (top < 0 or top + control.height > height))
                     end
                     if control.hidden and tooltipTargets[control] then tooltipTargets[control]:Hide() end
                 end
