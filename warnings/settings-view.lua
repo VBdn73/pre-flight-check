@@ -372,6 +372,12 @@ function view.build(host, rules, onChange, prettyui)
         end
         switch:Subscribe(ui.Hook.ONBUTTONPRESSED, function()
             local old = rules[key]
+            if key == "itemDurability" and not old then
+                local ok, permitted = pcall(function() return Plugin.HasPermission(PluginPermissions.chatAccess) end)
+                if not rules.checkOnPreset or not rules.presetChatNotifications or not ok or not permitted then
+                    return true
+                end
+            end
             rules[key] = not old
             if not settings.save(rules) then
                 rules[key] = old
@@ -384,7 +390,9 @@ function view.build(host, rules, onChange, prettyui)
             onChange()
             return true
         end)
-        tooltip(switch, parent, "Enable or disable this warning")
+        tooltip(switch, parent, key == "itemDurability" and
+            "Requires preset checks, preset chat notifications, and chat access permission. Reports charge warnings from preset chat."
+            or "Enable or disable this warning")
         frameEntry.update = updateRow
         resetControls[5][#resetControls[5] + 1] = updateRow
         updateRow()
@@ -393,6 +401,7 @@ function view.build(host, rules, onChange, prettyui)
     end
     addOtherSwitch("signOfLife", "Sign of life cooldown", 29290)
     addOtherSwitch("deathReclaim", "Death reclaim", 39559) -- Death's scythe.
+    addOtherSwitch("itemDurability", "Item durability", 2347)
     local function addUnavailableRows()
         pageIndex = 5
         local group = sections[5]["Other"]
@@ -402,7 +411,6 @@ function view.build(host, rules, onChange, prettyui)
             { id = 48680, name = "Blessed flask" },
             { id = 44548, name = "Grace of the elves" },
             { id = 26295, name = "Scrimshaw" },
-            { id = 2347, name = "Item durability" }, -- Hammer represents equipment repair.
         }) do
             local y = group.count * rowHeight
             group.count = group.count + 1
@@ -690,6 +698,7 @@ function view.build(host, rules, onChange, prettyui)
                 if style == "Misc" then
                     old.signOfLife, rules.signOfLife = rules.signOfLife, defaults.signOfLife
                     old.deathReclaim, rules.deathReclaim = rules.deathReclaim, defaults.deathReclaim
+                    old.itemDurability, rules.itemDurability = rules.itemDurability, defaults.itemDurability
                 end
                 for index, rule in ipairs(rules) do
                     if settings.style(rule.itemId) == style then
@@ -702,7 +711,9 @@ function view.build(host, rules, onChange, prettyui)
                     for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do rules[key] = old[key] end
                 else
                     rules.styles[styleNames[i]] = old.style
-                    if i == 5 then rules.signOfLife, rules.deathReclaim = old.signOfLife, old.deathReclaim end
+                    if i == 5 then
+                        rules.signOfLife, rules.deathReclaim, rules.itemDurability = old.signOfLife, old.deathReclaim, old.itemDurability
+                    end
                     for index, rule in pairs(old) do if type(index) == "number" then rules[index] = rule end end
                 end
                 label.content = "Save failed"

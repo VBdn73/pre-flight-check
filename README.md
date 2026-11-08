@@ -81,7 +81,7 @@ game's preset withdrawal messages into notifications: missing items, insufficien
 quantities, and substituted items. Missing items are critical; the other two are low.
 Messages from a withdrawal are grouped with a pending supply check where possible,
 and still appear if inventory data is unavailable. These notifications require the
-game's withdrawal header and the English message wording shown by the client; chat
+game's English message wording shown by the client; chat
 type, formatting and timing still need in-client verification. Without permission,
 normal supply checks continue to work. This setting requires preset-load checks and is
 turned off when those checks are disabled. After changing the manifest, run `prf` and
@@ -119,12 +119,14 @@ without a quantity threshold. It reads VarPlayer `DIV_LIFE_COOLDOWN`: a proc was
 observed setting it to 30, and a cooldown refresh returned it to 0. If the variable
 is unavailable, the warning is suppressed. The notification displays the reported
 cooldown in minutes.
-The Blessed flask, Grace of the elves, Scrimshaw and Item durability entries in Misc → Other are informational
+Item durability in Misc → Other is off by default. Enable it with preset checks,
+preset chat notifications and chat access to show the item and percentage from the
+game's low-charge messages during preset loading. It does not independently read
+durability or warn on bank close; only game-reported low charges are shown.
+The Blessed flask, Grace of the elves and Scrimshaw entries in Misc → Other are informational
 only. Their warnings are unavailable: the flask's remaining doses are not exposed,
 the Grace's porter charges have not yet been found in the plugin API, and the
-scrimshaw timer cannot reliably be attributed to the equipped item. Per-item durability
-is not exposed by the documented inventory slot API; experimental reads of Cinderbane
-glove slot variables were unavailable in both the backpack and equipment.
+scrimshaw timer cannot reliably be attributed to the equipped item.
 Each tab has always-visible style defaults above the item sections for thresholds. Every item
 starts enabled and uses its style defaults. Use an item's checkbox to toggle
 its warning immediately: green means enabled and red means disabled. Use the

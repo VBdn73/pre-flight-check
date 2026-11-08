@@ -18,6 +18,13 @@ local anticipatedCloseUntil
 local presetSettleDelay = 0.6 -- Allow a server tick for the preset's supply data to arrive.
 local chatAlerts, chatUntil, chatReady = {}, nil, nil
 
+local function beginPresetChat()
+    if canRead and now and rules.checkOnPreset and rules.presetChatNotifications
+        and Plugin.HasPermission(PluginPermissions.chatAccess) then
+        chatAlerts, chatUntil, chatReady = {}, now + 5, nil
+    end
+end
+
 local function showAlerts(alerts)
     if #alerts == 0 then return end
     ribbon.record(alerts, now)
@@ -60,7 +67,9 @@ local function refresh()
         if name then trackedNames[name] = true end
     end
     for _, alert in ipairs(chatAlerts) do
-        if not trackedNames[normaliseName(alert.name)] then alerts[#alerts + 1] = alert end
+        if alert.status and alert.status:match("%%$") or not trackedNames[normaliseName(alert.name)] then
+            alerts[#alerts + 1] = alert
+        end
     end
     chatAlerts, chatReady = {}, nil
     showAlerts(alerts)
@@ -98,7 +107,7 @@ Event.ChatMessage.Subscribe("supplyCheck.presetMessages", function(event)
     local kind, alert = presetMessages.parse(event)
     if kind == "start" then
         chatAlerts, chatUntil, chatReady = {}, now + 5, now + presetSettleDelay
-    elseif kind == "issue" and chatUntil and now < chatUntil then
+    elseif (kind == "issue" or (kind == "charge" and rules.itemDurability)) and chatUntil and now < chatUntil then
         chatAlerts[#chatAlerts + 1] = alert
         chatReady = now + presetSettleDelay
     end
@@ -121,6 +130,7 @@ Event.KeyDown.Subscribe("supplyCheck.presetShortcut", function(event)
         modifiers = (ctrl and 2 or 0) + (shift and 1 or 0) + (alt and 4 or 0)
     end
     if presetTrigger.isShortcut(event, modifiers) then
+        beginPresetChat()
         bankState.markOpen()
         if rules.checkOnBankClose then anticipateClose(true, presetSettleDelay)
         elseif rules.checkOnPreset then scheduleCheck(presetSettleDelay) end
@@ -147,6 +157,7 @@ Event.ContentLayerReady.Subscribe("supplyCheck.content", function(event)
 end)
 Event.MiniMenuEntrySelected.Subscribe("supplyCheck.preset", function(event)
     if not presetTrigger.isLoad(event.entry) then return end
+    beginPresetChat()
     if rules.checkOnBankClose and canRead and now and bankState.isMainPanelOpen() then
         bankState.markOpen()
         anticipateClose(true, presetSettleDelay)

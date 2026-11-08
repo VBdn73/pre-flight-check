@@ -166,6 +166,22 @@ end
 local style = magic.content
 local sign = find(misc.sections[4].content, "check", -30, 7)
 local death = find(misc.sections[4].content, "check", -30, 47)
+local durability = find(misc.sections[4].content, "check", -30, 87)
+PluginPermissions = { chatAccess = 1 }
+local permission = false
+Plugin = { HasPermission = function() return permission end }
+assert(not rules.itemDurability)
+durability.hooks.press()
+assert(not rules.itemDurability)
+rules.presetChatNotifications = true
+durability.hooks.press()
+assert(not rules.itemDurability)
+permission = true
+durability.hooks.press()
+assert(rules.itemDurability and saved.itemDurability and require("warnings/settings").load().itemDurability)
+durability.hooks.press()
+assert(not rules.itemDurability)
+rules.presetChatNotifications = false
 assert(find(misc.sections[4].content, "text", 48, 43).content == "Death reclaim")
 assert(death.value and rules.deathReclaim)
 death.hooks.press()
@@ -173,19 +189,19 @@ assert(not rules.deathReclaim and not saved.deathReclaim)
 assert(not require("warnings/settings").load().deathReclaim)
 death.hooks.press()
 assert(rules.deathReclaim and saved.deathReclaim)
-local flask = find(misc.sections[4].content, "text", 48, 163)
+local flask = find(misc.sections[4].content, "text", 48, 203)
 assert(flask.content == "Blessed flask: warning unavailable")
-assert(find(misc.sections[4].content, "sprite", 8, 163).itemId == 48680)
-local grace = find(misc.sections[4].content, "text", 48, 203)
+assert(find(misc.sections[4].content, "sprite", 8, 203).itemId == 48680)
+local grace = find(misc.sections[4].content, "text", 48, 243)
 assert(grace.content == "Grace of the elves: warning unavailable")
-assert(find(misc.sections[4].content, "sprite", 8, 203).itemId == 44548)
-assert(find(misc.sections[4].content, "text", 48, 243).content == "Scrimshaw: warning unavailable")
-assert(find(misc.sections[4].content, "sprite", 8, 243).itemId == 26295)
-assert(find(misc.sections[4].content, "text", 48, 283).content == "Item durability: warning unavailable")
-assert(find(misc.sections[4].content, "sprite", 8, 283).itemId == 2347)
+assert(find(misc.sections[4].content, "sprite", 8, 243).itemId == 44548)
+assert(find(misc.sections[4].content, "text", 48, 283).content == "Scrimshaw: warning unavailable")
+assert(find(misc.sections[4].content, "sprite", 8, 283).itemId == 26295)
+assert(find(misc.sections[4].content, "text", 48, 83).content == "Item durability")
+assert(find(misc.sections[4].content, "sprite", 8, 83).itemId == 2347)
 assert(misc.sections[4].contentHeight == 320 and misc.sections[3].contentHeight == 840)
-assert(find(misc.sections[4].content, "sprite", 8, 83).itemId == 22370)
-assert(find(misc.sections[4].content, "sprite", 8, 123).itemId == 22371)
+assert(find(misc.sections[4].content, "sprite", 8, 123).itemId == 22370)
+assert(find(misc.sections[4].content, "sprite", 8, 163).itemId == 22371)
 assert(find(misc.sections[3].content, "text", 8, 8).content
     == "Only equipped books are checked; backpack timers are unavailable.")
 for i, name in ipairs({ "Scripture of Jas", "Scripture of Wen", "Scripture of Bik",

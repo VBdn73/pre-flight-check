@@ -253,6 +253,23 @@ chat("Your preset is being withdrawn. Please see below for any issues whilst try
 chat("Item could not be found: Powder of protection", 109)
 time(67)
 assert(#alerts == 18, "chat notifications require preset checks")
+rules.checkOnPreset = true
+rules.itemDurability = false
+time(68)
+load()
+chat("Your Test platelegs has 3.9% of its charges left.", 109)
+time(68.7)
+assert(#alerts == 18, "durability warnings default off")
+rules.itemDurability = true
+time(70)
+load()
+chat("Your Test platelegs has 3.9% of its charges left.", 109)
+time(70.7)
+assert(#alerts == 19 and alerts[19][1].name == "Test platelegs" and alerts[19][1].status == "3.9%", "charge warning is displayed without a withdrawal header")
+time(76)
+chat("Your Test platelegs has 2% of its charges left.", 109)
+time(77)
+assert(#alerts == 19, "unrelated charge messages are ignored")
 callbacks.state({ newState = 40 })
 PluginShutdown()
 print("Warning integration tests passed.")
