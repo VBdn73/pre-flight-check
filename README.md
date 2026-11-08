@@ -13,7 +13,7 @@ Get warnings about low supplies and other preparation issues when loading a bank
 
 1. Install **PrettyUI** (mod.io ID `6398181`), the required dependency, and enable the plugin.
 2. Open the plugin settings. Preset-load checks are on by default; enable bank-close checks in **General** if wanted.
-3. Use the combat-style tabs to enable or disable warnings and set default or custom low and critical thresholds. Quantity warnings trigger strictly below the threshold, but not at zero.
+3. Use the combat-style tabs to enable or disable warnings and set default or custom low and critical thresholds. Quantity warnings trigger strictly below the threshold; zero counts are ignored except for Invention charge and equipped god book time.
 4. Load a preset or close the bank to check. Drag the popup heading to move it, choose **Keep open** while resupplying, or **Close** to dismiss it. The ribbon shows the most recent batch.
 
 To receive preset withdrawal messages, enable **Preset chat notifications** in General and grant optional chat access. For game-reported low durability messages, also enable **Item durability** under Misc → Other.

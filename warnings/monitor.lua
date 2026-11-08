@@ -44,10 +44,11 @@ function monitor.new(rules)
                     + (snapshot.equipment.counts[rule.itemId] or 0)
                 if item.nexus then count = count + (snapshot.nexus.counts[rule.itemId] or 0) end
             end
-            -- Ordinary supplies are only tracked when carried; an equipped book can
-            -- still need a warning at zero ticks. Book thresholds are in minutes.
+            -- Ordinary supplies are only tracked when carried; equipped books and
+            -- the global Invention charge pool can still need warnings at zero.
+            -- Book thresholds are in minutes.
             local timed = item.godBook
-            if rule.enabled and count ~= nil and (count > 0 or timed) then
+            if rule.enabled and count ~= nil and (count > 0 or timed or (item.inventionCharge and count == 0)) then
                 local level
                 local comparable = timed and count * 0.6 or count
                 local scale = timed and 60 or 1

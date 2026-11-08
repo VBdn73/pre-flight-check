@@ -90,7 +90,14 @@ snapshot.equipment.counts = {}
 assert(bombs.update(snapshot)[1].count == 10 and bombs.update(snapshot)[1].level == "critical")
 snapshot.backpack.available = false
 assert(#bombs.update(snapshot) == 0)
-local charge = monitor.new({ { itemId = 36389, enabled = true, low = 1000, critical = 250 } })
+local chargeRule = { itemId = 36389, enabled = true, low = 1000, critical = 250 }
+local charge = monitor.new({ chargeRule })
+snapshot.inventionCharge = 0
+local emptyCharge = charge.update(snapshot)
+assert(#emptyCharge == 1 and emptyCharge[1].count == 0 and emptyCharge[1].level == "critical")
+chargeRule.enabled = false
+assert(#charge.update(snapshot) == 0, "disabled charge warning stays silent at zero")
+chargeRule.enabled = true
 snapshot.inventionCharge = 249
 assert(charge.update(snapshot)[1].count == 249 and charge.update(snapshot)[1].level == "critical")
 snapshot.inventionCharge = 250
