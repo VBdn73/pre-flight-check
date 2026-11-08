@@ -101,18 +101,34 @@ function view.build(host, rules, onChange, prettyui)
     end
     pageIndex = 6
     text(pages[6].content, 10, 8, 380, "Additional supply checks")
+    local chatCheckbox
+    local function updateChatToggle()
+        if not chatCheckbox then return end
+        chatCheckbox:SetSelected("presetChatNotifications", rules.presetChatNotifications, false)
+        chatCheckbox:SetDisabled(not rules.checkOnPreset)
+    end
     local function triggerToggle(y, key, label)
         local checkbox
         checkbox = prettyui.CheckboxButton.new(pages[6].content, {
             { text = label, value = key, selected = rules[key] },
         }, { width = 300, onChange = function(_, _, _, selected)
             local old = rules[key]
+            local oldChat = rules.presetChatNotifications
+            if key == "presetChatNotifications" and not rules.checkOnPreset then
+                checkbox:SetSelected(key, false, false)
+                return
+            end
             rules[key] = selected
+            if key == "checkOnPreset" and not selected then rules.presetChatNotifications = false end
             if not settings.save(rules) then
                 rules[key] = old
+                rules.presetChatNotifications = oldChat
                 checkbox:SetSelected(key, old, false)
                 print("[supply-check] Could not save check setting.")
+            else
+                onChange()
             end
+            updateChatToggle()
         end })
         checkbox.root:SetPos(10, y)
         checkbox.items[1].label.font = id.Font.MUSEO_SANS_11PT_REGULAR
@@ -120,15 +136,21 @@ function view.build(host, rules, onChange, prettyui)
         track(checkbox.root)
         resetControls[6][#resetControls[6] + 1] = function()
             checkbox:SetSelected(key, rules[key], false)
+            updateChatToggle()
         end
+        return checkbox
     end
     triggerToggle(40, "checkOnPreset", "Check on preset load")
-    triggerToggle(75, "checkOnBankClose", "Check on bank close")
-    local durationLabel = text(pages[6].content, 10, 115, 190, "Notification duration (seconds)")
+    chatCheckbox = triggerToggle(75, "presetChatNotifications", "Preset chat notifications")
+    chatCheckbox.root:SetPos(25, 75)
+    tooltip(chatCheckbox.root, pages[6].content, "Read preset withdrawal messages for notifications. Requires chat access permission and preset checks.")
+    updateChatToggle()
+    triggerToggle(110, "checkOnBankClose", "Check on bank close")
+    local durationLabel = text(pages[6].content, 10, 150, 190, "Notification duration (seconds)")
     durationLabel:SetSize(190, 25)
     durationLabel.alignVertical = ui.AlignMode.CENTRE
-    local duration = input(pages[6].content, 205, 115, rules.popupDuration)
-    local durationStatus = text(pages[6].content, 274, 115, 110, "")
+    local duration = input(pages[6].content, 205, 150, rules.popupDuration)
+    local durationStatus = text(pages[6].content, 274, 150, 110, "")
     durationStatus:SetSize(110, 25)
     durationStatus.alignVertical = ui.AlignMode.CENTRE
     tooltip(duration, pages[6].content, "How long notifications remain visible, from 1 to 3600 seconds")
@@ -151,11 +173,11 @@ function view.build(host, rules, onChange, prettyui)
         duration.content = tostring(rules.popupDuration)
         durationStatus.content = ""
     end
-    local rowsLabel = text(pages[6].content, 10, 150, 190, "Visible notifications")
+    local rowsLabel = text(pages[6].content, 10, 185, 190, "Visible notifications")
     rowsLabel:SetSize(190, 25)
     rowsLabel.alignVertical = ui.AlignMode.CENTRE
-    local rows = input(pages[6].content, 205, 150, rules.popupRows)
-    local rowsStatus = text(pages[6].content, 274, 150, 110, "")
+    local rows = input(pages[6].content, 205, 185, rules.popupRows)
+    local rowsStatus = text(pages[6].content, 274, 185, 110, "")
     rowsStatus:SetSize(110, 25)
     rowsStatus.alignVertical = ui.AlignMode.CENTRE
     tooltip(rows, pages[6].content, "Maximum visible notifications in the popup, from 1 to 20")
@@ -230,9 +252,9 @@ function view.build(host, rules, onChange, prettyui)
             status.content = ""
         end
     end
-    colourControl(185, "lowColour", "Low warning colour", "#FF9429")
-    colourControl(220, "criticalColour", "Critical warning colour", "#F24033")
-    pages[6]:SetContentHeight(255)
+    colourControl(220, "lowColour", "Low warning colour", "#FF9429")
+    colourControl(255, "criticalColour", "Critical warning colour", "#F24033")
+    pages[6]:SetContentHeight(290)
     pageIndex = 1
     text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
     local sections = { {}, {}, {}, {}, {} }
@@ -659,7 +681,7 @@ function view.build(host, rules, onChange, prettyui)
             local old = {}
             if i == 6 then
                 dismissPicker()
-                for _, key in ipairs({ "checkOnPreset", "checkOnBankClose", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do
+                for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do
                     old[key], rules[key] = rules[key], defaults[key]
                 end
             else
@@ -677,7 +699,7 @@ function view.build(host, rules, onChange, prettyui)
             end
             if not settings.save(rules) then
                 if i == 6 then
-                    for _, key in ipairs({ "checkOnPreset", "checkOnBankClose", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do rules[key] = old[key] end
+                    for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do rules[key] = old[key] end
                 else
                     rules.styles[styleNames[i]] = old.style
                     if i == 5 then rules.signOfLife, rules.deathReclaim = old.signOfLife, old.deathReclaim end

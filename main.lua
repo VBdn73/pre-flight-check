@@ -36,6 +36,9 @@ local function anticipateClose(alwaysCheck, delay)
 end
 
 local function refresh()
+    if not rules.checkOnPreset or not rules.presetChatNotifications then
+        chatAlerts, chatUntil, chatReady = {}, nil, nil
+    end
     local snapshot = canRead and reader.read() or {
         backpack = { available = false }, equipment = { available = false },
     }
@@ -66,6 +69,9 @@ end
 Event.ServerLogic.Subscribe("supplyCheck.refresh", refresh)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
     now = event.logicTick / 50
+    if not rules.checkOnPreset or not rules.presetChatNotifications then
+        chatAlerts, chatUntil, chatReady = {}, nil, nil
+    end
     if chatReady and now >= chatReady then
         refresh()
         if chatReady then
@@ -87,7 +93,7 @@ Event.Logic.Subscribe("supplyCheck.clock", function(event)
     end
 end)
 Event.ChatMessage.Subscribe("supplyCheck.presetMessages", function(event)
-    if not canRead or not now or not rules.checkOnPreset
+    if not canRead or not now or not rules.checkOnPreset or not rules.presetChatNotifications
         or not Plugin.HasPermission(PluginPermissions.chatAccess) then return end
     local kind, alert = presetMessages.parse(event)
     if kind == "start" then
@@ -125,6 +131,9 @@ Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
     refreshSettings, destroySettings = nil, nil
     local ok, result, destroy = pcall(settingsView.build, event.component, rules, function()
         popup.clear()
+        if not rules.checkOnPreset or not rules.presetChatNotifications then
+            chatAlerts, chatUntil, chatReady = {}, nil, nil
+        end
     end, prettyUILibrary)
     if ok then
         refreshSettings, destroySettings = result, destroy

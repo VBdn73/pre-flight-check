@@ -195,6 +195,12 @@ callbacks.server()
 assert(#alerts == 15, "disabled death reclaim warning stays silent")
 rules.checkOnPreset = true
 local function chat(text, kind) callbacks.chat({ chatMessage = text, chatType = kind or 0 }) end
+time(57)
+chat("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...", 109)
+chat("Item could not be found: Powder of protection", 109)
+time(57.7)
+assert(#alerts == 15, "chat notifications are opt-in")
+rules.presetChatNotifications = true
 time(58)
 chat("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...", 109)
 chat("Item could not be found: Powder of protection", 109)
@@ -235,6 +241,18 @@ chat("Your preset is being withdrawn. Please see below for any issues whilst try
 chat("Item could not be found: Law rune", 109)
 time(63.7)
 assert(#alerts == 18 and #alerts[18] == 1 and alerts[18][1].status == "MISSING", "missing warning remains when no quantity alert is available")
+time(65)
+chat("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...", 109)
+chat("Item could not be found: Powder of protection", 109)
+rules.presetChatNotifications = false
+time(66)
+assert(#alerts == 18, "disabling chat notifications discards pending messages")
+rules.presetChatNotifications = true
+rules.checkOnPreset = false
+chat("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...", 109)
+chat("Item could not be found: Powder of protection", 109)
+time(67)
+assert(#alerts == 18, "chat notifications require preset checks")
 callbacks.state({ newState = 40 })
 PluginShutdown()
 print("Warning integration tests passed.")

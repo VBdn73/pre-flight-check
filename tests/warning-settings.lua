@@ -6,6 +6,7 @@ PersistentDB = {
 local settings = require("warnings/settings")
 local rules = settings.load()
 assert(not rules.checkOnBankClose and rules.checkOnPreset and settings.defaults().checkOnPreset)
+assert(not rules.presetChatNotifications and not settings.defaults().presetChatNotifications)
 assert(rules.signOfLife and settings.defaults().signOfLife)
 assert(rules.deathReclaim and settings.defaults().deathReclaim)
 assert(rules.popupDuration == 4)
@@ -13,6 +14,7 @@ assert(rules.popupRows == 8)
 rules.popupDuration = 12
 rules.popupRows = 10
 rules.checkOnBankClose, rules.checkOnPreset = true, true
+rules.presetChatNotifications = true
 local seen = {}
 for _, rule in ipairs(rules) do seen[rule.itemId] = (seen[rule.itemId] or 0) + 1 end
 for itemId, item in pairs(require("supply-catalogue")) do
@@ -46,6 +48,7 @@ rules.styles.Magic.low = 5000
 rules[1].custom, rules[1].low, rules[1].critical = true, 70, 10
 rules[2].enabled = false
 assert(settings.save(rules))
+assert(settings.load().presetChatNotifications, "chat notification choice persists")
 saved["26295"] = { enabled = true, custom = true, low = 60, critical = 30 }
 for _, rule in ipairs(settings.load()) do
     assert(rule.itemId ~= 26295, "saved scrimshaw rules must not be loaded")
@@ -54,6 +57,7 @@ saved.signOfLife = false
 assert(not settings.load().signOfLife, "explicitly disabled sign warning remains disabled")
 saved.checkOnPreset = false
 assert(not settings.load().checkOnPreset, "explicitly disabled preset check remains disabled")
+assert(not settings.load().presetChatNotifications, "chat notifications cannot load enabled without preset checks")
 saved.checkOnPreset = nil
 assert(settings.load().checkOnPreset, "missing preset setting uses the default")
 saved.signOfLife = nil

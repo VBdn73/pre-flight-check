@@ -57,7 +57,10 @@ end }, CheckboxButton = { new = function(parent, entries, options)
         item.selected = selected
         if notify then options.onChange(self, key, item, selected) end
     end
-    root.hooks.press = function() result:SetSelected(entries[1].value, not item.selected, true) end
+    function result:SetDisabled(disabled) self.disabled = disabled end
+    root.hooks.press = function()
+        if not result.disabled then result:SetSelected(entries[1].value, not item.selected, true) end
+    end
     function result:Destroy() self.destroyed = true end
     root.checkbox = result
     item.label.content = entries[1].text
@@ -211,14 +214,27 @@ assert(not require("warnings/settings").load().signOfLife)
 sign.hooks.press()
 assert(signBackground.rgba == 0x23412DE8 and sign.value)
 local preset = find(general.content, "checkbox", 10, 40)
-local bank = find(general.content, "checkbox", 10, 75)
-local duration = find(general.content, "input", 205, 115)
-local durationStatus = find(general.content, "text", 274, 115)
-local rows = find(general.content, "input", 205, 150)
-local rowsStatus = find(general.content, "text", 274, 150)
+local presetChat = find(general.content, "checkbox", 25, 75)
+assert(not rules.presetChatNotifications)
+assert(presetChat.checkbox.items[1].label.content == "Preset chat notifications" and not presetChat.checkbox.disabled)
+presetChat.hooks.press()
+assert(rules.presetChatNotifications and saved.presetChatNotifications)
+preset.hooks.press()
+assert(not rules.checkOnPreset and not rules.presetChatNotifications and not saved.presetChatNotifications)
+assert(presetChat.checkbox.disabled and presetChat.checkbox.items[1].label.content == "Preset chat notifications")
+presetChat.hooks.press()
+assert(not rules.presetChatNotifications and not presetChat.checkbox.items[1].selected)
+preset.hooks.press()
+assert(rules.checkOnPreset and not rules.presetChatNotifications)
+assert(not presetChat.checkbox.disabled)
+local bank = find(general.content, "checkbox", 10, 110)
+local duration = find(general.content, "input", 205, 150)
+local durationStatus = find(general.content, "text", 274, 150)
+local rows = find(general.content, "input", 205, 185)
+local rowsStatus = find(general.content, "text", 274, 185)
 local lowColour, criticalColour = table.unpack(pickers)
-assert(lowColour.root == find(general.content, "colourPicker", 205, 185))
-assert(criticalColour.root == find(general.content, "colourPicker", 205, 220))
+assert(lowColour.root == find(general.content, "colourPicker", 205, 220))
+assert(criticalColour.root == find(general.content, "colourPicker", 205, 255))
 assert(lowColour.value == 0xFF9429FF and criticalColour.value == 0xF24033FF)
 assert(lowColour.swatch.width == 56 and lowColour.swatch.height == 17)
 assert(criticalColour.swatchFrame.width == 58 and criticalColour.swatchFrame.height == 19)
@@ -235,7 +251,7 @@ assert(rules.lowColour == "#123456" and saved.lowColour == "#123456")
 assert(require("warnings/settings").load().lowColour == "#123456")
 PersistentDB.SetStructuredData = function() return false end
 criticalColour:SetValue(0xABCDEFFF)
-assert(rules.criticalColour == nil and find(general.content, "text", 274, 220).content == "Save failed")
+assert(rules.criticalColour == nil and find(general.content, "text", 274, 255).content == "Save failed")
 assert(criticalColour.value == 0xF24033FF)
 PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
 criticalColour:SetValue(0xABCDEFFF)
@@ -290,7 +306,7 @@ refresh, destroy = require("warnings/settings-view").build(host, rules, function
 general, magic, necro, ranged, melee, misc = table.unpack(tabs.pages)
 style = magic.content
 preset = find(general.content, "checkbox", 10, 40)
-bank = find(general.content, "checkbox", 10, 75)
+bank = find(general.content, "checkbox", 10, 110)
 assert(preset.checkbox.items[1].selected and bank.checkbox.items[1].selected, "reopening settings shows enabled checks")
 tabs.active = 2
 refresh()
@@ -559,7 +575,7 @@ local generalReset = find(general.content, "button", -160, 5)
 generalReset.hooks.press(); generalReset.hooks.press()
 assert(rules.checkOnPreset and not rules.checkOnBankClose and rules.popupDuration == 4)
 assert(preset.checkbox.items[1].selected and not bank.checkbox.items[1].selected)
-assert(find(general.content, "input", 205, 115).content == "4")
+assert(find(general.content, "input", 205, 150).content == "4")
 local settings = require("warnings/settings")
 for _, styleName in ipairs({ "Necromancy", "Ranged", "Melee", "Misc" }) do
     rules.styles[styleName].low = 2222
