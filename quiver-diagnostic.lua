@@ -41,7 +41,7 @@ end
 function probe.update()
     local result = probe.read()
     if result ~= previous then
-        print("[supply-check] Quiver field probe (experimental):\n" .. result)
+        print("[pre-flight-check] Quiver field probe (experimental):\n" .. result)
         previous = result
     end
 end

@@ -1,4 +1,4 @@
-# Supply Check
+# Pre flight check
 
 A planned RuneScape plugin for warning when supplies such as runes or ammunition
 are running low, potentially when entering a boss arena or loading a preset.
@@ -15,8 +15,9 @@ plugin is reloaded. The clock follows the in-game clock's server/local setting;
 set it to server time for game time. If the clock cannot be read, it shows unavailable.
 
 **Development limitation:** In testing, the client disabled this local plugin
-when returning to the lobby. After logging in, use `pon supply-check` to enable
-it again. Whether an installed plugin behaves the same way is not yet verified.
+when returning to the lobby. After logging in, use `pon pre-flight-check` to enable
+it again (assuming the local plugin directory is named `pre-flight-check`). Whether
+an installed plugin behaves the same way is not yet verified.
 
 `inventory-reader.lua` provides separate backpack and equipment snapshots for
 future features. Each source has `available`; when true, `counts` maps item IDs

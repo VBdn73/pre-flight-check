@@ -154,7 +154,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
         title:SetPos(10, 6); title:SetSize(225, 24)
         title.font = id.Font.MUSEO_SANS_15PT_REGULAR
         title.clickthrough = true
-        title.content = "Supply Check (" .. #alerts .. ")"
+        title.content = "Pre flight check (" .. #alerts .. ")"
         dragHandle = ui.Layer.new(parent)
         dragHandle.clickthrough = false
         local function placeHandle()
@@ -215,7 +215,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
             if drag and drag.moved then
                 local position = { x = drag.lastX, y = drag.lastY }
                 local ok, saved = pcall(function() return PersistentDB:SetStructuredData(positionKey, position) end)
-                if not ok or saved ~= true then print("[supply-check] Could not save popup position") end
+                if not ok or saved ~= true then print("[pre-flight-check] Could not save popup position") end
             end
             drag = nil
             placeHandle()
@@ -306,7 +306,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
     end)
     if not ok then
         popup.clear()
-        print("[supply-check] Warning popup failed: " .. tostring(err))
+        print("[pre-flight-check] Warning popup failed: " .. tostring(err))
         return false
     end
     return true

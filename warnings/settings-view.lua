@@ -127,7 +127,7 @@ function view.build(host, rules, onChange, prettyui)
                 rules[key] = old
                 rules.presetChatNotifications = oldChat
                 checkbox:SetSelected(key, old, false)
-                print("[supply-check] Could not save check setting.")
+                print("[pre-flight-check] Could not save check setting.")
             else
                 onChange()
             end
@@ -392,7 +392,7 @@ function view.build(host, rules, onChange, prettyui)
             if not settings.save(rules) then
                 rules[key] = old
                 updateRow()
-                print("[supply-check] Could not save " .. name .. " setting.")
+                print("[pre-flight-check] Could not save " .. name .. " setting.")
                 return true
             end
             updateRow()

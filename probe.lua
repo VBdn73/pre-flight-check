@@ -35,7 +35,7 @@ function probe.update()
     for _, name in ipairs({ "INV", "WORN" }) do
         local result = describe(name)
         if result ~= previous[name] then
-            print("[supply-check] " .. name .. ": " .. result)
+            print("[pre-flight-check] " .. name .. ": " .. result)
             previous[name] = result
         end
     end

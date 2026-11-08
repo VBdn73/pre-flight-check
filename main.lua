@@ -148,12 +148,12 @@ Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
     if ok then
         refreshSettings, destroySettings = result, destroy
     else
-        print("[supply-check] Settings creation failed: " .. tostring(result))
+        print("[pre-flight-check] Settings creation failed: " .. tostring(result))
     end
 end)
 Event.ContentLayerReady.Subscribe("supplyCheck.content", function(event)
     local ok, err = pcall(ribbon.open, event.component, prettyUILibrary, rules)
-    if not ok then print("[supply-check] Ribbon creation failed: " .. tostring(err)) end
+    if not ok then print("[pre-flight-check] Ribbon creation failed: " .. tostring(err)) end
 end)
 Event.MiniMenuEntrySelected.Subscribe("supplyCheck.preset", function(event)
     if not presetTrigger.isLoad(event.entry) then return end

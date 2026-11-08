@@ -43,7 +43,7 @@ assert(defaultCritical[1] == 0.95 and defaultCritical[2] == 0.25)
 assert(popup.show({ { name = "Law rune", count = 10, level = "critical" },
     { name = "Blood rune", count = 50, level = "low" } }, 100))
 local root, title, red, redAccent, critical, criticalSeverity, orange, orangeAccent, low, lowSeverity = table.unpack(components)
-assert(title.content == "Supply Check (2)")
+assert(title.content == "Pre flight check (2)")
 assert(root.clickthrough == false)
 assert(title.clickthrough and not handles[1].clickthrough)
 for i = 3, 10 do assert(components[i].clickthrough) end
@@ -171,7 +171,7 @@ assert(components[start + 1].size[2] == 402 and #views == 0, "ten rows need no s
 start = #components
 assert(popup.show(alerts, 200, 4, prettyui, 10))
 local view = views[1]
-assert(components[start + 2].content == "Supply Check (11)", "title counts all alerts, not just visible rows")
+assert(components[start + 2].content == "Pre flight check (11)", "title counts all alerts, not just visible rows")
 assert(components[start + 1].size[2] == 402 and view.height == 360)
 assert(view.scrollbarVisible and view.contentHeight == 396)
 assert(components[start + 5].parent == view.content)
