@@ -1,4 +1,4 @@
-local watcher = require("bank-state").new()
+local watcher = require("bank/state").new()
 local open, visible, restricted = false, true, false
 var = { VarPlayer = { BANK_ACTIVE = { value = 1 } } }
 ui = { Interfaces = {

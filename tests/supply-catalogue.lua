@@ -1,4 +1,4 @@
-local catalogue = require("supply-catalogue")
+local catalogue = require("supplies/catalogue")
 assert(catalogue[563].name == "Law rune" and catalogue[563].category == "rune")
 assert(catalogue[565].name == "Blood rune" and catalogue[565].category == "rune")
 assert(catalogue[52299].name == "Deathspore arrows" and catalogue[52299].category == "ammunition")

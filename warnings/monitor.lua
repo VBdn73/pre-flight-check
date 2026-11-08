@@ -1,5 +1,5 @@
-local catalogue = require("supply-catalogue")
-local spikes = require("armour-spikes")
+local catalogue = require("supplies/catalogue")
+local spikes = require("supplies/armour-spikes")
 local settings = require("warnings/settings")
 local monitor = {}
 

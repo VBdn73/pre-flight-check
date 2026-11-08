@@ -1,4 +1,4 @@
-local presetTest = require("preset-trigger")
+local presetTest = require("bank/preset-trigger")
 assert(presetTest.isShortcut({ gameKey = 16, modifiers = 0, isRepeat = false }))
 assert(presetTest.isShortcut({ gameKey = 1, modifiers = 0, isRepeat = false }))
 assert(presetTest.isShortcut({ gameKey = 3, modifiers = 0, isRepeat = false }))

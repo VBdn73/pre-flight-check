@@ -1,7 +1,7 @@
 -- Read independent, fresh snapshots; never retain an Inventory proxy across calls.
 local reader = {}
-local catalogue = require("supply-catalogue")
-local spikes = require("armour-spikes")
+local catalogue = require("supplies/catalogue")
+local spikes = require("supplies/armour-spikes")
 
 local function integer(value, minimum)
     return type(value) == "number" and value >= minimum
@@ -50,52 +50,47 @@ local function readSource(name)
     return { available = true, counts = result }
 end
 
+local function readNonnegativeVar(group, name)
+    local ok, value = pcall(function() return var[group][name].value end)
+    if ok and integer(value, 0) then return value end
+end
+
+-- Only read a container when exactly one corresponding item is carried.
+local function readCarriedContainer(backpack, equipment, ids, inventoryId)
+    if not backpack.available or not equipment.available then return { available = false } end
+    local count = 0
+    for _, id in ipairs(ids) do
+        count = count + (backpack.counts[id] or 0) + (equipment.counts[id] or 0)
+    end
+    if count == 0 then return { available = true, counts = {} } end
+    if count == 1 then return readSource(inventoryId) end
+    return { available = false }
+end
+
 function reader.read()
     local runes = {}
-    local charge
-    local signOfLifeCooldown
     local deathReclaim = false
     local deathKnown = true
     for _, name in ipairs({ "GRAVESTONE_TIMER_INV_SLOTS", "GRAVESTONE_TIMER_WORN_SLOTS",
         "GRAVESTONE_TIMER_OVERFLOW_SLOTS" }) do
-        local ok, value = pcall(function() return var.VarPlayer[name].value end)
-        if not ok or not integer(value, 0) then deathKnown = false
+        local value = readNonnegativeVar("VarPlayer", name)
+        if value == nil then deathKnown = false
         elseif value > 0 then deathReclaim = true end
     end
     if not deathReclaim and not deathKnown then deathReclaim = nil end
-    local bookOk, bookTicks = pcall(function() return var.VarPlayer.GOD_BOOK_TIMELEFT.value end)
-    if not bookOk or not integer(bookTicks, 0) then bookTicks = nil end
-    local cooldownOk, cooldown = pcall(function() return var.VarPlayer.DIV_LIFE_COOLDOWN.value end)
-    if cooldownOk and integer(cooldown, 0) then signOfLifeCooldown = cooldown end
-    local ok, raw = pcall(function() return var.VarPlayer.INVENT_CHARGE.value end)
-    if ok and integer(raw, 0) then charge = math.floor(raw / 3000) end
+    local bookTicks = readNonnegativeVar("VarPlayer", "GOD_BOOK_TIMELEFT")
+    local signOfLifeCooldown = readNonnegativeVar("VarPlayer", "DIV_LIFE_COOLDOWN")
+    local raw = readNonnegativeVar("VarPlayer", "INVENT_CHARGE")
+    local charge = raw and math.floor(raw / 3000)
     for itemId, item in pairs(catalogue) do
         if item.combatVar then
-            local ok, count = pcall(function() return var.VarClient[item.combatVar].value end)
-            if ok and integer(count, 0) then runes[itemId] = count end
+            runes[itemId] = readNonnegativeVar("VarClient", item.combatVar)
         end
     end
     local backpack, equipment = readSource("INV"), readSource("WORN")
-    local nexus, spikeHarness = { available = false }, { available = false }
-    if backpack.available and equipment.available then
-        local count = 0
-        -- Include uncharged variants conservatively; their contents are not assumed empty.
-        for _, id in ipairs({ 56141, 56142, 56143, 59358, 59359, 59360 }) do
-            count = count + (backpack.counts[id] or 0) + (equipment.counts[id] or 0)
-        end
-        if count == 0 then
-            nexus = { available = true, counts = {} }
-        elseif count == 1 then
-            nexus = readSource(953)
-        end
-        local harnessCount = (backpack.counts[spikes.harnessId] or 0)
-            + (equipment.counts[spikes.harnessId] or 0)
-        if harnessCount == 0 then
-            spikeHarness = { available = true, counts = {} }
-        elseif harnessCount == 1 then
-            spikeHarness = readSource(974)
-        end
-    end
+    -- Include uncharged nexus variants; their contents are not assumed empty.
+    local nexus = readCarriedContainer(backpack, equipment, { 56141, 56142, 56143, 59358, 59359, 59360 }, 953)
+    local spikeHarness = readCarriedContainer(backpack, equipment, { spikes.harnessId }, 974)
     return { backpack = backpack, equipment = equipment, runeCounts = runes, nexus = nexus,
         spikeHarness = spikeHarness, inventionCharge = charge, signOfLifeCooldown = signOfLifeCooldown,
         godBookTicks = bookTicks, deathReclaim = deathReclaim }

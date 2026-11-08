@@ -4,6 +4,7 @@ A planned RuneScape plugin for warning when supplies such as runes or ammunition
 are running low, potentially when entering a boss arena or loading a preset.
 
 Configure supply warnings in the plugin settings; alerts appear as popups.
+
 Popup headings show the total issue count. Popups show up to 8 notifications at once by default, with a scrollbar for longer
 lists or when the available screen height is smaller. Set the visible notification
 limit (1–20) in General settings. Long notification labels wrap onto additional lines;
@@ -19,7 +20,15 @@ when returning to the lobby. After logging in, use `pon pre-flight-check` to ena
 it again (assuming the local plugin directory is named `pre-flight-check`). Whether
 an installed plugin behaves the same way is not yet verified.
 
-`inventory-reader.lua` provides separate backpack and equipment snapshots for
+## Code layout
+
+`main.lua` connects client events to the modules in `bank/`, `supplies/`, and
+`warnings/`. Optional development probes are in `diagnostics/`; mock tests are in
+`tests/`. For a release, include `main.lua`, `plugin.json`, and the three runtime
+module directories at the ZIP root. Development probes and tests are not required
+at runtime. See `../SUBMISSION.md` for the release checklist.
+
+`supplies/inventory-reader.lua` provides separate backpack and equipment snapshots for
 future features. Each source has `available`; when true, `counts` maps item IDs
 to quantities. Missing or malformed slot data makes that source unavailable.
 Run the mock tests with `lua tests/inventory-reader.lua`.
@@ -38,14 +47,14 @@ need verification. Nexus contents are included in necromancy warnings.
 
 ## Quiver diagnostic
 
-The optional `quiver-diagnostic.lua` probe looks for Pernix's quiver in
+The optional `diagnostics/quiver.lua` probe looks for Pernix's quiver in
 the backpack and worn inventory and attempts to read undocumented slot fields
 `legacyvarobj` and `objvar_1` directly or through `slot.vars`. `not exposed`
 means the binding did not yield a number, not that the quiver is empty. Compare
 with `!listinv inv` or `!listinv worn` on the development server. These fields
 are experimental and never used for counts. Mock test: `lua tests/quiver-diagnostic.lua`.
 
-`supply-catalogue.lua` lists item IDs, names and combat-variable bindings.
+`supplies/catalogue.lua` lists item IDs, names and combat-variable bindings.
 
 ## Death reclaim warning
 

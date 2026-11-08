@@ -4,6 +4,7 @@ PersistentDB = {
     SetStructuredData = function(_, key, value) saved = value; return true end,
 }
 local settings = require("warnings/settings")
+local catalogue = require("supplies/catalogue")
 local rules = settings.load()
 assert(not rules.checkOnBankClose and rules.checkOnPreset and settings.defaults().checkOnPreset)
 assert(not rules.presetChatNotifications and not settings.defaults().presetChatNotifications)
@@ -17,7 +18,7 @@ rules.checkOnBankClose, rules.checkOnPreset = true, true
 rules.presetChatNotifications = true
 local seen = {}
 for _, rule in ipairs(rules) do seen[rule.itemId] = (seen[rule.itemId] or 0) + 1 end
-for itemId, item in pairs(require("supply-catalogue")) do
+for itemId, item in pairs(catalogue) do
     if item.scrimshaw then assert(seen[itemId] == nil)
     else assert(seen[itemId] == 1) end
 end
@@ -30,7 +31,7 @@ for _, rule in ipairs(rules) do
     elseif rule.itemId == 22370 or rule.itemId == 22371 then
         assert(rule.custom and rule.low == 10 and rule.critical == 5)
         assert(settings.effective(rules, rule).low == 10)
-    elseif require("supply-catalogue")[rule.itemId] and require("supply-catalogue")[rule.itemId].godBook then
+    elseif catalogue[rule.itemId] and catalogue[rule.itemId].godBook then
         assert(rule.custom and rule.low == 60 and rule.critical == 30)
         assert(settings.effective(rules, rule).low == 60)
     else

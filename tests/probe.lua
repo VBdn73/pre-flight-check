@@ -1,7 +1,7 @@
 local messages = {}
 local originalPrint = print
 print = function(message) messages[#messages + 1] = message end
-local probe = require("probe")
+local probe = require("diagnostics/probe")
 config = { Inv = { INV = "backpack", WORN = "worn" } }
 local sources = {
     backpack = { isValid = true, slotCount = 28, usedSlotCount = 1,

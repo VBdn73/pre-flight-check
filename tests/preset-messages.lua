@@ -1,4 +1,4 @@
-local messages = require("preset-messages")
+local messages = require("bank/preset-messages")
 local function parse(text, kind)
     return messages.parse({ chatMessage = text, chatType = kind or 0 })
 end

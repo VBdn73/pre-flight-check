@@ -1,5 +1,5 @@
 -- Legacy stateless threshold decisions, retained separately from the active monitor.
-local catalogue = require("supply-catalogue")
+local catalogue = require("supplies/catalogue")
 local warnings = {}
 
 -- Exact items only. These defaults can later be replaced with user settings.

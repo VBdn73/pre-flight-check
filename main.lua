@@ -1,12 +1,12 @@
-local reader = require("inventory-reader")
+local reader = require("supplies/inventory-reader")
 local warningSettings = require("warnings/settings")
 local settingsView = require("warnings/settings-view")
 local warningMonitor = require("warnings/monitor")
 local popup = require("warnings/popup")
 local ribbon = require("warnings/ribbon")
-local presetTrigger = require("preset-trigger")
-local presetMessages = require("preset-messages")
-local bankState = require("bank-state").new()
+local presetTrigger = require("bank/preset-trigger")
+local presetMessages = require("bank/preset-messages")
+local bankState = require("bank/state").new()
 local prettyUILibrary = prettyui
 local rules = warningSettings.load()
 local monitor = warningMonitor.new(rules)
@@ -17,6 +17,10 @@ local checkAfter, checkDeadline
 local anticipatedCloseUntil
 local presetSettleDelay = 0.6 -- Allow a server tick for the preset's supply data to arrive.
 local chatAlerts, chatUntil, chatReady = {}, nil, nil
+
+local function clearPresetChat()
+    chatAlerts, chatUntil, chatReady = {}, nil, nil
+end
 
 local function beginPresetChat()
     if canRead and now and rules.checkOnPreset and rules.presetChatNotifications
@@ -44,7 +48,7 @@ end
 
 local function refresh()
     if not rules.checkOnPreset or not rules.presetChatNotifications then
-        chatAlerts, chatUntil, chatReady = {}, nil, nil
+        clearPresetChat()
     end
     local snapshot = canRead and reader.read() or {
         backpack = { available = false }, equipment = { available = false },
@@ -79,7 +83,7 @@ Event.ServerLogic.Subscribe("supplyCheck.refresh", refresh)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
     now = event.logicTick / 50
     if not rules.checkOnPreset or not rules.presetChatNotifications then
-        chatAlerts, chatUntil, chatReady = {}, nil, nil
+        clearPresetChat()
     end
     if chatReady and now >= chatReady then
         refresh()
@@ -142,7 +146,7 @@ Event.SettingsLayerReady.Subscribe("supplyCheck.settings", function(event)
     local ok, result, destroy = pcall(settingsView.build, event.component, rules, function()
         popup.clear()
         if not rules.checkOnPreset or not rules.presetChatNotifications then
-            chatAlerts, chatUntil, chatReady = {}, nil, nil
+            clearPresetChat()
         end
     end, prettyUILibrary)
     if ok then
@@ -172,7 +176,7 @@ Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
         bankState.reset()
         checkAfter, checkDeadline = nil, nil
         anticipatedCloseUntil = nil
-        chatAlerts, chatUntil, chatReady = {}, nil, nil
+        clearPresetChat()
     end
     refresh()
 end)

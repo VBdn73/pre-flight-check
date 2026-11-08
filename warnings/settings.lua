@@ -1,8 +1,8 @@
 -- Persistent settings for the initial set of exact-item warnings.
 local settings = {}
 local ids = { 563, 565, 52299 }
-local catalogue = require("supply-catalogue")
-local spikes = require("armour-spikes")
+local catalogue = require("supplies/catalogue")
+local spikes = require("supplies/armour-spikes")
 local additional = {}
 local ammunition = {}
 for itemId, item in pairs(catalogue) do

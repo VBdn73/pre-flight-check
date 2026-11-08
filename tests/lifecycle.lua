@@ -14,7 +14,7 @@ package.loaded["warnings/settings-view"] = { build = function() end }
 package.loaded["warnings/monitor"] = { new = function() return {
     update = function(snapshot) snapshots[#snapshots + 1] = snapshot; return {} end } end }
 package.loaded["warnings/popup"] = { clear = function() end, update = function() end }
-package.loaded["inventory-reader"] = { read = function()
+package.loaded["supplies/inventory-reader"] = { read = function()
     reads = reads + 1
     return { backpack = { available = true }, equipment = { available = true } }
 end }

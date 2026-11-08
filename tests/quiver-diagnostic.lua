@@ -1,4 +1,4 @@
-local probe = require("quiver-diagnostic")
+local probe = require("diagnostics/quiver")
 config = { Inv = { INV = "INV", WORN = "WORN" } }
 local slots = { { obj = { id = 52532 }, legacyvarobj = 916117607, vars = { objvar_1 = 1073759409 } } }
 local inventories = {

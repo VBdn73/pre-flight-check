@@ -15,7 +15,7 @@ Keyboard = { IsAvailable = function() return true end, IsBlocked = function() re
     IsAltDown = function() return false end }
 ui = { Interfaces = { GetInterface = function() return bankOpen and {} or nil end,
     GetComponent = function() return { visibleGlobal = true, isRestricted = bankRestricted } end } }
-package.loaded["inventory-reader"] = { read = function()
+package.loaded["supplies/inventory-reader"] = { read = function()
     return { backpack = { available = available, counts = {} }, equipment = { available = available, counts = {} },
         runeCounts = { [563] = amount } }
 end }
@@ -174,7 +174,7 @@ assert(#alerts == 13, "disabled items do not alert on a triggered check")
 rules.deathReclaim = true
 var.VarPlayer.GRAVESTONE_TIMER_INV_SLOTS = { value = 2 }
 -- The reader mock supplies the same snapshot field as the real reader.
-package.loaded["inventory-reader"].read = function()
+package.loaded["supplies/inventory-reader"].read = function()
     return { backpack = { available = true, counts = {} }, equipment = { available = true, counts = {} },
         deathReclaim = true, runeCounts = {} }
 end
@@ -218,7 +218,7 @@ time(60)
 assert(#alerts == 16, "no chat notifications without permission")
 chatPermission = true
 rules[1].enabled = true
-package.loaded["inventory-reader"].read = function()
+package.loaded["supplies/inventory-reader"].read = function()
     return { backpack = { available = true, counts = {} }, equipment = { available = true, counts = {} },
         runeCounts = { [563] = 10 } }
 end
@@ -231,7 +231,7 @@ time(61.7)
 assert(#alerts == 17 and #alerts[17] == 2, "tracked and chat warnings for the same item are merged")
 assert(alerts[17][1].name == "Law rune" and alerts[17][1].count == 10, "quantity warning is retained")
 assert(alerts[17][2].name == "Powder of penance", "unmatched chat warning is retained")
-package.loaded["inventory-reader"].read = function()
+package.loaded["supplies/inventory-reader"].read = function()
     return { backpack = { available = true, counts = {} }, equipment = { available = true, counts = {} },
         runeCounts = { [563] = 0 } }
 end

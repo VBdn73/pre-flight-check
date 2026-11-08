@@ -1,4 +1,4 @@
-local reader = require("inventory-reader")
+local reader = require("supplies/inventory-reader")
 local empty = function() return { obj = { id = -1 }, count = 0 } end
 local item = function(id, count) return { obj = { id = id }, count = count } end
 local slots = { empty(), item(565, 10), item(565, 20) }

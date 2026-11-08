@@ -139,7 +139,7 @@ snapshot.godBookTicks = nil
 assert(#ful.update(snapshot) == 0)
 local books = { 3840, 3842, 3844, 19613, 19615, 19617, 22420, 22421, 22422,
     22423, 22424, 22425, 42787, 51814, 52117, 52347, 52494, 57126, 57526, 61425 }
-local catalogue = require("supply-catalogue")
+local catalogue = require("supplies/catalogue")
 for _, id in ipairs(books) do
     local book = monitor.new({ { itemId = id, enabled = true, low = 60, critical = 30 } })
     snapshot.equipment.counts = { [id] = 1 }

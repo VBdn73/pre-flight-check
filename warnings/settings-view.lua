@@ -1,6 +1,6 @@
-local catalogue = require("supply-catalogue")
+local catalogue = require("supplies/catalogue")
 local settings = require("warnings/settings")
-local spikes = require("armour-spikes")
+local spikes = require("supplies/armour-spikes")
 local colourValue = require("warnings/colour")
 local view = {}
 local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
