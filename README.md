@@ -25,7 +25,7 @@ To receive preset withdrawal messages, enable **Preset chat notifications** in G
 - Necromancy nexus and Nodon spike harness contents are counted only when exactly one corresponding container is carried; multiple containers suppress the relevant warnings.
 - The death reclaim warning is not a guarantee that no items are awaiting reclaim. Blessed flask, Grace of the elves and scrimshaw warnings are unavailable. Durability warnings depend on English game messages during preset loading, not an independent durability check.
 
-See [planning.md](planning.md) for planned work and investigations.
+See [changelog.md](changelog.md) for release notes and [planning.md](planning.md) for planned work and investigations.
 
 ## Permissions and data protection
 
