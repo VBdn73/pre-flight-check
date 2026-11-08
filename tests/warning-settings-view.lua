@@ -91,12 +91,16 @@ end }, Tabs = { new = function(host, entries, options)
         function page:ScrollBy(delta) self.scrollY = math.max(0, math.min(self.contentHeight - self.height, self.scrollY + delta)) end
         function page:reflow()
             local y = options.contentLayout.startY
+            if self.flowText and self.flowTextBeforeSections then
+                self.flowText.y = y
+                y = y + self.flowText.height + 2
+            end
             for _, section in ipairs(self.sections) do
                 y = y + (section.marginTop or 0)
                 section.root.y = y
                 y = y + 20 + (section.expanded and 4 + section.contentHeight or 0) + 8
             end
-            if self.flowText then
+            if self.flowText and not self.flowTextBeforeSections then
                 self.flowText.y = y
                 y = y + self.flowText.height + 2
             end
@@ -116,6 +120,7 @@ end }, Tabs = { new = function(host, entries, options)
         end
         function page:AddText(opts)
             self.flowText = control("flowText", self.content)
+            self.flowTextBeforeSections = #self.sections == 0
             self.flowText:SetSize(0, opts.height, 1, 0)
             self:reflow()
             return self.flowText
@@ -154,14 +159,15 @@ local refresh, destroy = require("warnings/settings-view").build(host, rules, fu
 local general, magic, necro, ranged, melee, misc = table.unpack(tabs.pages)
 assert(tabs.entries[1].text == "General" and tabs.entries[5].text == "Melee")
 assert(tabs.options.contentLayout.startY == 80)
-assert(magic.sections[1].root.y == 80 and necro.sections[1].root.y == 80)
-assert(melee.sections[1].root.y == 80 and misc.sections[1].root.y == 80)
+assert(magic.sections[1].root.y == 80 and necro.flowText.y == 80)
+assert(necro.sections[1].root.y > necro.flowText.y)
+assert(#melee.sections == 0 and melee.flowText.y == 80 and misc.sections[1].root.y == 80)
 assert(ranged.sections[1].root.y == 80)
 assert(ranged.flowText.y > ranged.sections[4].root.y)
 assert(magic.sections[1].name == "Elemental" and magic.sections[2].name == "Catalytic")
 assert(necro.sections[1].name == "Necrotic Runes" and ranged.sections[1].name == "Elder God Arrows")
 assert(ranged.sections[2].name == "Special Arrows" and ranged.sections[3].name == "Enchanted Bakriminel Bolts")
-assert(melee.sections[1].name == "Armour Spikes")
+assert(#necro.sections == 1 and #melee.sections == 0)
 assert(tabs.entries[6].text == "Misc" and misc.sections[1].name == "Bombs")
 assert(misc.sections[2].name == "Invention")
 assert(misc.sections[3].name == "God Books" and misc.sections[4].name == "Other")
@@ -170,9 +176,7 @@ magic.sections[2]:SetExpanded(true)
 assert(not magic.sections[1].expanded and magic.sections[2].expanded)
 magic.sections[2]:SetExpanded(false)
 necro.sections[1]:SetExpanded(true)
-necro.sections[2]:SetExpanded(true)
-assert(not necro.sections[1].expanded and necro.sections[2].expanded)
-necro.sections[2]:SetExpanded(false)
+necro.sections[1]:SetExpanded(false)
 local function find(parent, kind, x, y)
     for _, c in ipairs(controls) do
         if not c.destroyed and c.parent == parent and c.kind == kind and c.x == x and c.y == y then return c end
@@ -626,9 +630,24 @@ assert(not arrowSwitch.value)
 assert(not saved["31737"].enabled and not saved["882"].enabled)
 PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
 tabs.active = 5
-melee.sections[1]:SetExpanded(true)
 refresh()
-assert(find(melee.sections[1].content, "sprite", 8, 3).itemId == 59925)
+local meleeRows = find(melee.content, "layer", 14, melee.flowText.y)
+assert(find(meleeRows, "sprite", 8, 3).itemId == 59925)
+assert(find(meleeRows, "text", 48, 3).content == "Armour spikes")
+tabs.active = 3
+necro.sections[1]:SetExpanded(true)
+refresh()
+local necroRows = find(necro.content, "layer", 14, necro.flowText.y)
+assert(find(necroRows, "text", 48, 3).content == "Ectoplasm")
+assert(find(necroRows, "sprite", 8, 3).itemId == 55336)
+local expandedNecroY = necroRows.y
+necro.sections[1]:SetExpanded(false)
+refresh()
+assert(necroRows.y == necro.flowText.y and necroRows.y == expandedNecroY)
+local ectoplasmSwitch = find(necroRows, "check", -30, 7)
+ectoplasmSwitch.hooks.press()
+assert(not saved["55336"].enabled)
+ectoplasmSwitch.hooks.press()
 tabs.active = 6
 misc.sections[1]:SetExpanded(true)
 refresh()

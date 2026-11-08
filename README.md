@@ -94,8 +94,8 @@ bank is open, even if the load fails or does not end up closing the bank.
 The Magic and Necromancy tabs provide individual warning controls for elemental,
 catalytic and combination runes, all four necrotic runes and ectoplasm.
 Magic tab groups runes into collapsible Elemental, Catalytic and Combination sections.
-The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
-The Melee tab provides one Armour Spikes warning for all six variants combined,
+The Necromancy tab has a collapsible Necrotic Runes section and a standalone Ectoplasm row.
+The Melee tab provides one standalone Armour Spikes warning for all six variants combined,
 and the Ranged tab has shared settings alongside collapsible sections for other ammunition.
 The shared rows cover standard and slayer arrows, Araxyte and god arrows, standard and special
 bolts, gem bolts, Bakriminel bolts, and enchanted gem bolts. Each item is still counted and

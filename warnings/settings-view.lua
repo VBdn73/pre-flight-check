@@ -322,7 +322,9 @@ function view.build(host, rules, onChange, prettyui)
     for _, name in ipairs({ "Elemental", "Catalytic", "Combination" }) do addSection(1, name) end
     pageIndex = 2
     text(pages[2].content, 10, 8, 400, "Counts include loose supplies and the nexus.")
-    for _, name in ipairs({ "Necrotic Runes", "Ectoplasm" }) do addSection(2, name) end
+    local necroSpacer = pages[2]:AddText({ text = "", height = rowHeight })
+    necroSpacer.clickthrough = true
+    addSection(2, "Necrotic Runes")
     pageIndex = 3
     text(pages[3].content, 10, 8, 400, "Quivers unreadable; only loose supplies count.")
     for _, name in ipairs({ "Elder God Arrows", "Special Arrows", "Enchanted Bakriminel Bolts",
@@ -334,7 +336,8 @@ function view.build(host, rules, onChange, prettyui)
     rangedSpacer.clickthrough = true
     pageIndex = 4
     text(pages[4].content, 10, 8, 400, "Counts include loose spikes and one harness.")
-    addSection(4, "Armour Spikes")
+    local meleeSpacer = pages[4]:AddText({ text = "", height = rowHeight })
+    meleeSpacer.clickthrough = true
     pageIndex = 5
     text(pages[5].content, 10, 8, 400, "Counts include supplies in the backpack and equipment.")
     addSection(5, "Bombs")
@@ -593,7 +596,7 @@ function view.build(host, rules, onChange, prettyui)
             updateRow()
         end
         frameEntry.reset = resetRow
-        if combined then resetControls[rowPage][#resetControls[rowPage] + 1] = resetRow end
+        if rowParent then resetControls[rowPage][#resetControls[rowPage] + 1] = resetRow end
         updateRow()
     end
     local combinedRows = {}
@@ -614,11 +617,14 @@ function view.build(host, rules, onChange, prettyui)
         if pa ~= pb then return pa < pb end
         return a.index < b.index
     end)
+    local standalone = {}
     for _, entry in ipairs(orderedRules) do
         local index, rule = entry.index, entry.rule
         local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
         local combined = combinedName(rule.itemId, item)
-        if combined then
+        if rule.itemId == 55336 or rule.itemId == spikes.ruleId then
+            standalone[rule.itemId] = index
+        elseif combined then
             combinedRows[combined][#combinedRows[combined] + 1] = index
         else
         pageIndex = rule.itemId == spikes.ruleId and 4
@@ -630,11 +636,9 @@ function view.build(host, rules, onChange, prettyui)
             name = elemental[rule.itemId] and "Elemental"
                 or combination[rule.itemId] and "Combination" or "Catalytic"
         elseif pageIndex == 2 then
-            name = rule.itemId == 55336 and "Ectoplasm" or "Necrotic Runes"
+            name = "Necrotic Runes"
         elseif pageIndex == 3 or pageIndex == 5 then
             name = item.group
-        else
-            name = "Armour Spikes"
         end
         local group = sections[pageIndex][name]
         local y = group.count * rowHeight
@@ -648,10 +652,16 @@ function view.build(host, rules, onChange, prettyui)
         end
         end
     end
-    -- Match PrettyUI's flow padding so these rows line up with the section headers.
-    local rangedRows = ui.Layer.new(pages[3].content)
-    rangedRows:SetPos(14, rangedSpacer.y); rangedRows:SetSize(-28, #rangedCombinedNames * rowHeight, 1, 0)
-    rangedRows.clickthrough = true
+    -- Match PrettyUI's flow padding and follow the managed spacer as sections reflow.
+    local rowLayers = {}
+    local function rowLayer(page, spacer, height)
+        local layer = ui.Layer.new(pages[page].content)
+        layer:SetPos(14, spacer.y); layer:SetSize(-28, height, 1, 0)
+        layer.clickthrough = true
+        rowLayers[#rowLayers + 1] = { layer = layer, spacer = spacer }
+        return layer
+    end
+    local rangedRows = rowLayer(3, rangedSpacer, #rangedCombinedNames * rowHeight)
     currentRowOffset = rangedRows
     for i, name in ipairs(rangedCombinedNames) do
         local indices = combinedRows[name]
@@ -663,6 +673,15 @@ function view.build(host, rules, onChange, prettyui)
         buildRow(index, rules[index], { name = name }, nil, 3, (i - 1) * rowHeight, indices, rangedRows)
     end
     currentRowOffset = nil
+    for _, entry in ipairs({ { page = 2, spacer = necroSpacer, itemId = 55336 },
+        { page = 4, spacer = meleeSpacer, itemId = spikes.ruleId } }) do
+        local layer = rowLayer(entry.page, entry.spacer, rowHeight)
+        local index = standalone[entry.itemId]
+        currentRowOffset = layer
+        buildRow(index, rules[index], entry.itemId == spikes.ruleId and spikes or catalogue[entry.itemId],
+            nil, entry.page, 0, nil, layer)
+        currentRowOffset = nil
+    end
     addUnavailableRows()
     local function destroyRows(page, section, keep)
         for i = #controls[page], 1, -1 do
@@ -782,9 +801,11 @@ function view.build(host, rules, onChange, prettyui)
     end
     local width, height, scrollPositions, activeIndex
     local function refresh()
-        if rangedRows.y ~= rangedSpacer.y then
-            rangedRows:SetPos(14, rangedSpacer.y)
-            layoutChanged = true
+        for _, entry in ipairs(rowLayers) do
+            if entry.layer.y ~= entry.spacer.y then
+                entry.layer:SetPos(14, entry.spacer.y)
+                layoutChanged = true
+            end
         end
         local w = math.max(1, host.width)
         local h = math.max(1, host.height - 42)
