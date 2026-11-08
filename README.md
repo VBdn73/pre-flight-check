@@ -1,183 +1,57 @@
 # Pre flight check
 
-A planned RuneScape plugin for warning when supplies such as runes or ammunition
-are running low, potentially when entering a boss arena or loading a preset.
+Get warnings about low supplies and other preparation issues when loading a bank preset or closing the bank. This development version requires Jagex moderation before distribution; approval is not implied.
 
-Configure supply warnings in the plugin settings; alerts appear as popups.
+## Features
 
-Popup headings show the total issue count. Popups show up to 8 notifications at once by default, with a scrollbar for longer
-lists or when the available screen height is smaller. Set the visible notification
-limit (1–20) in General settings. Long notification labels wrap onto additional lines;
-the popup scrolls when the expanded rows exceed the available screen height.
-The ribbon displays the most recent batch of notifications, its issue count, and the client clock time in its heading,
-with a scrollbar for longer lists. Long labels wrap and expand their rows. A new notification replaces the batch;
-checks without warnings leave it unchanged. The batch is kept in memory until the
-plugin is reloaded. The clock follows the in-game clock's server/local setting;
-set it to server time for game time. If the clock cannot be read, it shows unavailable.
+- Checks runes, necromancy supplies, ammunition, armour spikes, selected consumables, Invention charge and equipped god book time.
+- Warns about death reclaim items and the Sign of life cooldown. Optional preset chat notifications report missing, insufficient or substituted items and game-reported low item durability.
+- Shows a popup and keeps the latest warning batch in the ribbon panel. Adjust thresholds, colours, popup duration and visible rows in plugin settings.
+- Does not load presets or perform game actions for you.
 
-**Development limitation:** In testing, the client disabled this local plugin
-when returning to the lobby. After logging in, use `pon pre-flight-check` to enable
-it again (assuming the local plugin directory is named `pre-flight-check`). Whether
-an installed plugin behaves the same way is not yet verified.
+## How to use
 
-## Code layout
+1. Install **PrettyUI** (mod.io ID `6398181`), the required dependency, and enable the plugin.
+2. Open the plugin settings. Preset-load checks are on by default; enable bank-close checks in **General** if wanted.
+3. Use the combat-style tabs to enable or disable warnings and set default or custom low and critical thresholds. Quantity warnings trigger strictly below the threshold, but not at zero.
+4. Load a preset or close the bank to check. Drag the popup heading to move it, choose **Keep open** while resupplying, or **Close** to dismiss it. The ribbon shows the most recent batch.
 
-`main.lua` connects client events to the modules in `bank/`, `supplies/`, and
-`warnings/`. Mock tests are in `tests/`. For a release, include `main.lua`,
-`plugin.json`, and the three runtime module directories at the ZIP root. Tests are
-not required at runtime. See `../SUBMISSION.md` for the release checklist.
+To receive preset withdrawal messages, enable **Preset chat notifications** in General and grant optional chat access. For game-reported low durability messages, also enable **Item durability** under Misc → Other.
 
-`supplies/inventory-reader.lua` provides separate backpack and equipment snapshots for
-future features. Each source has `available`; when true, `counts` maps item IDs
-to quantities. Missing or malformed slot data makes that source unavailable.
-Run the mock tests with `lua tests/inventory-reader.lua`.
+## Limitations
 
-## Container data findings
+- Checks are triggered by observed actions, not confirmed successful preset loads; shortcuts or Escape can occasionally trigger an extra check. Data may be delayed or unavailable, in which case warnings can be missed.
+- Ammunition counts exclude quivers.
+- Necromancy nexus and Nodon spike harness contents are counted only when exactly one corresponding container is carried; multiple containers suppress the relevant warnings.
+- The death reclaim warning is not a guarantee that no items are awaiting reclaim. Blessed flask, Grace of the elves and scrimshaw warnings are unavailable. Durability warnings depend on English game messages during preset loading, not an independent durability check.
 
-In-client testing found that `COMBATV2_RUNECOUNT_LAW` and
-`COMBATV2_RUNECOUNT_BLOOD` tracked loose and pouched runes together when runes
-were moved or consumed. Their exact semantics and freshness are not documented.
-Make-X rune-count variables remained zero in that test.
+## Permissions and data protection
 
-Inventory 953 (`NECROMANCY_NEXUS`) exposed ectoplasm and all four necrotic
-runes through the inventory API, updating after additions and spell consumption.
-Availability and freshness across logout and switching multiple nexuses still
-need verification. Nexus contents are included in necromancy warnings.
+**Optional `chatAccess`:** reads preset withdrawal and low-charge messages for the optional notifications above. Supply checks work without it. No other permissions are requested.
 
-`supplies/catalogue.lua` lists item IDs, names and combat-variable bindings.
+**Data protection — Case 1 (local only):** The plugin reads inventory, equipment, relevant game variables and, if enabled and permitted, preset-related chat messages to produce warnings. Settings and popup position are stored locally using `PersistentDB`, shared across characters on the same client type. The latest warning batch is held in memory until replaced or the plugin reloads. Data is not transmitted to the developer or external services by this plugin.
 
-## Death reclaim warning
+Settings have no automatic expiry. Tab resets restore defaults; disabling the plugin does not erase stored data. There is no full-data deletion control, and uninstalling should not be assumed to clear the client database. The developer cannot access or delete local data remotely.
 
-The Misc → Other Death reclaim warning is enabled by default and checks the
-gravestone backpack, worn, and overflow slot counters during preset and bank-close
-checks, alongside other warnings. It repeats on each check while items are indicated.
-A client test showed the
-backpack and worn counters increasing after a death and returning to zero after
-reclaiming. Positive counters were also observed after lobbying and re-enabling the
-development plugin. Other death situations, overflow, and installed-plugin login behavior remain unverified;
-an absent warning does not guarantee that no items are awaiting reclaim.
-## Experimental warnings
+## Local development
 
-The settings panel uses the required PrettyUI dependency for tabs and scrolling. After
-changing the plugin manifest, run `prf` before enabling or reloading the plugin.
+Follow the [RuneScape API getting-started guide](https://developer.runescape.com/rs/getting-started.html). Place the repository in `RuneScape-BETA/dev_plugins/pre-flight-check/` and install PrettyUI. In the client console (**Alt + `**), run:
 
-The **General** tab has separate, immediately saved switches for checking on
-**preset load** and **bank close**. Preset load defaults on; bank close defaults off. When enabled, these check
-configured supply rules after the action. No popup is shown when no enabled supply
-is below its threshold.
+```text
+prf
+pon pre-flight-check
+```
 
-Preset checks cover bank menu actions, the selected preset's Load button, the
-bank chest's Load Last Preset action, and the bank's numbered and beast-of-burden
-shortcuts. The detection observes an action or keypress, not confirmation of a
-successful load; shortcuts used for other purposes while banking may trigger a
-check. Preset checks wait 0.6 seconds before the next server update to allow supply
-data to settle; other bank-close checks run on the next server update. Supply data may
-still be delayed; unavailable sources remain suppressed. If backpack or equipment
-data stays unavailable for five seconds, the check is dropped.
+After Lua changes, use `prl pre-flight-check`; after manifest changes, run `prf` first. Run individual mocked tests with Lua 5.4, for example `lua tests/warning-integration.lua`. Also test in-client; mocked tests do not verify client behavior.
 
-Enable **Preset chat notifications** in General (off by default) and grant the optional
-**chatAccess** permission to turn the
-game's preset withdrawal messages into notifications: missing items, insufficient
-quantities, and substituted items. Missing items are critical; the other two are low.
-Messages from a withdrawal are grouped with a pending supply check where possible,
-and still appear if inventory data is unavailable. These notifications require the
-game's English message wording shown by the client; chat
-type, formatting and timing still need in-client verification. Without permission,
-normal supply checks continue to work. This setting requires preset-load checks and is
-turned off when those checks are disabled. After changing the manifest, run `prf` and
-grant chat access in the plugin permissions.
-Escape schedules a bank-close check as soon as it is pressed while the main bank
-panel is open; it may also check if Escape dismisses something instead of the bank.
-Bank preset load actions and shortcuts also schedule that delayed check while the
-bank is open, even if the load fails or does not end up closing the bank.
+Before submission, review the [plugin guidelines](https://developer.runescape.com/rs/submission/guidelines.html) and [submission process](https://developer.runescape.com/rs/submission/process.html). Required description sections must also appear in the mod.io listing.
 
-The Magic and Necromancy tabs provide individual warning controls for elemental,
-catalytic and combination runes, all four necrotic runes and ectoplasm.
-Magic tab groups runes into collapsible Elemental, Catalytic and Combination sections.
-The Necromancy tab has a collapsible Necrotic Runes section and a standalone Ectoplasm row.
-The Melee tab provides one standalone Armour Spikes warning for all six variants combined,
-and the Ranged tab has shared settings alongside collapsible sections for other ammunition.
-The shared rows cover standard and slayer arrows, Araxyte and god arrows, standard and special
-bolts, gem bolts, Bakriminel bolts, and enchanted gem bolts. Each item is still counted and
-warned about separately; enchanted Bakriminel bolts retain individual settings.
-Changing a shared row applies its settings to all items in that row; previously saved individual
-settings remain in effect until the row is changed.
-The Misc tab includes vulnerability, poison and sticky bombs, dreadnips and dominion mines,
-counted in the backpack and equipment,
-and an Invention charge pack warning. Charge is read from VarPlayer 5984 (`INVENT_CHARGE`)
-and converted to whole charges by dividing by 3,000. Adding a divine charge increased the
-raw value by 9,000,000 and the converted value matched the displayed pack charge; ongoing
-drain and update timing still need in-client verification. An unavailable variable suppresses
-the warning. Thresholds are in pack charges, not divine charge items.
-Dreadnips and dominion mines default to custom thresholds of 10 low and 5 critical.
-The Misc → God Books section includes Erethdor's and chaotic grimoires, the six scriptures,
-and the six regular and six illuminated god books, each with independent thresholds in
-whole minutes (0–1440), defaulting to 60 low and 30 critical. It checks only when
-the corresponding book is equipped, using `GOD_BOOK_TIMELEFT` at 0.6 seconds per
-tick; the displayed time matched this conversion for Ful in a client test. Other
-books, switching books and update timing still need client verification. Unavailable
-values suppress the warning. An equipped book at zero time can warn.
-The Misc tab's Other section has an optional Sign of life cooldown warning, on by
-default. It reports the shared revive cooldown during the same preset/bank checks,
-without a quantity threshold. It reads VarPlayer `DIV_LIFE_COOLDOWN`: a proc was
-observed setting it to 30, and a cooldown refresh returned it to 0. If the variable
-is unavailable, the warning is suppressed. The notification displays the reported
-cooldown in minutes.
-Item durability in Misc → Other is off by default. Enable it with preset checks,
-preset chat notifications and chat access to show the item and percentage from the
-game's low-charge messages during preset loading. It does not independently read
-durability or warn on bank close; only game-reported low charges are shown.
-The Blessed flask, Grace of the elves and Scrimshaw entries in Misc → Other are informational
-only. Their warnings are unavailable: the flask's remaining doses are not exposed,
-the Grace's porter charges have not yet been found in the plugin API, and the
-scrimshaw timer cannot reliably be attributed to the equipped item.
-Each tab has always-visible style defaults above the item sections for thresholds. Every item
-starts enabled and uses its style defaults. Use an item's checkbox to toggle
-its warning immediately: green means enabled and red means disabled. Use the
-Defaults/Custom button to switch threshold modes; that change is saved immediately.
-The fields always show the item's own thresholds, but are read-only in Defaults
-mode, when the style thresholds are used. Custom lets you edit the item values.
-The two fields are low and critical
-thresholds, respectively, and show descriptions on hover. Threshold changes are
-saved when you leave a field or press Enter. Invalid values or save failures are
-shown beside the fields; correct the values and leave the field to retry.
-Only one section per combat style can be open at a time. Ranged sections load
-only visible rows to keep the panel within the client's UI resource limits.
-Each tab has a **Restore to defaults** button. Confirm the action to reset only
-that tab's settings, including its item overrides; Cancel leaves them unchanged.
+## Feedback and collaboration
 
-Each style starts with a low threshold of 1000 and a critical threshold of 250.
-Invention charge instead starts in Custom mode with thresholds of 50,000 low and
-10,000 critical; existing saved settings are retained.
-Thresholds mean strictly below; zero counts do not trigger quantity warnings.
-Settings are shared across characters on this client type. The new settings format
-does not import the previous experimental per-item settings.
+Report bugs or propose contributions through the repository's issue tracker, or email [vincent.rs.plugins@gmail.com](mailto:vincent.rs.plugins@gmail.com). Include reproduction steps and your client version; avoid posting personal information publicly.
 
-Rune warnings use the client combat rune counts, without adding loose counts;
-law and blood counts were tested with pouches, but the other variables and
-effects of combination runes or infinite-rune equipment require in-client tests.
-An unavailable rune variable suppresses its warning. Necromancy warnings add
-loose backpack and equipped supplies to inventory 953 when exactly one nexus
-is carried. Multiple nexuses or an unavailable inventory suppress these warnings;
-with no nexus they count loose supplies only. Switching nexuses and inventory
-freshness need further in-client testing. Ammunition warnings count
-loose backpack plus equipment only, excluding quivers. Unavailable relevant sources
-suppress warnings.
-The popup shows critical alerts in red and low warnings in orange by default.
-Choose custom colours for each level on the General settings tab; they also apply
-to the last notifications panel. Restore General defaults to return to the original colours.
-Its duration
-can be set in the General tab from 1 to 3600 seconds (default: four seconds).
-Hovering over a popup keeps it visible after its duration expires; it disappears
-when the pointer leaves. The popup captures mouse input while it is visible.
-Drag the popup heading to move it; its position is saved for future notifications.
-Click **Keep open** in the popup heading to keep it visible while resupplying;
-click **Close** to dismiss it immediately. A new notification replaces the popup.
-The tester reports that warnings work in-client; individual settings and timing
-cases have not been documented separately. Warning modules live in `warnings/`.
+To request a new warning setting, include the exact in-game item name. If it relies on a game message, include the message text and the in-game setup and steps needed to reproduce it.
 
-Armour spike warnings total all variants in the backpack and equipment, plus
-inventory 974 when exactly one Nodon spike harness is carried. No harness means
-only loose spikes are counted; multiple harnesses or unavailable sources suppress
-the warning. Inventory 974 was observed updating in combat with one worn harness,
-and showing its contents in the backpack. Multiple harnesses remain untested.
+## EULA
+
+This Plugin uses software licensed by Jagex to the developer under the terms of the Jagex End User Licence Agreement (EULA) found at https://legal.jagex.com/docs/terms/eula (and all terms incorporated into it by reference). The development and any use of the Plugin is at all times subject to the Jagex EULA.
