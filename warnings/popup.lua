@@ -48,6 +48,7 @@ local function displayName(name, count)
 end
 
 function popup.formatAlert(alert)
+    if alert.status then return alert.name end
     return alert.message or (displayName(alert.name, alert.count) .. ": " .. formatCount(alert.count))
 end
 
@@ -184,7 +185,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
             severity.alignHorizontal = ui.AlignMode.BOTTOMRIGHT
             severity.alignVertical = ui.AlignMode.CENTRE
             severity.clickthrough = true
-            severity.content = alert.message and "" or (critical and "CRITICAL" or "LOW")
+            severity.content = alert.status or (alert.message and "" or (critical and "CRITICAL" or "LOW"))
         end
         expires = now + (duration or 4)
     end)

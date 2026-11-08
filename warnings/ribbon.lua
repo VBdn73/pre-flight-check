@@ -22,7 +22,7 @@ end
 function ribbon.record(alerts)
     latest = {}
     for i, alert in ipairs(alerts) do
-        latest[i] = { name = alert.name, count = alert.count, message = alert.message, level = alert.level }
+        latest[i] = { name = alert.name, count = alert.count, message = alert.message, level = alert.level, status = alert.status }
     end
     timestamp = clock()
     if refresh and not pcall(refresh, true) then ribbon.close() end
@@ -90,7 +90,7 @@ function ribbon.open(parent, prettyui, rules)
             row.background:SetPos(5, y); row.background:SetSize(math.max(1, scroll.contentWidth - 10), 32)
             row.accent:SetPos(5, y); row.accent:SetSize(4, 32)
             row.label:SetPos(17, y); row.label:SetSize(math.max(1, scroll.contentWidth - 27), 32)
-            row.label.content = alert and popup.formatAlert(alert) or ""
+            row.label.content = alert and (popup.formatAlert(alert) .. (alert.status and " - " .. alert.status or "")) or ""
             if alert then row.background.colour, row.accent.colour = popup.colours(alert.level, rules) end
         end
     end

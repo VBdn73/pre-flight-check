@@ -5,6 +5,7 @@ local warningMonitor = require("warnings/monitor")
 local popup = require("warnings/popup")
 local ribbon = require("warnings/ribbon")
 local presetTrigger = require("preset-trigger")
+local presetMessages = require("preset-messages")
 local bankState = require("bank-state").new()
 local prettyUILibrary = prettyui
 local rules = warningSettings.load()
@@ -15,6 +16,13 @@ local now
 local checkAfter, checkDeadline
 local anticipatedCloseUntil
 local presetSettleDelay = 0.6 -- Allow a server tick for the preset's supply data to arrive.
+local chatAlerts, chatUntil, chatReady = {}, nil, nil
+
+local function showAlerts(alerts)
+    if #alerts == 0 then return end
+    ribbon.record(alerts, now)
+    popup.show(alerts, now, rules.popupDuration, prettyUILibrary, rules.popupRows, rules)
+end
 
 -- Wait for server updates following the action before taking a fresh snapshot.
 local function scheduleCheck(delay)
@@ -33,21 +41,29 @@ local function refresh()
     }
     if not snapshot.backpack.available or not snapshot.equipment.available then popup.clear() end
     if not canRead or not now or not checkAfter or now < checkAfter then return end
+    if chatReady and now < chatReady then return end
     if not snapshot.backpack.available or not snapshot.equipment.available then
         if now >= checkDeadline then checkAfter, checkDeadline = nil, nil end
         return
     end
     checkAfter, checkDeadline = nil, nil
     local alerts = monitor.update(snapshot)
-    if #alerts > 0 then
-        ribbon.record(alerts, now)
-        popup.show(alerts, now, rules.popupDuration, prettyUILibrary, rules.popupRows, rules)
-    end
+    for _, alert in ipairs(chatAlerts) do alerts[#alerts + 1] = alert end
+    chatAlerts, chatReady = {}, nil
+    showAlerts(alerts)
 end
 
 Event.ServerLogic.Subscribe("supplyCheck.refresh", refresh)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
     now = event.logicTick / 50
+    if chatReady and now >= chatReady then
+        refresh()
+        if chatReady then
+            showAlerts(chatAlerts)
+            chatAlerts, chatReady = {}, nil
+        end
+    end
+    if chatUntil and now >= chatUntil then chatUntil = nil end
     popup.update(now)
     ribbon.update()
     if anticipatedCloseUntil and now >= anticipatedCloseUntil then anticipatedCloseUntil = nil end
@@ -58,6 +74,17 @@ Event.Logic.Subscribe("supplyCheck.clock", function(event)
     if refreshSettings and not pcall(refreshSettings) then
         refreshSettings = nil
         if destroySettings then pcall(destroySettings); destroySettings = nil end
+    end
+end)
+Event.ChatMessage.Subscribe("supplyCheck.presetMessages", function(event)
+    if not canRead or not now or not rules.checkOnPreset
+        or not Plugin.HasPermission(PluginPermissions.chatAccess) then return end
+    local kind, alert = presetMessages.parse(event)
+    if kind == "start" then
+        chatAlerts, chatUntil, chatReady = {}, now + 5, now + presetSettleDelay
+    elseif kind == "issue" and chatUntil and now < chatUntil then
+        chatAlerts[#chatAlerts + 1] = alert
+        chatReady = now + presetSettleDelay
     end
 end)
 Event.KeyDown.Subscribe("supplyCheck.presetShortcut", function(event)
@@ -115,6 +142,7 @@ Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
         bankState.reset()
         checkAfter, checkDeadline = nil, nil
         anticipatedCloseUntil = nil
+        chatAlerts, chatUntil, chatReady = {}, nil, nil
     end
     refresh()
 end)
@@ -127,6 +155,7 @@ function PluginShutdown()
     Event.ServerLogic.Unsubscribe("supplyCheck.refresh")
     Event.Logic.Unsubscribe("supplyCheck.clock")
     Event.KeyDown.Unsubscribe("supplyCheck.presetShortcut")
+    Event.ChatMessage.Unsubscribe("supplyCheck.presetMessages")
     Event.SettingsLayerReady.Unsubscribe("supplyCheck.settings")
     Event.ContentLayerReady.Unsubscribe("supplyCheck.content")
     Event.MiniMenuEntrySelected.Unsubscribe("supplyCheck.preset")

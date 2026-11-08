@@ -105,6 +105,13 @@ local start = #components
 assert(popup.show({ { message = "Cooldown: 1000 minutes", level = "low" } }, 200))
 assert(components[start + 5].content == "Cooldown: 1000 minutes")
 popup.clear()
+for _, case in ipairs({ { "Powder of penance", "critical", "MISSING" },
+    { "Ectoplasm", "low", "LOW" }, { "Perfect plus potion (1)", "low", "DOSE" } }) do
+    start = #components
+    assert(popup.show({ { name = case[1], message = "Long original message", level = case[2], status = case[3] } }, 200))
+    assert(components[start + 5].content == case[1] and components[start + 6].content == case[3])
+end
+popup.clear()
 local views = {}
 local prettyui = { SimpleView = { new = function(host, options)
     local view = { parent = host, content = {}, width = options.width, height = options.height, scrollY = 0 }

@@ -73,6 +73,16 @@ check. Preset checks wait 0.6 seconds before the next server update to allow sup
 data to settle; other bank-close checks run on the next server update. Supply data may
 still be delayed; unavailable sources remain suppressed. If backpack or equipment
 data stays unavailable for five seconds, the check is dropped.
+
+With the optional **chatAccess** permission granted, preset checks also turn the
+game's preset withdrawal messages into notifications: missing items, insufficient
+quantities, and substituted items. Missing items are critical; the other two are low.
+Messages from a withdrawal are grouped with a pending supply check where possible,
+and still appear if inventory data is unavailable. These notifications require the
+game's withdrawal header and the English message wording shown by the client; chat
+type, formatting and timing still need in-client verification. Without permission,
+normal supply checks continue to work. After changing the manifest, run `prf` and
+grant chat access in the plugin permissions.
 Escape schedules a bank-close check as soon as it is pressed while the main bank
 panel is open; it may also check if Escape dismisses something instead of the bank.
 Bank preset load actions and shortcuts also schedule that delayed check while the

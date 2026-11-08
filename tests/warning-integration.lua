@@ -4,7 +4,10 @@ local function event(name)
 end
 Event = { Logic = event("logic"), ServerLogic = event("server"), GameStateChanged = event("state"),
     SettingsLayerReady = event("settings"), ContentLayerReady = event("content"),
-    MiniMenuEntrySelected = event("menu"), KeyDown = event("key") }
+    MiniMenuEntrySelected = event("menu"), KeyDown = event("key"), ChatMessage = event("chat") }
+PluginPermissions = { chatAccess = 1 }
+local chatPermission = true
+Plugin = { HasPermission = function() return chatPermission end }
 local amount, available, bankOpen, bankRestricted = 200, true, false, false
 var = { VarPlayer = { BANK_ACTIVE = { value = 1 } } }
 Keyboard = { IsAvailable = function() return true end, IsBlocked = function() return false end,
@@ -190,6 +193,23 @@ load()
 time(56.8)
 callbacks.server()
 assert(#alerts == 15, "disabled death reclaim warning stays silent")
+rules.checkOnPreset = true
+local function chat(text, kind) callbacks.chat({ chatMessage = text, chatType = kind or 0 }) end
+time(58)
+chat("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...", 109)
+chat("Item could not be found: Powder of protection", 109)
+chat("Super prayer renewal potion (2) could not be found. Super prayer renewal potion (6) was loaded instead.", 109)
+chat("Item could not be found in the quantity required: Ectoplasm", 109)
+chat("Item could not be found: Fake", 2)
+time(58.7)
+assert(#alerts == 16 and #alerts[16] == 3, "preset game messages form one notification batch")
+assert(alerts[16][1].level == "critical" and alerts[16][2].level == "low")
+assert(lastBatch == alerts[16], "preset issues reach the ribbon")
+chatPermission = false
+chat("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...")
+chat("Item could not be found: Powder of protection")
+time(60)
+assert(#alerts == 16, "no chat notifications without permission")
 callbacks.state({ newState = 40 })
 PluginShutdown()
 print("Warning integration tests passed.")
