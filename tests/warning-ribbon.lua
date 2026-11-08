@@ -97,4 +97,8 @@ assert(controls[4].content == "Sign of life: 3 min", "reopening retains the batc
 gameClock = ""
 ribbon.record({ { name = "Rune", count = 1, level = "low" } })
 assert(controls[1].content == "Last notifications (1): unavailable")
+gameClock = "10:15"
+ribbon.record({})
+assert(controls[1].content == "Last notifications (0): 10:15", "clean checks update the ribbon timestamp")
+assert(controls[4].hidden and views[2].contentHeight == 0, "clean checks hide old warning rows")
 print("Warning ribbon tests passed.")

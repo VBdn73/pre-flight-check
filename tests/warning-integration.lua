@@ -25,11 +25,11 @@ package.loaded["warnings/settings"] = { effective = function(_, rule) return rul
     load = function() return rules end }
 package.loaded["warnings/settings-view"] = { build = function() end }
 local alerts = {}
-local lastBatch, lastTime
+local lastBatch, lastTime, popupOpen
 package.loaded["warnings/ribbon"] = { record = function(items, now) lastBatch, lastTime = items, now end,
     open = function() end, close = function() end, update = function() end }
-package.loaded["warnings/popup"] = { show = function(items) alerts[#alerts + 1] = items; return true end,
-    clear = function() end, update = function() end }
+package.loaded["warnings/popup"] = { show = function(items) popupOpen = true; alerts[#alerts + 1] = items; return true end,
+    clear = function() popupOpen = false end, update = function() end }
 dofile("main.lua")
 local function time(seconds) callbacks.logic({ logicTick = seconds * 50 }) end
 local function load() callbacks.menu({ entry = { verbText = "Load", componentData = { component = {
@@ -162,7 +162,8 @@ amount = 200
 time(50.3)
 callbacks.server()
 assert(#alerts == 12, "a well-stocked preset does not inherit the previous warning")
-assert(lastBatch == alerts[12], "a check without notifications preserves the last batch")
+assert(#lastBatch == 0 and lastTime == 50.3, "a clean check replaces the previous batch")
+assert(not popupOpen, "a clean check closes the previous popup, including when pinned")
 load()
 amount = 10
 time(51.6)

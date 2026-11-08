@@ -30,8 +30,11 @@ local function beginPresetChat()
 end
 
 local function showAlerts(alerts)
-    if #alerts == 0 then return end
     ribbon.record(alerts, now)
+    if #alerts == 0 then
+        popup.clear()
+        return
+    end
     popup.show(alerts, now, rules.popupDuration, prettyUILibrary, rules.popupRows, rules)
 end
 
@@ -92,7 +95,7 @@ Event.Logic.Subscribe("supplyCheck.clock", function(event)
     if chatReady and now >= chatReady then
         refresh()
         if chatReady then
-            showAlerts(chatAlerts)
+            if #chatAlerts > 0 then showAlerts(chatAlerts) end
             chatAlerts, chatReady = {}, nil
         end
     end

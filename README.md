@@ -6,7 +6,7 @@ Get warnings about low supplies and other preparation issues when loading a bank
 
 - Checks runes, necromancy supplies, ammunition, armour spikes, selected consumables, Invention charge and equipped god book time.
 - Warns about death reclaim items and the Sign of life cooldown. Optional preset chat notifications report missing, insufficient or substituted items and game-reported low item durability.
-- Shows a popup and keeps the latest warning batch in the ribbon panel. Adjust thresholds, colours, popup duration and visible rows in plugin settings.
+- Shows a popup and keeps the latest check's warnings in the ribbon panel. A clean check clears the popup and shows zero notifications. Adjust thresholds, colours, popup duration and visible rows in plugin settings.
 - Does not load presets or perform game actions for you.
 
 ## How to use
@@ -20,7 +20,6 @@ To receive preset withdrawal messages, enable **Preset chat notifications** in G
 
 ## Limitations
 
-- Checks are triggered by observed actions, not confirmed successful preset loads; shortcuts or Escape can occasionally trigger an extra check. Data may be delayed or unavailable, in which case warnings can be missed.
 - Ammunition counts exclude quivers.
 - Necromancy nexus and Nodon spike harness contents are counted only when exactly one corresponding container is carried; multiple containers suppress the relevant warnings.
 - The death reclaim warning is not a guarantee that no items are awaiting reclaim. Blessed flask, Grace of the elves and scrimshaw warnings are unavailable. Durability warnings depend on English game messages during preset loading, not an independent durability check.
