@@ -35,6 +35,7 @@ Vector4 = { new = function(r, g, b, a) return { r, g, b, a } end }
 config = { Font = { FromID = function() return { GetStringWidth = function(_, text) return #text * 6 end } end } }
 
 local popup = require("warnings/popup")
+-- Colours, rows, and default expiry.
 local customBackground, customAccent = popup.colours("low", { lowColour = "#0080FF" })
 assert(customAccent[1] == 0 and customAccent[2] == 128 / 255 and customAccent[3] == 1)
 assert(customBackground[3] == 0.36)
@@ -68,6 +69,7 @@ popup.update(103.9)
 assert(not root.destroyed)
 popup.update(104)
 assert(root.destroyed)
+-- Custom duration and hover behavior.
 local start = #components
 assert(popup.show({ { name = "Law rune", count = 1, level = "critical" } }, 110, 12))
 local replacement = components[start + 1]
@@ -98,6 +100,7 @@ popup.update(155)
 assert(leftEarly.destroyed)
 popup.clear()
 assert(replacement.destroyed)
+-- Quantity labels, message labels, and long names.
 local cases = {
     { "Fire rune", 1, "Fire rune: 1" }, { "Fire rune", 100, "Fire runes: 100" },
     { "Ectoplasm", 10, "Ectoplasm: 10" }, { "Ruby bolts (e)", 1, "Ruby bolt (e): 1" },
@@ -132,6 +135,7 @@ assert(#longLabel.content * 6 <= longLabel.size[1] and #secondLine.content * 6 <
 assert(secondLine.pos[2] > longLabel.pos[2] and components[start + 3].size[2] > 32)
 assert(longSeverity.content == "MISSING" and longLabel.pos[1] + longLabel.size[1] <= longSeverity.pos[1])
 popup.clear()
+-- Scrolling, configurable row limits, and small screens.
 local views = {}
 local prettyui = { SimpleView = { new = function(host, options)
     local view = { parent = host, content = {}, width = options.width, height = options.height, scrollY = 0 }
@@ -196,6 +200,7 @@ parent.height = 250
 assert(popup.show({ table.unpack(alerts, 1, 10) }, 200, 4, prettyui))
 assert(views[2].height == 163 and views[2].scrollbarVisible, "small screens limit popup height")
 popup.clear()
+-- Dragging, saved positions, display scaling, and screen bounds.
 parent.width, parent.height = 800, 600
 start = #components
 assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 300))
@@ -234,6 +239,7 @@ assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 320))
 assert(components[#components - 7].pos[1] == 60 and components[#components - 7].pos[2] == 72,
     "saved positions are clamped to the available screen")
 popup.clear()
+-- Pinning, closing, and replacement notifications.
 start = #components
 assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 400, 4))
 local pinnedRoot, pin, pinLabel = components[start + 1], components[start + 7], components[start + 8]

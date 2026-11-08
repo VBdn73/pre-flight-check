@@ -12,6 +12,7 @@ Inventory = { Find = function(name) return sources[name] end }
 var = { VarPlayer = { INVENT_CHARGE = { value = 379197048 } }, VarClient = { COMBATV2_RUNECOUNT_LAW = { value = 123 },
     COMBATV2_RUNECOUNT_BLOOD = { value = -1 } } }
 
+-- Read inventory, equipment, and combat rune counts.
 local first = reader.read()
 assert(first.backpack.available and first.backpack.counts[565] == 30)
 assert(first.equipment.available and first.equipment.counts[52299] == 6872)
@@ -19,6 +20,7 @@ assert(first.runeCounts[563] == 123 and first.runeCounts[565] == nil)
 assert(first.inventionCharge == 126399)
 assert(first.signOfLifeCooldown == nil)
 assert(first.deathReclaim == nil)
+-- Optional game variables distinguish unavailable data from zero.
 var.VarPlayer.GRAVESTONE_TIMER_INV_SLOTS = { value = 0 }
 var.VarPlayer.GRAVESTONE_TIMER_WORN_SLOTS = { value = 0 }
 var.VarPlayer.GRAVESTONE_TIMER_OVERFLOW_SLOTS = { value = 0 }
@@ -43,6 +45,7 @@ var.VarPlayer.DIV_LIFE_COOLDOWN.value = -1
 assert(reader.read().signOfLifeCooldown == nil)
 var.VarPlayer.DIV_LIFE_COOLDOWN = nil
 assert(reader.read().signOfLifeCooldown == nil)
+-- The decoded charge can be consumed by the monitor.
 local chargeMonitor = require("warnings/monitor").new({
     { itemId = 36389, enabled = true, custom = true, low = 200000, critical = 175000 },
 })
@@ -52,6 +55,7 @@ var.VarPlayer.INVENT_CHARGE.value = -1
 assert(reader.read().inventionCharge == nil)
 var.VarPlayer.INVENT_CHARGE = nil
 assert(reader.read().inventionCharge == nil)
+-- Snapshots do not change when the underlying inventory changes.
 var.VarClient.COMBATV2_RUNECOUNT_LAW.value = 12
 slots[2].count = 12
 local second = reader.read()
@@ -59,6 +63,7 @@ assert(second.backpack.counts[565] == 32 and first.backpack.counts[565] == 30)
 assert(second.runeCounts[563] == 12 and first.runeCounts[563] == 123)
 assert(first.backpack.counts ~= second.backpack.counts)
 
+-- Nexus contents are only attributable to a single carried nexus.
 local nexusSlots = { item(55336, 11953), item(55338, 20136) }
 sources[953] = { isValid = true, slotCount = 2, GetSlots = function() return nexusSlots end }
 slots = { item(59360, 1), item(55338, 5), empty() }
@@ -74,6 +79,7 @@ worn = { item(56142, 1), empty() }
 assert(not reader.read().nexus.available, "multiple nexuses cannot be attributed")
 worn = { empty(), item(52299, 6872) }
 
+-- Empty containers and spike harness attribution.
 slots = { empty(), empty(), empty() }
 assert(reader.read().backpack.available and next(reader.read().backpack.counts) == nil)
 assert(reader.read().nexus.available and next(reader.read().nexus.counts) == nil)
@@ -86,12 +92,12 @@ harnessSlots[1].count = 999
 assert(reader.read().spikeHarness.counts[57390] == 999)
 worn = { item(59925, 1), empty() }
 assert(not reader.read().spikeHarness.available, "multiple harnesses cannot be attributed")
-worn = { item(59925, 1), empty() }
 slots = { item(47071, 5), empty(), empty() }
 assert(reader.read().spikeHarness.counts[57390] == 999)
 sources[974].isValid = false
 assert(not reader.read().spikeHarness.available)
 sources[974].isValid = true
+-- Invalid or incomplete inventory data must not be interpreted as empty.
 worn = { empty(), item(52299, 6872) }
 slots = { empty(), item(565, 1) }
 assert(not reader.read().backpack.available) -- missing slot

@@ -1,3 +1,4 @@
+-- Mock client controls and PrettyUI widgets used by the settings view.
 local controls = {}
 local function control(kind, parent)
     local c = { kind = kind, parent = parent, hooks = {} }
@@ -155,6 +156,7 @@ prettyui.ColourPicker = { new = function(parent, options)
     pickers[#pickers + 1] = picker
     return picker
 end }
+-- Tab layout, sections, and accordion behavior.
 local refresh, destroy = require("warnings/settings-view").build(host, rules, function() changes = changes + 1 end, prettyui)
 local general, magic, necro, ranged, melee, misc = table.unpack(tabs.pages)
 assert(tabs.entries[1].text == "General" and tabs.entries[5].text == "Melee")
@@ -183,6 +185,7 @@ local function find(parent, kind, x, y)
     end
     error("control not found: " .. kind .. " " .. x .. "," .. y)
 end
+-- Miscellaneous warnings, permissions, and persistence.
 local style = magic.content
 local sign = find(misc.sections[4].content, "check", -30, 7)
 local death = find(misc.sections[4].content, "check", -30, 47)
@@ -249,6 +252,7 @@ assert(signBackground.rgba == 0x492626E8 and not sign.value)
 assert(not require("warnings/settings").load().signOfLife)
 sign.hooks.press()
 assert(signBackground.rgba == 0x23412DE8 and sign.value)
+-- General settings, validation, and failed saves.
 local preset = find(general.content, "checkbox", 10, 40)
 local presetChat = find(general.content, "checkbox", 25, 75)
 assert(not rules.presetChatNotifications)
@@ -330,6 +334,7 @@ PersistentDB.SetStructuredData = function() return false end
 preset.hooks.press()
 assert(preset.checkbox.items[1].selected and rules.checkOnPreset, "failed save restores the checkbox")
 PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
+-- Reopening restores saved settings and displays style defaults.
 destroy()
 assert(preset.checkbox.destroyed and bank.checkbox.destroyed)
 assert(lowColour.destroyed and criticalColour.destroyed)
@@ -363,6 +368,7 @@ assert(rules.styles.Magic.low ~= 5000)
 find(style, "input", 165, 38).hooks.change(nil, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
 assert(saved.styles.Magic.low == 5000 and rules.styles.Magic.low == 5000)
 assert(find(style, "text", 302, 38).content == "", "successful saves do not display a status message")
+-- Custom thresholds, tooltip placement, and row clipping.
 host.height = 600
 magic.sections[1]:SetExpanded(true)
 refresh()
@@ -513,6 +519,7 @@ assert(saved["554"].low == 7000 and saved["554"].critical == 300)
 local reloadedFire = require("warnings/settings").load()[4]
 assert(reloadedFire.custom and reloadedFire.low == 7000 and reloadedFire.critical == 300)
 customLow.simulateProgrammaticChange, customCritical.simulateProgrammaticChange = false, false
+-- Collapsed sections release rows; scrolling virtualizes and restores drafts.
 tabs.active = 4
 for _, c in ipairs(controls) do
     for _, section in ipairs(ranged.sections) do
@@ -577,6 +584,7 @@ large:SetExpanded(false)
 assert(liveRows() == 0)
 host.height = 600
 refresh()
+-- Shared ammunition groups and the other combat-style tabs.
 local rangedRows = find(ranged.content, "layer", 14, ranged.flowText.y)
 assert(rangedRows.width == -28 and rangedRows.widthAnchor == 1)
 local arrowSwitch = find(rangedRows, "check", -30, 7)

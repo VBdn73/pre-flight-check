@@ -1,4 +1,5 @@
 local catalogue = require("supplies/catalogue")
+-- Representative item names, categories, and groups.
 assert(catalogue[563].name == "Law rune" and catalogue[563].category == "rune")
 assert(catalogue[565].name == "Blood rune" and catalogue[565].category == "rune")
 assert(catalogue[52299].name == "Deathspore arrows" and catalogue[52299].category == "ammunition")
@@ -18,6 +19,7 @@ for itemId, name in pairs({ [10033] = "Chinchompa", [10034] = "Red chinchompa",
     local item = catalogue[itemId]
     assert(item.name == name and item.category == "ammunition" and item.group == "Chinchompas")
 end
+-- Combat rune variables cover the full supported set.
 local count = 0
 for _, item in pairs(catalogue) do
     if item.combatVar then count = count + 1 end

@@ -44,6 +44,12 @@ pon pre-flight-check
 
 After Lua changes, use `prl pre-flight-check`; after manifest changes, run `prf` first. Run individual mocked tests with Lua 5.4, for example `lua tests/warning-integration.lua`. Also test in-client; mocked tests do not verify client behavior.
 
+Run the whole mocked suite from PowerShell (each file runs in a separate Lua process):
+
+```powershell
+Get-ChildItem tests/*.lua | ForEach-Object { lua $_.FullName; if ($LASTEXITCODE -ne 0) { throw "Failed: $($_.Name)" } }
+```
+
 Before submission, review the [plugin guidelines](https://developer.runescape.com/rs/submission/guidelines.html) and [submission process](https://developer.runescape.com/rs/submission/process.html). Required description sections must also appear in the mod.io listing.
 
 ## Feedback and collaboration

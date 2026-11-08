@@ -19,6 +19,7 @@ package.loaded["supplies/inventory-reader"] = { read = function()
     return { backpack = { available = true }, equipment = { available = true } }
 end }
 dofile("main.lua")
+-- Updates without an enabled trigger and updates outside the game.
 callbacks.logic({ logicTick = 50 })
 callbacks.server()
 assert(#snapshots == 0, "server updates alone do not check warnings")
@@ -31,6 +32,7 @@ callbacks.state({ newState = 30 })
 assert(#snapshots == 0, "entering the game does not check warnings")
 callbacks.server()
 assert(#snapshots == 0, "warnings only run after an enabled action")
+-- Shutdown unregisters each event subscription.
 PluginShutdown()
 assert(unsubscribed.server == "supplyCheck.refresh")
 assert(unsubscribed.state == "supplyCheck.state")

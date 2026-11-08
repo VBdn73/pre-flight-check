@@ -6,6 +6,7 @@ PersistentDB = {
 local settings = require("warnings/settings")
 local catalogue = require("supplies/catalogue")
 local rules = settings.load()
+-- Defaults and catalogue coverage.
 assert(not rules.checkOnBankClose and rules.checkOnPreset and settings.defaults().checkOnPreset)
 assert(not rules.presetChatNotifications and not settings.defaults().presetChatNotifications)
 assert(rules.signOfLife and settings.defaults().signOfLife)
@@ -42,6 +43,7 @@ for _, name in ipairs({ "Magic", "Necromancy", "Ranged", "Melee", "Misc" }) do
     assert(rules.styles[name].low == 1000 and rules.styles[name].critical == 250)
 end
 assert(settings.style(48951) == "Misc")
+-- Threshold validation and persistence.
 assert(settings.valid({ itemId = 52494, enabled = true, low = 1440, critical = 0 }))
 assert(not settings.valid({ itemId = 52494, enabled = true, low = 1441, critical = 0 }))
 assert(not settings.valid({ itemId = 52494, enabled = true, low = 30, critical = 31 }))
@@ -50,6 +52,7 @@ rules[1].custom, rules[1].low, rules[1].critical = true, 70, 10
 rules[2].enabled = false
 assert(settings.save(rules))
 assert(settings.load().presetChatNotifications, "chat notification choice persists")
+-- Legacy and missing saved values are handled safely.
 saved["26295"] = { enabled = true, custom = true, low = 60, critical = 30 }
 for _, rule in ipairs(settings.load()) do
     assert(rule.itemId ~= 26295, "saved scrimshaw rules must not be loaded")
@@ -81,6 +84,7 @@ end
 assert(loaded.checkOnBankClose and loaded.checkOnPreset)
 assert(loaded.popupDuration == 12)
 assert(loaded.popupRows == 10)
+-- Invalid saved values fall back to defaults; invalid changes cannot be saved.
 saved.popupRows = 0
 assert(settings.load().popupRows == 8)
 saved.popupRows = 21
@@ -96,6 +100,7 @@ assert(settings.load().popupDuration == 4)
 saved.popupDuration = 3601
 assert(settings.load().popupDuration == 4)
 saved.popupDuration = 12
+-- Effective thresholds and removal of obsolete persisted fields.
 assert(loaded.styles.Magic.warnAtZero == nil and loaded[1].warnAtZero == nil)
 assert(settings.effective(loaded, loaded[1]).low == 70)
 assert(settings.effective(loaded, loaded[2]).low == 5000 and not loaded[2].enabled)

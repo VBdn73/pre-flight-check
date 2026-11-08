@@ -32,6 +32,7 @@ local prettyui = { SimpleView = { new = function(_, options)
     return view
 end } }
 local ribbon = require("warnings/ribbon")
+-- Record a batch, scroll through it, and resize the panel.
 local parent = { width = 250, height = 144 }
 ribbon.open(parent, prettyui)
 assert(controls[1].content == "Last notifications (0)")
@@ -54,11 +55,13 @@ assert(controls[10].content == "Rune: 7" and not controls[10].hidden, "last aler
 parent.height = 216
 ribbon.update()
 assert(views[1].height == 180, "view follows panel size")
+-- Replacing a batch resets scrolling and updates the presentation.
 ribbon.record({ { message = "Sign of life: 3 min", level = "critical" } }, 20)
 assert(controls[1].content == "Last notifications (1): 09:42")
 assert(views[1].scrollY == 0 and not views[1].scrollbarVisible)
 assert(controls[4].content == "Sign of life: 3 min" and controls[7].hidden)
 assert(controls[2].colour[2] == 0.08 and controls[3].colour[2] == 0.25)
+-- Long labels reflow without hiding subsequent alerts.
 local longName = "Augmented custom-fit trimmed spiked masterwork melee platebody"
 ribbon.record({ { name = longName, level = "critical", status = "MISSING" },
     { name = "Rune", count = 2, level = "low" } })
@@ -83,6 +86,7 @@ for _, item in ipairs(controls) do
     if item.content == "Rune: 2" and not item.hidden then foundLast = true end
 end
 assert(foundLast, "scrolling reaches the row after a long label")
+-- Reopening retains the batch; a missing game clock has a fallback.
 parent.width, parent.height = 250, 216
 ribbon.record({ { message = "Sign of life: 3 min", level = "critical" } })
 ribbon.close()

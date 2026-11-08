@@ -1,16 +1,25 @@
 local presetTest = require("bank/preset-trigger")
-assert(presetTest.isShortcut({ gameKey = 16, modifiers = 0, isRepeat = false }))
-assert(presetTest.isShortcut({ gameKey = 1, modifiers = 0, isRepeat = false }))
-assert(presetTest.isShortcut({ gameKey = 3, modifiers = 0, isRepeat = false }))
-assert(presetTest.isShortcut({ gameKey = 18, modifiers = 2, isRepeat = false }))
-assert(presetTest.isShortcut({ gameKey = 18, modifiers = 4, isRepeat = false }, 2))
-assert(presetTest.isShortcut({ gameKey = 68, modifiers = 2, isRepeat = false }))
-assert(not presetTest.isShortcut({ gameKey = 18, modifiers = 0, isRepeat = false }))
-assert(not presetTest.isShortcut({ gameKey = 68, modifiers = 0, isRepeat = false }))
-assert(not presetTest.isShortcut({ gameKey = 1, modifiers = 2, isRepeat = false }))
-assert(not presetTest.isShortcut({ gameKey = 16, modifiers = 0, isRepeat = true }))
-assert(not presetTest.isShortcut({ gameKey = 16, modifiers = 1, isRepeat = false }))
-assert(not presetTest.isShortcut({ gameKey = 30, modifiers = 0, isRepeat = false }))
+-- Supported shortcuts and rejected modifiers, repeats, and keys.
+local shortcutCases = {
+    { "preset key", 16, 0, false, true },
+    { "first number key", 1, 0, false, true },
+    { "number key", 3, 0, false, true },
+    { "modified shortcut", 18, 2, false, true },
+    { "custom modifier", 18, 4, false, true, 2 },
+    { "modified letter", 68, 2, false, true },
+    { "missing modifier", 18, 0, false, false },
+    { "unmodified letter", 68, 0, false, false },
+    { "modified number", 1, 2, false, false },
+    { "repeat", 16, 0, true, false },
+    { "wrong modifier", 16, 1, false, false },
+    { "unrelated key", 30, 0, false, false },
+}
+for _, case in ipairs(shortcutCases) do
+    local name, key, modifiers, repeatKey, expected, customModifier = table.unpack(case)
+    local result = presetTest.isShortcut({ gameKey = key, modifiers = modifiers, isRepeat = repeatKey }, customModifier)
+    assert(not not result == expected, name)
+end
+-- Menu actions must match a supported bank component and verb.
 local function entry(verb, interface, component)
     return { verbText = verb, componentData = { component = {
         interfaceID = interface, staticID = component } } }

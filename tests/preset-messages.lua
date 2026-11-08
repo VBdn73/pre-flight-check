@@ -2,6 +2,7 @@ local messages = require("bank/preset-messages")
 local function parse(text, kind)
     return messages.parse({ chatMessage = text, chatType = kind or 0 })
 end
+-- Withdrawal header and individual issue types.
 assert(parse("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...") == "start")
 assert(parse("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...", 109) == "start")
 local kind, alert = parse("<col=ff0000>Item could not be found: Powder of protection</col>")
@@ -14,6 +15,7 @@ kind, alert = parse("Perfect plus potion (1) could not be found. Perfect plus po
 assert(kind == "issue" and alert.name == "Perfect plus potion (1)" and alert.level == "low" and alert.status == "DOSE")
 kind, alert = parse("Item could not be found: Powder of penance", 109)
 assert(kind == "issue" and alert.name == "Powder of penance" and alert.level == "critical")
+-- Ignore unrelated chat and malformed charge warnings.
 assert(not parse("Item could not be found: Ectoplasm", 2))
 assert(not parse("Unrelated message"))
 kind, alert = parse("<col=ff0000>Your Augmented custom-fit trimmed spiked masterwork melee platelegs has 3.9% of its charges left.</col>", 109)

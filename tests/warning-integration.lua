@@ -34,6 +34,7 @@ dofile("main.lua")
 local function time(seconds) callbacks.logic({ logicTick = seconds * 50 }) end
 local function load() callbacks.menu({ entry = { verbText = "Load", componentData = { component = {
     interfaceID = 517, staticID = 267 } } } }) end
+-- Preset checks wait for the new inventory and do not run continuously.
 time(1)
 callbacks.server()
 amount = 99
@@ -67,6 +68,7 @@ amount = 70
 time(10.2)
 callbacks.server()
 assert(#alerts == 3 and alerts[3][1].count == 70, "shortcut checks the settled snapshot")
+-- Bank-close checks, unavailable inventory, and Escape deduplication.
 rules.checkOnPreset = false
 rules.checkOnBankClose = true
 bankRestricted = true
@@ -113,6 +115,7 @@ assert(#alerts == 8, "a later bank close is not suppressed indefinitely")
 time(40)
 callbacks.server()
 assert(#alerts == 8, "server updates do not repeat alerts")
+-- Preset loads and bank closure must not generate duplicate or stale checks.
 bankOpen = true
 time(41)
 load()
@@ -171,6 +174,7 @@ load()
 time(52.9)
 callbacks.server()
 assert(#alerts == 13, "disabled items do not alert on a triggered check")
+-- Death reclaim follows the same trigger and enabled-setting rules.
 rules.deathReclaim = true
 var.VarPlayer.GRAVESTONE_TIMER_INV_SLOTS = { value = 2 }
 -- The reader mock supplies the same snapshot field as the real reader.
@@ -193,6 +197,7 @@ load()
 time(56.8)
 callbacks.server()
 assert(#alerts == 15, "disabled death reclaim warning stays silent")
+-- Preset chat notifications require opt-in and permission.
 rules.checkOnPreset = true
 local function chat(text, kind) callbacks.chat({ chatMessage = text, chatType = kind or 0 }) end
 time(57)
@@ -216,6 +221,7 @@ chat("Your preset is being withdrawn. Please see below for any issues whilst try
 chat("Item could not be found: Powder of protection")
 time(60)
 assert(#alerts == 16, "no chat notifications without permission")
+-- Merge chat issues with supply warnings without losing unmatched issues.
 chatPermission = true
 rules[1].enabled = true
 package.loaded["supplies/inventory-reader"].read = function()
@@ -254,6 +260,7 @@ chat("Item could not be found: Powder of protection", 109)
 time(67)
 assert(#alerts == 18, "chat notifications require preset checks")
 rules.checkOnPreset = true
+-- Durability messages are opt-in and limited to the preset-load window.
 rules.itemDurability = false
 time(68)
 load()

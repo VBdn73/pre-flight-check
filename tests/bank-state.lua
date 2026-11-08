@@ -5,6 +5,7 @@ ui = { Interfaces = {
     GetInterface = function() return open and {} or nil end,
     GetComponent = function() return { visibleGlobal = visible, isRestricted = restricted } end,
 } }
+-- Opening, closing, and hiding the bank.
 assert(not watcher.update())
 open = true
 assert(not watcher.update())
@@ -21,6 +22,7 @@ assert(not watcher.update())
 watcher.reset()
 open = false
 assert(not watcher.update())
+-- A keyboard event can mark an opening between updates.
 open = true
 assert(watcher.isOpen())
 assert(watcher.isMainPanelOpen())
@@ -30,6 +32,7 @@ var.VarPlayer.BANK_ACTIVE.value = 1
 watcher.markOpen()
 open = false
 assert(watcher.update(), "key event can mark a briefly opened bank")
+-- Restricted roots require an independent signal before reporting closure.
 open = true
 assert(not watcher.update())
 restricted = true
