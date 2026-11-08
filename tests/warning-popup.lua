@@ -1,4 +1,4 @@
-local components = {}
+local components, handles = {}, {}
 local parent = { xyGlobal = { x = 0, y = 0 } }
 local savedPosition
 PersistentDB = {
@@ -12,6 +12,7 @@ local function new(kind, host)
     function control:SetHeaderLayout() end
     function control:Subscribe(hook, name, callback) self.hooks = self.hooks or {}; self.hooks[hook] = callback or name end
     function control:Destroy() self.destroyed = true end
+    function control:MoveToFront() end
     components[#components + 1] = control
     return control
 end
@@ -19,6 +20,12 @@ ui = { Interfaces = { GetComponent = function() return parent end },
     AlignMode = { CENTRE = 1, BOTTOMRIGHT = 2 }, Hook = { ONSCROLLWHEEL = "wheel",
         ONCLICK = "click", ONHOLD = "hold", ONRELEASE = "release", ONDRAGCOMPLETE = "dragComplete", ONBUTTONPRESSED = "pressed" },
     GroupBox = { new = function(host) return new("group", host) end },
+    Layer = { new = function(host)
+        local item = new("layer", host)
+        components[#components] = nil
+        handles[#handles + 1] = item
+        return item
+    end },
     Button = { new = function(host) return new("button", host) end },
     Rectangle = { new = function(host) return new("rectangle", host) end },
     Text = { new = function(host) return new("text", host) end } }
@@ -38,7 +45,7 @@ assert(popup.show({ { name = "Law rune", count = 10, level = "critical" },
 local root, title, red, redAccent, critical, criticalSeverity, orange, orangeAccent, low, lowSeverity = table.unpack(components)
 assert(title.content == "Supply Check (2)")
 assert(root.clickthrough == false)
-assert(not title.clickthrough)
+assert(title.clickthrough and not handles[1].clickthrough)
 for i = 3, 10 do assert(components[i].clickthrough) end
 assert(red.fill and orange.fill and redAccent.fill and orangeAccent.fill)
 assert(red.colour[1] > red.colour[2] and orange.colour[2] > red.colour[2])
@@ -192,19 +199,35 @@ popup.clear()
 parent.width, parent.height = 800, 600
 start = #components
 assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 300))
-local draggable, handle = components[start + 1], components[start + 2]
+local draggable, handle = components[start + 1], handles[#handles]
 draggable.xyGlobal = { x = 230, y = 45 }
+local mouse = { x = 260, y = 61 }
+Mouse = { GetPosition = function() return mouse end }
 handle.hooks.click(handle, 20, 10)
+assert(handle.pos[1] == 0 and handle.size[3] == 1, "drag captures the whole parent")
 popup.update(305)
 assert(not draggable.destroyed, "dragging keeps the popup open")
+mouse = { x = 360, y = 111 }
 handle.hooks.hold(handle, 120, 60)
 assert(draggable.pos[1] == 330 and draggable.pos[2] == 95)
+mouse = { x = 660, y = 311 }
+handle.hooks.hold(handle, 420, 260)
+assert(draggable.pos[1] == 460 and draggable.pos[2] == 295, "fast drags remain captured and clamped")
 handle.hooks.release()
-assert(savedPosition.x == 330 and savedPosition.y == 95)
+assert(savedPosition.x == 460 and savedPosition.y == 295)
+assert(handle.size[1] == 225 and handle.pos[1] == 470, "release restores the handle")
 popup.clear()
+assert(handle.destroyed, "popup cleanup destroys the sibling handle")
 start = #components
 assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 310))
-assert(components[start + 1].pos[1] == 330 and components[start + 1].pos[2] == 95)
+assert(components[start + 1].pos[1] == 460 and components[start + 1].pos[2] == 295)
+local scaledRoot, scaledHandle = components[start + 1], handles[#handles]
+mouse = { x = (460 + 10 + 20) * 2, y = (295 + 6 + 10) * 2 }
+scaledHandle.hooks.click(scaledHandle, 20, 10)
+mouse = { x = mouse.x - 100, y = mouse.y - 80 }
+scaledHandle.hooks.hold(scaledHandle, -30, -30)
+assert(scaledRoot.pos[1] == 410 and scaledRoot.pos[2] == 255, "drag accounts for display scaling")
+scaledHandle.hooks.release()
 popup.clear()
 parent.width, parent.height = 400, 150
 assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 320))

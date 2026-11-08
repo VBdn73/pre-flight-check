@@ -1,6 +1,6 @@
 -- Short-lived, non-blocking warning overlay.
 local popup = {}
-local root, expires, scroll, hoverTargets, drag, pinned
+local root, expires, scroll, hoverTargets, drag, pinned, dragHandle
 local rowHeight = 36
 local positionKey = "supplyWarnings.popupPosition"
 
@@ -100,8 +100,10 @@ end
 function popup.clear()
     local old = root
     local oldScroll = scroll
-    root, expires, scroll, hoverTargets, drag, pinned = nil, nil, nil, nil, nil, nil
+    local oldHandle = dragHandle
+    root, expires, scroll, hoverTargets, drag, pinned, dragHandle = nil, nil, nil, nil, nil, nil, nil
     if oldScroll then pcall(function() oldScroll:Destroy() end) end
+    if oldHandle then pcall(function() oldHandle:Destroy() end) end
     if old then pcall(function() old:Destroy() end) end
 end
 
@@ -151,23 +153,58 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
         local title = ui.Text.new(root)
         title:SetPos(10, 6); title:SetSize(225, 24)
         title.font = id.Font.MUSEO_SANS_15PT_REGULAR
-        title.clickthrough = false
+        title.clickthrough = true
         title.content = "Supply Check (" .. #alerts .. ")"
-        hoverTargets = { title }
-        title:Subscribe(ui.Hook.ONCLICK, "supplyCheck.popupDragStart", function(_, x, y)
+        dragHandle = ui.Layer.new(parent)
+        dragHandle.clickthrough = false
+        local function placeHandle()
+            local origin, parentOrigin = root.xyGlobal, parent.xyGlobal
+            if origin and parentOrigin then
+                dragHandle:SetPos(origin.x - parentOrigin.x + 10, origin.y - parentOrigin.y + 6)
+            end
+            dragHandle:SetSize(225, 24)
+            dragHandle:MoveToFront()
+        end
+        placeHandle()
+        hoverTargets = { title, dragHandle }
+        local function mousePosition()
+            local ok, value = pcall(function() return Mouse.GetPosition() end)
+            if ok and value and type(value.x) == "number" and type(value.y) == "number" then return value end
+        end
+        dragHandle:Subscribe(ui.Hook.ONCLICK, "supplyCheck.popupDragStart", function(_, x, y)
             if type(x) ~= "number" or type(y) ~= "number" then return false end
             local origin, parentOrigin = root.xyGlobal, parent.xyGlobal
             if not origin or not parentOrigin then return false end
+            local raw = mousePosition()
+            local expectedX, expectedY = origin.x + 10 + x, origin.y + 6 + y
+            local sx = raw and math.abs(expectedX) >= 32 and raw.x / expectedX or nil
+            local sy = raw and math.abs(expectedY) >= 32 and raw.y / expectedY or nil
+            local scale
+            if sx and sy and math.abs(sx - sy) <= (sx + sy) * 0.05 then
+                scale = (sx + sy) / 2
+            elseif sx and not sy and sx >= 0.5 and sx <= 4 then scale = sx
+            elseif sy and not sx and sy >= 0.5 and sy <= 4 then scale = sy end
+            if not scale or scale <= 0 then
+                scale = (game and game.options and game.options.InterfaceScale
+                    and tonumber(game.options.InterfaceScale.setting) or 100) / 100
+                if scale <= 0 then scale = 1 end
+            end
             drag = { x = x, y = y, rootX = origin.x - parentOrigin.x,
-                rootY = origin.y - parentOrigin.y }
+                rootY = origin.y - parentOrigin.y, raw = raw, scale = scale }
+            dragHandle:SetPos(0, 0)
+            dragHandle:SetSize(0, 0, 1, 1)
+            dragHandle:MoveToFront()
             return false
         end)
-        title:Subscribe(ui.Hook.ONHOLD, "supplyCheck.popupDragMove", function(_, x, y)
+        dragHandle:Subscribe(ui.Hook.ONHOLD, "supplyCheck.popupDragMove", function(_, x, y)
             if not drag or type(x) ~= "number" or type(y) ~= "number" then return false end
-            local origin, parentOrigin = root.xyGlobal, parent.xyGlobal
-            if not origin or not parentOrigin then return false end
-            local nextX = origin.x - parentOrigin.x + x - drag.x
-            local nextY = origin.y - parentOrigin.y + y - drag.y
+            local raw = mousePosition()
+            local dx, dy = x - drag.x, y - drag.y
+            if raw and drag.raw then
+                dx, dy = (raw.x - drag.raw.x) / drag.scale, (raw.y - drag.raw.y) / drag.scale
+            end
+            local nextX = math.floor(drag.rootX + dx + 0.5)
+            local nextY = math.floor(drag.rootY + dy + 0.5)
             nextX, nextY = clampPosition(nextX, nextY, parent, 42 + listHeight)
             root:SetPos(nextX, nextY)
             drag.moved = nextX ~= drag.rootX or nextY ~= drag.rootY
@@ -181,10 +218,11 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
                 if not ok or saved ~= true then print("[supply-check] Could not save popup position") end
             end
             drag = nil
+            placeHandle()
             return false
         end
-        title:Subscribe(ui.Hook.ONRELEASE, "supplyCheck.popupDragEnd", finishDrag)
-        title:Subscribe(ui.Hook.ONDRAGCOMPLETE, "supplyCheck.popupDragComplete", finishDrag)
+        dragHandle:Subscribe(ui.Hook.ONRELEASE, "supplyCheck.popupDragEnd", finishDrag)
+        dragHandle:Subscribe(ui.Hook.ONDRAGCOMPLETE, "supplyCheck.popupDragComplete", finishDrag)
         local listParent, rowWidth = root, 324
         if needsScroll then
             assert(prettyui and prettyui.SimpleView and prettyui.SimpleView.new, "PrettyUI SimpleView is required")
