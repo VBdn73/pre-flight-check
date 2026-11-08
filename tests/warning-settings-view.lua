@@ -30,6 +30,7 @@ local function control(kind, parent)
     return c
 end
 ui = { Text = { new = function(parent) return control("text", parent) end },
+    Layer = { new = function(parent) return control("layer", parent) end },
     Sprite = { new = function(parent) return control("sprite", parent) end },
     Rectangle = { new = function(parent) return control("rectangle", parent) end },
     Check = { new = function(parent) return control("check", parent) end },
@@ -91,14 +92,19 @@ end }, Tabs = { new = function(host, entries, options)
         function page:reflow()
             local y = options.contentLayout.startY
             for _, section in ipairs(self.sections) do
+                y = y + (section.marginTop or 0)
                 section.root.y = y
                 y = y + 20 + (section.expanded and 4 + section.contentHeight or 0) + 8
+            end
+            if self.flowText then
+                self.flowText.y = y
+                y = y + self.flowText.height + 2
             end
             self:SetContentHeight(y + 6)
             self.scrollY = math.min(self.scrollY, math.max(0, self.contentHeight - self.height))
         end
         function page:AddCollapseButton(name, opts)
-            local section = { name = name, expanded = opts.expanded, root = {},
+            local section = { name = name, expanded = opts.expanded, root = {}, marginTop = opts.marginTop,
                 content = { x = opts.indent or 20, y = 24 }, contentHeight = 0 }
             function section:_SetContentHeight(h) self.contentHeight = h; page:reflow() end
             function section:SetExpanded(value)
@@ -107,6 +113,12 @@ end }, Tabs = { new = function(host, entries, options)
             self.sections[#self.sections + 1] = section
             self:reflow()
             return section
+        end
+        function page:AddText(opts)
+            self.flowText = control("flowText", self.content)
+            self.flowText:SetSize(0, opts.height, 1, 0)
+            self:reflow()
+            return self.flowText
         end
         tabs.pages[i] = page
     end
@@ -142,6 +154,10 @@ local refresh, destroy = require("warnings/settings-view").build(host, rules, fu
 local general, magic, necro, ranged, melee, misc = table.unpack(tabs.pages)
 assert(tabs.entries[1].text == "General" and tabs.entries[5].text == "Melee")
 assert(tabs.options.contentLayout.startY == 80)
+assert(magic.sections[1].root.y == 80 and necro.sections[1].root.y == 80)
+assert(melee.sections[1].root.y == 80 and misc.sections[1].root.y == 80)
+assert(ranged.sections[1].root.y == 80)
+assert(ranged.flowText.y > ranged.sections[4].root.y)
 assert(magic.sections[1].name == "Elemental" and magic.sections[2].name == "Catalytic")
 assert(necro.sections[1].name == "Necrotic Runes" and ranged.sections[1].name == "Elder God Arrows")
 assert(ranged.sections[2].name == "Special Arrows" and ranged.sections[3].name == "Enchanted Bakriminel Bolts")
@@ -516,12 +532,13 @@ end
 ranged.sections[2]:SetExpanded(true)
 refresh()
 assert(find(arrow, "sprite", 8, 3).itemId == 52299)
-local chinchompas = ranged.sections[11]
+local chinchompas = ranged.sections[4]
 chinchompas:SetExpanded(true)
 refresh()
 assert(not ranged.sections[2].expanded)
 assert(find(chinchompas.content, "sprite", 8, 3).itemId == 60791)
-local large = ranged.sections[7] -- Slayer and Other Arrows
+local large = ranged.sections[3] -- Enchanted Bakriminel Bolts
+host.height = 300
 large:SetExpanded(true)
 ranged.scrollY = large.root.y + large.content.y
 refresh()
@@ -551,8 +568,63 @@ ranged.scrollY = large.root.y + large.content.y
 refresh()
 assert(not find(large.content, "check", -30, 7).value, "recreated rows retain saved settings")
 assert(find(large.content, "input", -171, 5).content == "1234", "scrolling retains an unsaved draft")
+find(large.content, "check", -30, 7).hooks.press()
 large:SetExpanded(false)
 assert(liveRows() == 0)
+host.height = 600
+refresh()
+local rangedRows = find(ranged.content, "layer", 14, ranged.flowText.y)
+assert(rangedRows.width == -28 and rangedRows.widthAnchor == 1)
+local arrowSwitch = find(rangedRows, "check", -30, 7)
+local boltSwitch = find(rangedRows, "check", -30, 47)
+local collapsedY = rangedRows.y
+host.height = 300
+ranged.sections[1]:SetExpanded(true)
+ranged.scrollY = 0
+refresh()
+assert(rangedRows.y == ranged.flowText.y and rangedRows.y > collapsedY)
+assert(arrowSwitch.hidden, "rows below an expanded section are clipped outside the viewport")
+ranged.scrollY = rangedRows.y
+refresh()
+assert(not arrowSwitch.hidden, "scrolling reaches the shared rows")
+ranged.sections[1]:SetExpanded(false)
+refresh()
+assert(rangedRows.y == collapsedY and ranged.flowText.y == collapsedY)
+host.height = 600
+assert(find(rangedRows, "text", 48, 3).content == "Arrows")
+assert(find(rangedRows, "text", 48, 43).content == "Bolts")
+assert(find(rangedRows, "text", 48, 83).content == "Gem Bolts")
+assert(find(rangedRows, "text", 48, 123).content == "Bakriminel Bolts")
+assert(find(rangedRows, "text", 48, 163).content == "Enchanted Gem Bolts")
+arrowSwitch.hooks.press()
+for _, itemId in ipairs({ 882, 31737, 19152, 19157, 19162, 58036, 34235 }) do
+    assert(not saved[tostring(itemId)].enabled)
+end
+assert(saved["52299"].enabled and saved["53055"].enabled)
+boltSwitch.hooks.press()
+for _, itemId in ipairs({ 877, 28465, 35989, 58041, 60322 }) do
+    assert(not saved[tostring(itemId)].enabled)
+end
+assert(saved["41633"].enabled and saved["9242"].enabled)
+for _, group in ipairs({
+    { y = 87, ids = { 879, 31868, 9342 }, other = 9236 },
+    { y = 127, ids = { 24116, 41634, 41684 }, other = 41633 },
+    { y = 167, ids = { 9236, 31881, 9245 }, other = 41633 },
+}) do
+    find(rangedRows, "check", -30, group.y).hooks.press()
+    for _, itemId in ipairs(group.ids) do assert(not saved[tostring(itemId)].enabled) end
+    assert(saved[tostring(group.other)].enabled)
+end
+find(rangedRows, "button", -251, 5).hooks.press()
+local combinedLow = find(rangedRows, "input", -171, 5)
+combinedLow.content = "2000"
+combinedLow.hooks.change(combinedLow, ui.InputFieldActionResult.SUBMIT)
+assert(saved["31737"].custom and saved["31737"].low == 2000 and saved["882"].low == 2000)
+PersistentDB.SetStructuredData = function() return false end
+arrowSwitch.hooks.press()
+assert(not arrowSwitch.value)
+assert(not saved["31737"].enabled and not saved["882"].enabled)
+PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
 tabs.active = 5
 melee.sections[1]:SetExpanded(true)
 refresh()

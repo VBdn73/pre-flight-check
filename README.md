@@ -96,8 +96,12 @@ catalytic and combination runes, all four necrotic runes and ectoplasm.
 Magic tab groups runes into collapsible Elemental, Catalytic and Combination sections.
 The Necromancy tab has collapsible Necrotic Runes and Ectoplasm sections.
 The Melee tab provides one Armour Spikes warning for all six variants combined,
-and the Ranged tab groups arrows, bolts and chinchompas into collapsible sections, with commonly
-used ammunition first. Each ammunition variant has its own warning.
+and the Ranged tab has shared settings alongside collapsible sections for other ammunition.
+The shared rows cover standard and slayer arrows, Araxyte and god arrows, standard and special
+bolts, gem bolts, Bakriminel bolts, and enchanted gem bolts. Each item is still counted and
+warned about separately; enchanted Bakriminel bolts retain individual settings.
+Changing a shared row applies its settings to all items in that row; previously saved individual
+settings remain in effect until the row is changed.
 The Misc tab includes vulnerability, poison and sticky bombs, dreadnips and dominion mines,
 counted in the backpack and equipment,
 and an Invention charge pack warning. Charge is read from VarPlayer 5984 (`INVENT_CHARGE`)

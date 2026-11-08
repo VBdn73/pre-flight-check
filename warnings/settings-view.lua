@@ -7,6 +7,9 @@ local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
 local combination = { [4694] = true, [4695] = true, [4696] = true,
     [4697] = true, [4698] = true, [4699] = true }
 local rowHeight = 40
+local rangedCombinedNames = { "Arrows", "Bolts", "Gem Bolts", "Bakriminel Bolts", "Enchanted Gem Bolts" }
+local rangedCombinedIcons = { Arrows = 882, Bolts = 877, ["Gem Bolts"] = 879,
+    ["Bakriminel Bolts"] = 24116, ["Enchanted Gem Bolts"] = 9236 }
 
 local function text(parent, x, y, width, value)
     local label = ui.Text.new(parent)
@@ -50,7 +53,7 @@ function view.build(host, rules, onChange, prettyui)
     local styleNames = { "Magic", "Necromancy", "Ranged", "Melee", "Misc" }
     local controls = { {}, {}, {}, {}, {}, {} }
     local checkboxes, tooltips, tooltipTargets = {}, {}, {}
-    local pageIndex, currentSection, currentRow = 1, nil, nil
+    local pageIndex, currentSection, currentRow, currentRowOffset = 1, nil, nil, nil
     local layoutChanged = true
     local resetControls = { {}, {}, {}, {}, {}, {} }
     local colourPickers = {}
@@ -61,7 +64,7 @@ function view.build(host, rules, onChange, prettyui)
         local scroll = pages[pageIndex]
         local list = controls[pageIndex]
         list[#list + 1] = { control = control, section = currentSection, row = currentRow,
-            viewportClipped = currentSection ~= nil }
+            rowOffset = currentRowOffset, viewportClipped = currentSection ~= nil or currentRowOffset ~= nil }
         control:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.scroll", function(_, delta)
             if not scroll.scrollbarVisible then return true end
             scroll:ScrollBy(delta * 32)
@@ -323,8 +326,12 @@ function view.build(host, rules, onChange, prettyui)
     pageIndex = 3
     text(pages[3].content, 10, 8, 400, "Quivers unreadable; only loose supplies count.")
     for _, name in ipairs({ "Elder God Arrows", "Special Arrows", "Enchanted Bakriminel Bolts",
-        "Special Bolts", "Enchanted Gem Bolts", "Standard Arrows", "Slayer and Other Arrows",
-        "Bakriminel Bolts", "Gem Bolts", "Standard Bolts", "Chinchompas" }) do addSection(3, name) end
+        "Chinchompas" }) do
+        addSection(3, name)
+    end
+    -- A managed flow item reserves space after the sections and follows their expansion.
+    local rangedSpacer = pages[3]:AddText({ text = "", height = #rangedCombinedNames * rowHeight })
+    rangedSpacer.clickthrough = true
     pageIndex = 4
     text(pages[4].content, 10, 8, 400, "Counts include loose spikes and one harness.")
     addSection(4, "Armour Spikes")
@@ -430,10 +437,10 @@ function view.build(host, rules, onChange, prettyui)
         currentSection = nil
     end
     local rowDrafts = {}
-    local function buildRow(index, rule, item, group, rowPage, y)
+    local function buildRow(index, rule, item, group, rowPage, y, combined, rowParent)
         pageIndex = rowPage
-        currentSection = group.section
-        local parent = currentSection.content
+        currentSection = group and group.section or nil
+        local parent = currentSection and currentSection.content or rowParent or pages[rowPage].content
         -- PrettyUI's list uses a framed rectangle; use the same treatment for each row.
         local frame = track(ui.Rectangle.new(parent))
         local frameEntry = controls[pageIndex][#controls[pageIndex]]
@@ -454,6 +461,20 @@ function view.build(host, rules, onChange, prettyui)
         rowDrafts[index] = draft
         local fields, mode, switch
         local settingFields = false
+        local function saveCombined()
+            if not combined then return settings.save(rules) end
+            local old = {}
+            for _, other in ipairs(combined) do
+                if other ~= index then
+                    old[other] = rules[other]
+                    rules[other] = { itemId = rules[other].itemId, enabled = rules[index].enabled,
+                        custom = rules[index].custom, low = rules[index].low, critical = rules[index].critical }
+                end
+            end
+            if settings.save(rules) then return true end
+            for other, value in pairs(old) do rules[other] = value end
+            return false
+        end
         local function setField(field, value)
             value = tostring(value)
             if field.content == value then return end
@@ -473,7 +494,7 @@ function view.build(host, rules, onChange, prettyui)
         local function toggleEnabled()
             local old = rules[index].enabled
             rules[index].enabled = not old
-            if not settings.save(rules) then
+            if not saveCombined() then
                 rules[index].enabled = old
                 switch.value = old
                 mode.content = "Failed"
@@ -501,7 +522,7 @@ function view.build(host, rules, onChange, prettyui)
             end
             local old = rules[index].custom
             rules[index].custom = not custom
-            if not settings.save(rules) then
+            if not saveCombined() then
                 rules[index].custom = old
                 mode.content = "Failed"
                 return true
@@ -552,7 +573,7 @@ function view.build(host, rules, onChange, prettyui)
             end
             local old = rules[index]
             rules[index] = candidate
-            if not settings.save(rules) then
+            if not saveCombined() then
                 rules[index] = old
                 mode.content = "Failed"
                 return
@@ -572,7 +593,17 @@ function view.build(host, rules, onChange, prettyui)
             updateRow()
         end
         frameEntry.reset = resetRow
+        if combined then resetControls[rowPage][#resetControls[rowPage] + 1] = resetRow end
         updateRow()
+    end
+    local combinedRows = {}
+    for _, name in ipairs(rangedCombinedNames) do combinedRows[name] = {} end
+    local function combinedName(itemId, item)
+        if item.category ~= "ammunition" then return nil end
+        if item.group == "Standard Arrows" or item.group == "Slayer and Other Arrows"
+            or itemId == 31737 or itemId == 19152 or itemId == 19157 or itemId == 19162 then return "Arrows" end
+        if item.group == "Special Bolts" or item.group == "Standard Bolts" then return "Bolts" end
+        if combinedRows[item.group] then return item.group end
     end
     local orderedRules = {}
     local scriptureOrder = { [51814] = 1, [52117] = 2, [52347] = 3,
@@ -586,6 +617,10 @@ function view.build(host, rules, onChange, prettyui)
     for _, entry in ipairs(orderedRules) do
         local index, rule = entry.index, entry.rule
         local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
+        local combined = combinedName(rule.itemId, item)
+        if combined then
+            combinedRows[combined][#combinedRows[combined] + 1] = index
+        else
         pageIndex = rule.itemId == spikes.ruleId and 4
             or item.category == "rune" and 1 or item.category == "necromancy" and 2
             or item.category == "ammunition" and 3 or item.category == "misc" and 5 or nil
@@ -611,7 +646,23 @@ function view.build(host, rules, onChange, prettyui)
             buildRow(index, rule, item, group, pageIndex, y)
         end
         end
+        end
     end
+    -- Match PrettyUI's flow padding so these rows line up with the section headers.
+    local rangedRows = ui.Layer.new(pages[3].content)
+    rangedRows:SetPos(14, rangedSpacer.y); rangedRows:SetSize(-28, #rangedCombinedNames * rowHeight, 1, 0)
+    rangedRows.clickthrough = true
+    currentRowOffset = rangedRows
+    for i, name in ipairs(rangedCombinedNames) do
+        local indices = combinedRows[name]
+        local representative = rangedCombinedIcons[name]
+        local index
+        for _, candidate in ipairs(indices) do
+            if rules[candidate].itemId == representative then index = candidate; break end
+        end
+        buildRow(index, rules[index], { name = name }, nil, 3, (i - 1) * rowHeight, indices, rangedRows)
+    end
+    currentRowOffset = nil
     addUnavailableRows()
     local function destroyRows(page, section, keep)
         for i = #controls[page], 1, -1 do
@@ -731,6 +782,10 @@ function view.build(host, rules, onChange, prettyui)
     end
     local width, height, scrollPositions, activeIndex
     local function refresh()
+        if rangedRows.y ~= rangedSpacer.y then
+            rangedRows:SetPos(14, rangedSpacer.y)
+            layoutChanged = true
+        end
         local w = math.max(1, host.width)
         local h = math.max(1, host.height - 42)
         local selected = tabs:GetActiveIndex()
@@ -778,6 +833,7 @@ function view.build(host, rules, onChange, prettyui)
                     local box = entry.background
                     local top = (box and box.y or control.y) - page.scrollY
                     if section then top = top + section.root.y + section.content.y end
+                    if entry.rowOffset then top = top + entry.rowOffset.y end
                     if box then
                         local inset = math.max(0, -top)
                         local clippedHeight = math.max(0, math.min(box.height - inset, height - math.max(0, top)))
