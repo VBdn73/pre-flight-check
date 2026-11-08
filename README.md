@@ -23,10 +23,9 @@ an installed plugin behaves the same way is not yet verified.
 ## Code layout
 
 `main.lua` connects client events to the modules in `bank/`, `supplies/`, and
-`warnings/`. Optional development probes are in `diagnostics/`; mock tests are in
-`tests/`. For a release, include `main.lua`, `plugin.json`, and the three runtime
-module directories at the ZIP root. Development probes and tests are not required
-at runtime. See `../SUBMISSION.md` for the release checklist.
+`warnings/`. Mock tests are in `tests/`. For a release, include `main.lua`,
+`plugin.json`, and the three runtime module directories at the ZIP root. Tests are
+not required at runtime. See `../SUBMISSION.md` for the release checklist.
 
 `supplies/inventory-reader.lua` provides separate backpack and equipment snapshots for
 future features. Each source has `available`; when true, `counts` maps item IDs
@@ -44,15 +43,6 @@ Inventory 953 (`NECROMANCY_NEXUS`) exposed ectoplasm and all four necrotic
 runes through the inventory API, updating after additions and spell consumption.
 Availability and freshness across logout and switching multiple nexuses still
 need verification. Nexus contents are included in necromancy warnings.
-
-## Quiver diagnostic
-
-The optional `diagnostics/quiver.lua` probe looks for Pernix's quiver in
-the backpack and worn inventory and attempts to read undocumented slot fields
-`legacyvarobj` and `objvar_1` directly or through `slot.vars`. `not exposed`
-means the binding did not yield a number, not that the quiver is empty. Compare
-with `!listinv inv` or `!listinv worn` on the development server. These fields
-are experimental and never used for counts. Mock test: `lua tests/quiver-diagnostic.lua`.
 
 `supplies/catalogue.lua` lists item IDs, names and combat-variable bindings.
 
