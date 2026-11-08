@@ -1,6 +1,6 @@
 -- Short-lived, non-blocking warning overlay.
 local popup = {}
-local root, expires, scroll, hoverTargets, drag
+local root, expires, scroll, hoverTargets, drag, pinned
 local rowHeight = 36
 local positionKey = "supplyWarnings.popupPosition"
 
@@ -100,7 +100,7 @@ end
 function popup.clear()
     local old = root
     local oldScroll = scroll
-    root, expires, scroll, hoverTargets, drag = nil, nil, nil, nil, nil
+    root, expires, scroll, hoverTargets, drag, pinned = nil, nil, nil, nil, nil, nil
     if oldScroll then pcall(function() oldScroll:Destroy() end) end
     if old then pcall(function() old:Destroy() end) end
 end
@@ -149,7 +149,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
         -- The root must receive mouse input for isMouseOver to detect hover.
         root.clickthrough = false
         local title = ui.Text.new(root)
-        title:SetPos(10, 6); title:SetSize(320, 24)
+        title:SetPos(10, 6); title:SetSize(225, 24)
         title.font = id.Font.MUSEO_SANS_15PT_REGULAR
         title.clickthrough = false
         title.content = "Supply Check (" .. #alerts .. ")"
@@ -244,6 +244,26 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
             severity.clickthrough = true
             severity.content = alert.status or (alert.message and "" or (critical and "CRITICAL" or "LOW"))
         end
+        local pin = ui.Button.new(root)
+        pin:SetPos(240, 4); pin:SetSize(90, 25)
+        pin.stylesheetID = id.StyleSheet.BUTTON_DEFAULT
+        local pinLabel = ui.Text.new(root)
+        pinLabel:SetPos(240, 4); pinLabel:SetSize(90, 25)
+        pinLabel.font = id.Font.MUSEO_SANS_11PT_REGULAR
+        pinLabel.alignHorizontal = ui.AlignMode.CENTRE
+        pinLabel.alignVertical = ui.AlignMode.CENTRE
+        pinLabel.clickthrough = true
+        pinLabel.content = "Keep open"
+        hoverTargets[#hoverTargets + 1] = pin
+        pin:Subscribe(ui.Hook.ONBUTTONPRESSED, function()
+            if pinned then
+                popup.clear()
+            else
+                pinned = true
+                pinLabel.content = "Close"
+            end
+            return true
+        end)
         expires = now + (duration or 4)
     end)
     if not ok then
@@ -255,7 +275,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
 end
 
 function popup.update(now)
-    if not expires or now < expires then return end
+    if not expires or pinned or now < expires then return end
     if drag or root.isMouseOver or (scroll and scroll.dragStart) then return end
     if hoverTargets then
         for _, target in pairs(hoverTargets) do

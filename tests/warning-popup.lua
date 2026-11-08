@@ -10,19 +10,20 @@ local function new(kind, host)
     function control:SetPos(...) self.pos = { ... }; self.xyGlobal = { x = self.pos[1], y = self.pos[2] } end
     function control:SetSize(...) self.size = { ... } end
     function control:SetHeaderLayout() end
-    function control:Subscribe(hook, _, callback) self.hooks = self.hooks or {}; self.hooks[hook] = callback end
+    function control:Subscribe(hook, name, callback) self.hooks = self.hooks or {}; self.hooks[hook] = callback or name end
     function control:Destroy() self.destroyed = true end
     components[#components + 1] = control
     return control
 end
 ui = { Interfaces = { GetComponent = function() return parent end },
     AlignMode = { CENTRE = 1, BOTTOMRIGHT = 2 }, Hook = { ONSCROLLWHEEL = "wheel",
-        ONCLICK = "click", ONHOLD = "hold", ONRELEASE = "release", ONDRAGCOMPLETE = "dragComplete" },
+        ONCLICK = "click", ONHOLD = "hold", ONRELEASE = "release", ONDRAGCOMPLETE = "dragComplete", ONBUTTONPRESSED = "pressed" },
     GroupBox = { new = function(host) return new("group", host) end },
+    Button = { new = function(host) return new("button", host) end },
     Rectangle = { new = function(host) return new("rectangle", host) end },
     Text = { new = function(host) return new("text", host) end } }
 id = { Component = { TOPLEVEL_V2__PLUGIN_BUILD_LAYER_TOP = 1 },
-    StyleSheet = { DEFAULT = 1 }, Font = { MUSEO_SANS_15PT_REGULAR = 1, MUSEO_SANS_11PT_REGULAR = 2 } }
+    StyleSheet = { DEFAULT = 1, BUTTON_DEFAULT = 2 }, Font = { MUSEO_SANS_15PT_REGULAR = 1, MUSEO_SANS_11PT_REGULAR = 2 } }
 Vector4 = { new = function(r, g, b, a) return { r, g, b, a } end }
 config = { Font = { FromID = function() return { GetStringWidth = function(_, text) return #text * 6 end } end } }
 
@@ -38,7 +39,7 @@ local root, title, red, redAccent, critical, criticalSeverity, orange, orangeAcc
 assert(title.content == "Supply Check (2)")
 assert(root.clickthrough == false)
 assert(not title.clickthrough)
-for i = 3, #components do assert(components[i].clickthrough) end
+for i = 3, 10 do assert(components[i].clickthrough) end
 assert(red.fill and orange.fill and redAccent.fill and orangeAccent.fill)
 assert(red.colour[1] > red.colour[2] and orange.colour[2] > red.colour[2])
 assert(critical.content == "Law runes: 10" and low.content == "Blood runes: 50")
@@ -60,14 +61,16 @@ popup.update(103.9)
 assert(not root.destroyed)
 popup.update(104)
 assert(root.destroyed)
+local start = #components
 assert(popup.show({ { name = "Law rune", count = 1, level = "critical" } }, 110, 12))
-local replacement = components[11]
+local replacement = components[start + 1]
 popup.update(121.9)
 assert(not replacement.destroyed)
 popup.update(122)
 assert(replacement.destroyed)
+start = #components
 assert(popup.show({ { name = "Law rune", count = 1, level = "critical" } }, 130, 2))
-local hovered = components[17]
+local hovered = components[start + 1]
 hovered.isMouseOver = true
 popup.update(132)
 assert(not hovered.destroyed)
@@ -76,8 +79,9 @@ assert(not hovered.destroyed)
 hovered.isMouseOver = false
 popup.update(140.1)
 assert(hovered.destroyed)
+start = #components
 assert(popup.show({ { name = "Law rune", count = 1, level = "critical" } }, 150, 5))
-local leftEarly = components[23]
+local leftEarly = components[start + 1]
 leftEarly.isMouseOver = true
 popup.update(151)
 leftEarly.isMouseOver = false
@@ -102,7 +106,7 @@ for _, case in ipairs(cases) do
     assert(popup.show({ { name = case[1], count = case[2], level = "low" } }, 200))
     assert(components[start + 5].content == case[3])
 end
-local start = #components
+start = #components
 assert(popup.show({ { message = "Cooldown: 1000 minutes", level = "low" } }, 200))
 assert(components[start + 5].content == "Cooldown: 1000 minutes")
 popup.clear()
@@ -204,7 +208,30 @@ assert(components[start + 1].pos[1] == 330 and components[start + 1].pos[2] == 9
 popup.clear()
 parent.width, parent.height = 400, 150
 assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 320))
-assert(components[#components - 5].pos[1] == 60 and components[#components - 5].pos[2] == 72,
+assert(components[#components - 7].pos[1] == 60 and components[#components - 7].pos[2] == 72,
     "saved positions are clamped to the available screen")
 popup.clear()
+start = #components
+assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 400, 4))
+local pinnedRoot, pin, pinLabel = components[start + 1], components[start + 7], components[start + 8]
+assert(pinLabel.content == "Keep open")
+pin.hooks.pressed()
+assert(pinLabel.content == "Close")
+popup.update(500)
+assert(not pinnedRoot.destroyed, "pinned popup remains open after expiry")
+pinnedRoot.isMouseOver = true
+pin.hooks.pressed()
+assert(pinnedRoot.destroyed, "closing a pinned popup ignores hover")
+start = #components
+assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 510, 100))
+components[start + 7].hooks.pressed()
+components[start + 7].hooks.pressed()
+assert(components[start + 1].destroyed, "closing a pinned popup ignores remaining duration")
+start = #components
+assert(popup.show({ { name = "Law rune", count = 1, level = "low" } }, 520))
+components[start + 7].hooks.pressed()
+assert(popup.show({ { name = "Blood rune", count = 1, level = "low" } }, 530))
+local nextRoot = components[start + 9]
+popup.update(534)
+assert(nextRoot.destroyed, "replacement notifications are not pinned")
 print("Warning popup tests passed.")
