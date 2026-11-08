@@ -52,6 +52,34 @@ function popup.formatAlert(alert)
     return alert.message or (displayName(alert.name, alert.count) .. ": " .. formatCount(alert.count))
 end
 
+function popup.wrapLabel(text, width, font)
+    local function measure(value)
+        if font then
+            local ok, result = pcall(function() return font:GetStringWidth(value, true) end)
+            if ok and type(result) == "number" then return result end
+        end
+        -- Conservative fallback if the client font metrics are unavailable.
+        return #value * 15
+    end
+    local lines, line = {}, ""
+    for character in text:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+        if character == "\n" then
+            lines[#lines + 1], line = line, ""
+        elseif line ~= "" and measure(line .. character) > width then
+            local prefix, remainder = line:match("^(.*%s)(%S+)$")
+            if prefix and measure(remainder .. character) <= width then
+                lines[#lines + 1], line = prefix:gsub("%s+$", ""), remainder .. character
+            else
+                lines[#lines + 1], line = line:gsub("%s+$", ""), character
+            end
+        else
+            line = line .. character
+        end
+    end
+    lines[#lines + 1] = line
+    return lines
+end
+
 function popup.colours(level, rules)
     local critical = level == "critical"
     local hex
@@ -82,13 +110,34 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
     if not parent then return false end
     popup.clear()
     local ok, err = pcall(function()
+        local fontOK, labelFont = pcall(function() return config.Font.FromID(id.Font.MUSEO_SANS_15PT_REGULAR) end)
+        if not fontOK then labelFont = nil end
+        local function layout(width)
+            local rows, total, visible = {}, 0, 0
+            for i, alert in ipairs(alerts) do
+                local lines = popup.wrapLabel(popup.formatAlert(alert), width - 104, labelFont)
+                local height = math.max(rowHeight, #lines * 24 + 8)
+                rows[i] = { lines = lines, height = height }
+                total = total + height
+                if i <= (maxRows or 8) then visible = total end
+            end
+            return rows, total, visible
+        end
+        local rows, totalHeight, listHeight = layout(324)
+        local heightLimit = math.huge
+        if type(parent.height) == "number" and parent.height > 0 then
+            heightLimit = math.max(1, parent.height - 45 - 42)
+        end
+        listHeight = math.min(listHeight, heightLimit)
+        local needsScroll = totalHeight > listHeight
+        if needsScroll then
+            -- SimpleView reserves space for its scrollbar; recalculate with its actual width below.
+            rows, totalHeight, listHeight = layout(306)
+            listHeight = math.min(listHeight, heightLimit)
+        end
         root = ui.GroupBox.new(parent)
         root.stylesheetID = id.StyleSheet.DEFAULT
         root:SetHeaderLayout(0, 0, 0, 0, 0)
-        local listHeight = math.min(#alerts, maxRows or 8) * rowHeight
-        if type(parent.height) == "number" and parent.height > 0 then
-            listHeight = math.min(listHeight, math.max(1, parent.height - 45 - 42))
-        end
         root:SetSize(340, 42 + listHeight)
         local loaded, position = pcall(function() return PersistentDB:GetStructuredData(positionKey) end)
         if loaded and validPosition(position) then
@@ -137,50 +186,58 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
         title:Subscribe(ui.Hook.ONRELEASE, "supplyCheck.popupDragEnd", finishDrag)
         title:Subscribe(ui.Hook.ONDRAGCOMPLETE, "supplyCheck.popupDragComplete", finishDrag)
         local listParent, rowWidth = root, 324
-        if #alerts * rowHeight > listHeight then
+        if needsScroll then
             assert(prettyui and prettyui.SimpleView and prettyui.SimpleView.new, "PrettyUI SimpleView is required")
             scroll = prettyui.SimpleView.new(root, {
                 x = 5, y = 32, width = 324, height = listHeight, scrollStep = rowHeight,
             })
-            scroll:SetContentHeight(#alerts * rowHeight)
+            scroll:SetContentHeight(totalHeight)
             listParent, rowWidth = scroll.content, scroll.contentWidth
+            if rowWidth ~= 306 then
+                rows, totalHeight = layout(rowWidth)
+                scroll:SetContentHeight(totalHeight)
+            end
             -- Interactive scroll children can receive hover instead of the popup root.
             for _, key in ipairs({ "root", "viewport", "content", "upArrow", "downArrow",
                 "track", "trackTop", "trackCentre", "trackBottom", "thumbDrag" }) do
                 if scroll[key] then hoverTargets[#hoverTargets + 1] = scroll[key] end
             end
         end
+        local rowY = scroll and 0 or 32
         for i, alert in ipairs(alerts) do
             local critical = alert.level == "critical"
             local backgroundColour, accentColour = popup.colours(alert.level, rules)
-            local y = (scroll and 0 or 32) + (i - 1) * rowHeight
+            local y, height = rowY, rows[i].height
+            rowY = rowY + height
             local x = scroll and 0 or 5
             local box = ui.Rectangle.new(listParent)
-            box:SetPos(x, y); box:SetSize(rowWidth, 32)
+            box:SetPos(x, y); box:SetSize(rowWidth, height - 4)
             box.fill = true
             box.colour = backgroundColour
             box.clickthrough = true
             local accent = ui.Rectangle.new(listParent)
-            accent:SetPos(x, y); accent:SetSize(4, 32)
+            accent:SetPos(x, y); accent:SetSize(4, height - 4)
             accent.fill = true
             accent.colour = accentColour
             accent.clickthrough = true
-            local label = ui.Text.new(listParent)
-            label:SetPos(x + 12, y); label:SetSize(rowWidth - 104, 32)
-            label.font = id.Font.MUSEO_SANS_15PT_REGULAR
-            label.alignVertical = ui.AlignMode.CENTRE
-            label.clickthrough = not scroll
-            if scroll then
-                hoverTargets[#hoverTargets + 1] = label
-                label:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.popupScroll", function(_, delta)
-                    if not scroll or not scroll.scrollbarVisible then return true end
-                    scroll:ScrollBy(delta * rowHeight)
-                    return false
-                end)
+            for lineIndex, line in ipairs(rows[i].lines) do
+                local label = ui.Text.new(listParent)
+                label:SetPos(x + 12, y + (lineIndex - 1) * 24); label:SetSize(rowWidth - 104, #rows[i].lines == 1 and 32 or 24)
+                label.font = id.Font.MUSEO_SANS_15PT_REGULAR
+                label.alignVertical = ui.AlignMode.CENTRE
+                label.clickthrough = not scroll
+                if scroll then
+                    hoverTargets[#hoverTargets + 1] = label
+                    label:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.popupScroll", function(_, delta)
+                        if not scroll or not scroll.scrollbarVisible then return true end
+                        scroll:ScrollBy(delta * rowHeight)
+                        return false
+                    end)
+                end
+                label.content = line
             end
-            label.content = popup.formatAlert(alert)
             local severity = ui.Text.new(listParent)
-            severity:SetPos(x + rowWidth - 82, y); severity:SetSize(75, 32)
+            severity:SetPos(x + rowWidth - 82, y); severity:SetSize(75, height - 4)
             severity.font = id.Font.MUSEO_SANS_11PT_REGULAR
             severity.alignHorizontal = ui.AlignMode.BOTTOMRIGHT
             severity.alignVertical = ui.AlignMode.CENTRE

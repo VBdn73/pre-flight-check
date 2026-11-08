@@ -24,6 +24,7 @@ ui = { Interfaces = { GetComponent = function() return parent end },
 id = { Component = { TOPLEVEL_V2__PLUGIN_BUILD_LAYER_TOP = 1 },
     StyleSheet = { DEFAULT = 1 }, Font = { MUSEO_SANS_15PT_REGULAR = 1, MUSEO_SANS_11PT_REGULAR = 2 } }
 Vector4 = { new = function(r, g, b, a) return { r, g, b, a } end }
+config = { Font = { FromID = function() return { GetStringWidth = function(_, text) return #text * 6 end } end } }
 
 local popup = require("warnings/popup")
 local customBackground, customAccent = popup.colours("low", { lowColour = "#0080FF" })
@@ -112,6 +113,14 @@ for _, case in ipairs({ { "Powder of penance", "critical", "MISSING" },
     assert(components[start + 5].content == case[1] and components[start + 6].content == case[3])
 end
 popup.clear()
+start = #components
+assert(popup.show({ { name = "Augmented custom-fit trimmed spiked masterwork platebody", level = "critical", status = "MISSING" } }, 200))
+local longLabel, secondLine, longSeverity = components[start + 5], components[start + 6], components[start + 7]
+assert(longLabel.content .. " " .. secondLine.content == "Augmented custom-fit trimmed spiked masterwork platebody")
+assert(#longLabel.content * 6 <= longLabel.size[1] and #secondLine.content * 6 <= secondLine.size[1])
+assert(secondLine.pos[2] > longLabel.pos[2] and components[start + 3].size[2] > 32)
+assert(longSeverity.content == "MISSING" and longLabel.pos[1] + longLabel.size[1] <= longSeverity.pos[1])
+popup.clear()
 local views = {}
 local prettyui = { SimpleView = { new = function(host, options)
     local view = { parent = host, content = {}, width = options.width, height = options.height, scrollY = 0 }
@@ -129,6 +138,14 @@ local prettyui = { SimpleView = { new = function(host, options)
 end } }
 local alerts = {}
 for i = 1, 11 do alerts[i] = { name = "Rune", count = i, level = "low" } end
+parent.height = 140
+start = #components
+assert(popup.show({ { name = string.rep("wideword ", 20), level = "critical", status = "MISSING" } }, 200, 4, prettyui))
+assert(views[1].scrollbarVisible and views[1].contentHeight > views[1].height, "a tall row scrolls on a small screen")
+assert(components[start + 5].parent == views[1].content and components[start + 5].hooks.wheel)
+popup.clear()
+parent.height = nil
+views = {}
 start = #components
 assert(popup.show({ table.unpack(alerts, 1, 8) }, 200, 4, prettyui))
 assert(components[start + 1].size[2] == 330 and #views == 0, "eight rows need no scrollbar by default")

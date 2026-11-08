@@ -47,11 +47,7 @@ function ribbon.open(parent, prettyui, rules)
         pcall(function() title:Destroy() end)
     end
     local rows = {}
-    local function addRow()
-        local background = ui.Rectangle.new(scroll.content)
-        background.fill = true; background.clickthrough = true
-        local accent = ui.Rectangle.new(scroll.content)
-        accent.fill = true; accent.clickthrough = true
+    local function addLabel(row)
         local label = ui.Text.new(scroll.content)
         label.font = id.Font.MUSEO_SANS_11PT_REGULAR
         label.alignVertical = ui.AlignMode.CENTRE
@@ -60,37 +56,77 @@ function ribbon.open(parent, prettyui, rules)
             scroll:ScrollBy(delta * rowHeight)
             return false
         end)
-        rows[#rows + 1] = { background = background, accent = accent, label = label }
+        row.labels[#row.labels + 1] = label
     end
-    local width, height, count
+    local function addRow()
+        local background = ui.Rectangle.new(scroll.content)
+        background.fill = true; background.clickthrough = true
+        local accent = ui.Rectangle.new(scroll.content)
+        accent.fill = true; accent.clickthrough = true
+        local row = { background = background, accent = accent, labels = {} }
+        addLabel(row)
+        rows[#rows + 1] = row
+    end
+    local fontOK, font = pcall(function() return config.Font.FromID(id.Font.MUSEO_SANS_11PT_REGULAR) end)
+    if not fontOK then font = nil end
+    local width, height, count, layout
     local function render(reset)
         local w, h = math.max(1, parent.width), math.max(1, parent.height - listTop)
-        if w ~= width or h ~= height then
+        local resized = w ~= width or h ~= height
+        if resized then
             width, height = w, h
             scroll:SetSize(w, h)
         end
-        if reset or count ~= #latest then
+        if reset or resized or count ~= #latest then
             count = #latest
-            scroll:SetContentHeight(count * rowHeight)
+            local function buildLayout(contentWidth)
+                local entries, total = {}, 0
+                for i, alert in ipairs(latest) do
+                    local text = popup.formatAlert(alert) .. (alert.status and " - " .. alert.status or "")
+                    local lines = popup.wrapLabel(text, math.max(1, contentWidth - 27), font)
+                    local rowSize = math.max(rowHeight, #lines * 18 + 8)
+                    entries[i] = { y = total, height = rowSize, lines = lines }
+                    total = total + rowSize
+                end
+                return entries, total
+            end
+            -- First lay out without a scrollbar, then reflow if one is needed.
+            local total
+            layout, total = buildLayout(w)
+            scroll:SetContentHeight(total)
+            if scroll.contentWidth ~= w then
+                layout, total = buildLayout(scroll.contentWidth)
+                scroll:SetContentHeight(total)
+            end
             if reset then scroll:SetScrollPosition(0) end
         end
         title.content = "Last notifications (" .. count .. ")" .. (timestamp and ": " .. timestamp or "")
         -- Reuse only enough native controls for the viewport, even for large batches.
         local needed = math.min(count, math.ceil(height / rowHeight) + 1)
         while #rows < needed do addRow() end
-        local first = math.floor(scroll.scrollY / rowHeight) + 1
+        local first = 1
+        while first <= count and layout[first].y + layout[first].height <= scroll.scrollY do first = first + 1 end
         for i, row in ipairs(rows) do
             local index = first + i - 1
             local alert = latest[index]
-            local y = (index - 1) * rowHeight
+            local entry = layout[index]
+            local y = entry and entry.y or 0
             local top = y - scroll.scrollY
             -- Let the scroll viewport clip partially visible rows at either edge.
-            local hidden = not alert or top >= height or top + 32 <= 0
-            row.background.hidden, row.accent.hidden, row.label.hidden = hidden, hidden, hidden
-            row.background:SetPos(5, y); row.background:SetSize(math.max(1, scroll.contentWidth - 10), 32)
-            row.accent:SetPos(5, y); row.accent:SetSize(4, 32)
-            row.label:SetPos(17, y); row.label:SetSize(math.max(1, scroll.contentWidth - 27), 32)
-            row.label.content = alert and (popup.formatAlert(alert) .. (alert.status and " - " .. alert.status or "")) or ""
+            local hidden = not alert or top >= height or top + (entry and entry.height or 0) - 4 <= 0
+            row.background.hidden, row.accent.hidden = hidden, hidden
+            local boxHeight = entry and entry.height - 4 or 32
+            row.background:SetPos(5, y); row.background:SetSize(math.max(1, scroll.contentWidth - 10), boxHeight)
+            row.accent:SetPos(5, y); row.accent:SetSize(4, boxHeight)
+            if not hidden then
+                while #row.labels < #entry.lines do addLabel(row) end
+            end
+            for lineIndex, label in ipairs(row.labels) do
+                label.hidden = hidden or not entry.lines[lineIndex]
+                label:SetPos(17, y + (lineIndex - 1) * 18)
+                label:SetSize(math.max(1, scroll.contentWidth - 27), entry and #entry.lines == 1 and 32 or 18)
+                label.content = entry and entry.lines[lineIndex] or ""
+            end
             if alert then row.background.colour, row.accent.colour = popup.colours(alert.level, rules) end
         end
     end
