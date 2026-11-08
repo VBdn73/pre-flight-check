@@ -210,6 +210,31 @@ chat("Your preset is being withdrawn. Please see below for any issues whilst try
 chat("Item could not be found: Powder of protection")
 time(60)
 assert(#alerts == 16, "no chat notifications without permission")
+chatPermission = true
+rules[1].enabled = true
+package.loaded["inventory-reader"].read = function()
+    return { backpack = { available = true, counts = {} }, equipment = { available = true, counts = {} },
+        runeCounts = { [563] = 10 } }
+end
+time(61)
+load()
+chat("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...", 109)
+chat("Item could not be found in the quantity required: LAW RUNE", 109)
+chat("Item could not be found: Powder of penance", 109)
+time(61.7)
+assert(#alerts == 17 and #alerts[17] == 2, "tracked and chat warnings for the same item are merged")
+assert(alerts[17][1].name == "Law rune" and alerts[17][1].count == 10, "quantity warning is retained")
+assert(alerts[17][2].name == "Powder of penance", "unmatched chat warning is retained")
+package.loaded["inventory-reader"].read = function()
+    return { backpack = { available = true, counts = {} }, equipment = { available = true, counts = {} },
+        runeCounts = { [563] = 0 } }
+end
+time(63)
+load()
+chat("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...", 109)
+chat("Item could not be found: Law rune", 109)
+time(63.7)
+assert(#alerts == 18 and #alerts[18] == 1 and alerts[18][1].status == "MISSING", "missing warning remains when no quantity alert is available")
 callbacks.state({ newState = 40 })
 PluginShutdown()
 print("Warning integration tests passed.")

@@ -48,7 +48,17 @@ local function refresh()
     end
     checkAfter, checkDeadline = nil, nil
     local alerts = monitor.update(snapshot)
-    for _, alert in ipairs(chatAlerts) do alerts[#alerts + 1] = alert end
+    local trackedNames = {}
+    local function normaliseName(name)
+        return type(name) == "string" and name:match("^%s*(.-)%s*$"):lower() or nil
+    end
+    for _, alert in ipairs(alerts) do
+        local name = alert.itemId and normaliseName(alert.name)
+        if name then trackedNames[name] = true end
+    end
+    for _, alert in ipairs(chatAlerts) do
+        if not trackedNames[normaliseName(alert.name)] then alerts[#alerts + 1] = alert end
+    end
     chatAlerts, chatReady = {}, nil
     showAlerts(alerts)
 end
