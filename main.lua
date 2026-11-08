@@ -42,6 +42,7 @@ local function scheduleCheck(delay)
 end
 
 local function anticipateClose(alwaysCheck, delay)
+    -- Avoid scheduling a second check when an anticipated bank close is observed.
     if alwaysCheck or not anticipatedCloseUntil then scheduleCheck(delay or 0) end
     anticipatedCloseUntil = now + 5
 end
@@ -56,6 +57,7 @@ local function refresh()
     if not snapshot.backpack.available or not snapshot.equipment.available then popup.clear() end
     if not canRead or not now or not checkAfter or now < checkAfter then return end
     if chatReady and now < chatReady then return end
+    -- Retry unavailable snapshots until the deadline instead of treating them as empty.
     if not snapshot.backpack.available or not snapshot.equipment.available then
         if now >= checkDeadline then checkAfter, checkDeadline = nil, nil end
         return
@@ -70,6 +72,8 @@ local function refresh()
         local name = alert.itemId and normaliseName(alert.name)
         if name then trackedNames[name] = true end
     end
+    -- Prefer snapshot counts over duplicate withdrawal messages; charge percentages
+    -- carry different information and should still be shown.
     for _, alert in ipairs(chatAlerts) do
         if alert.status and alert.status:match("%%$") or not trackedNames[normaliseName(alert.name)] then
             alerts[#alerts + 1] = alert

@@ -62,6 +62,7 @@ local function readCarriedContainer(backpack, equipment, ids, inventoryId)
     for _, id in ipairs(ids) do
         count = count + (backpack.counts[id] or 0) + (equipment.counts[id] or 0)
     end
+    -- Multiple containers cannot be attributed reliably to the shared inventory.
     if count == 0 then return { available = true, counts = {} } end
     if count == 1 then return readSource(inventoryId) end
     return { available = false }
@@ -77,6 +78,7 @@ function reader.read()
         if value == nil then deathKnown = false
         elseif value > 0 then deathReclaim = true end
     end
+    -- A positive slot count is conclusive even if another variable is unavailable.
     if not deathReclaim and not deathKnown then deathReclaim = nil end
     local bookTicks = readNonnegativeVar("VarPlayer", "GOD_BOOK_TIMELEFT")
     local signOfLifeCooldown = readNonnegativeVar("VarPlayer", "DIV_LIFE_COOLDOWN")

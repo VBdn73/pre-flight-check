@@ -2,7 +2,7 @@
 local catalogue = require("supplies/catalogue")
 local warnings = {}
 
--- Exact items only. These defaults can later be replaced with user settings.
+-- Fallback rules for callers that do not supply their own thresholds.
 warnings.defaults = {
     { itemId = 563, threshold = 100 },
     { itemId = 565, threshold = 100 },
