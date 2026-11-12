@@ -107,6 +107,15 @@ assert(#charge.update(snapshot) == 0)
 snapshot.inventionCharge = nil
 assert(#charge.update(snapshot) == 0)
 -- Non-quantity warnings.
+local powerburstRules = { powerburst = true }
+local powerburst = monitor.new(powerburstRules)
+assert(#powerburst.update({}) == 0)
+assert(#powerburst.update({ powerburstCooldown = 0 }) == 0)
+local powerburstAlert = powerburst.update({ powerburstCooldown = 120 })[1]
+assert(powerburstAlert.name == "Powerburst" and powerburstAlert.message == "Powerburst is on cooldown"
+    and powerburstAlert.level == "critical")
+powerburstRules.powerburst = false
+assert(#powerburst.update({ powerburstCooldown = 120 }) == 0)
 local excaliburRules = { excalibur = true }
 local excalibur = monitor.new(excaliburRules)
 assert(#excalibur.update({}) == 0)

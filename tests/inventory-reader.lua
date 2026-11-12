@@ -20,6 +20,15 @@ assert(first.runeCounts[563] == 123 and first.runeCounts[565] == nil)
 assert(first.inventionCharge == 126399)
 assert(first.signOfLifeCooldown == nil)
 assert(first.excaliburCooldown == nil)
+assert(first.powerburstCooldown == nil)
+var.VarPlayer.HERB_POW_COOLDOWN = { value = 120 }
+assert(reader.read().powerburstCooldown == 120)
+var.VarPlayer.HERB_POW_COOLDOWN.value = 0
+assert(reader.read().powerburstCooldown == 0)
+var.VarPlayer.HERB_POW_COOLDOWN.value = -1
+assert(reader.read().powerburstCooldown == nil)
+var.VarPlayer.HERB_POW_COOLDOWN = nil
+assert(reader.read().powerburstCooldown == nil)
 -- The client timestamp can stay positive after an altar reset; use server state.
 var.VarClient.COMBATV2_COOLDOWN_EXCALIBUR = { value = 198961 }
 var.VarPlayer.COMBATV2_EXCALIBUR_SPEC = { value = 20 }

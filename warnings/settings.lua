@@ -84,6 +84,7 @@ local function fromSaved(saved)
     rules.checkOnBankClose = saved.checkOnBankClose == true
     rules.signOfLife = saved.signOfLife ~= false
     rules.excalibur = saved.excalibur ~= false
+    rules.powerburst = saved.powerburst ~= false
     rules.deathReclaim = saved.deathReclaim ~= false
     rules.itemDurability = saved.itemDurability == true
     rules.popupDuration = settings.validDuration(saved.popupDuration) and saved.popupDuration or 4
@@ -136,6 +137,7 @@ function settings.save(rules)
         checkOnBankClose = rules.checkOnBankClose == true, signOfLife = rules.signOfLife == true,
         deathReclaim = rules.deathReclaim == true, itemDurability = rules.itemDurability == true,
         excalibur = rules.excalibur == true,
+        powerburst = rules.powerburst == true,
         popupDuration = rules.popupDuration, popupRows = rules.popupRows,
         lowColour = colourValue.normalize(rules.lowColour), criticalColour = colourValue.normalize(rules.criticalColour) }
     if (rules.lowColour and not data.lowColour) or (rules.criticalColour and not data.criticalColour) then return false end

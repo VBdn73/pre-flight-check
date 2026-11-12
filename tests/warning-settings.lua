@@ -65,6 +65,10 @@ for _, rule in ipairs(settings.load()) do
 end
 saved.signOfLife = false
 saved.excalibur = false
+saved.powerburst = false
+assert(not settings.load().powerburst, "explicitly disabled powerburst warning remains disabled")
+saved.powerburst = nil
+assert(settings.load().powerburst and settings.defaults().powerburst)
 assert(not settings.load().excalibur, "explicitly disabled Excalibur warning remains disabled")
 assert(not settings.load().signOfLife, "explicitly disabled sign warning remains disabled")
 saved.checkOnPreset = false

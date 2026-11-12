@@ -83,6 +83,7 @@ function reader.read()
     local bookTicks = readNonnegativeVar("VarPlayer", "GOD_BOOK_TIMELEFT")
     local signOfLifeCooldown = readNonnegativeVar("VarPlayer", "DIV_LIFE_COOLDOWN")
     local excaliburCooldown = readNonnegativeVar("VarPlayer", "COMBATV2_EXCALIBUR_SPEC")
+    local powerburstCooldown = readNonnegativeVar("VarPlayer", "HERB_POW_COOLDOWN")
     local raw = readNonnegativeVar("VarPlayer", "INVENT_CHARGE")
     local charge = raw and math.floor(raw / 3000)
     for itemId, item in pairs(catalogue) do
@@ -96,7 +97,8 @@ function reader.read()
     local spikeHarness = readCarriedContainer(backpack, equipment, { spikes.harnessId }, 974)
     return { backpack = backpack, equipment = equipment, runeCounts = runes, nexus = nexus,
         spikeHarness = spikeHarness, inventionCharge = charge, signOfLifeCooldown = signOfLifeCooldown,
-        godBookTicks = bookTicks, deathReclaim = deathReclaim, excaliburCooldown = excaliburCooldown }
+        godBookTicks = bookTicks, deathReclaim = deathReclaim, excaliburCooldown = excaliburCooldown,
+        powerburstCooldown = powerburstCooldown }
 end
 
 return reader
