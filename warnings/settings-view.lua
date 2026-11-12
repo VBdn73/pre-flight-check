@@ -412,6 +412,7 @@ function view.build(host, rules, onChange, prettyui)
     addOtherSwitch("signOfLife", "Sign of life cooldown", 29290)
     addOtherSwitch("deathReclaim", "Death reclaim", 39559) -- Death's scythe.
     addOtherSwitch("itemDurability", "Item durability", 2347)
+    addOtherSwitch("excalibur", "Excalibur cooldown", 14632)
     local function addUnavailableRows()
         pageIndex = 5
         local group = sections[5]["Other"]
@@ -767,6 +768,7 @@ function view.build(host, rules, onChange, prettyui)
                 old.style, rules.styles[style] = rules.styles[style], defaults.styles[style]
                 if style == "Misc" then
                     old.signOfLife, rules.signOfLife = rules.signOfLife, defaults.signOfLife
+                    old.excalibur, rules.excalibur = rules.excalibur, defaults.excalibur
                     old.deathReclaim, rules.deathReclaim = rules.deathReclaim, defaults.deathReclaim
                     old.itemDurability, rules.itemDurability = rules.itemDurability, defaults.itemDurability
                 end
@@ -783,6 +785,7 @@ function view.build(host, rules, onChange, prettyui)
                     rules.styles[styleNames[i]] = old.style
                     if i == 5 then
                         rules.signOfLife, rules.deathReclaim, rules.itemDurability = old.signOfLife, old.deathReclaim, old.itemDurability
+                        rules.excalibur = old.excalibur
                     end
                     for index, rule in pairs(old) do if type(index) == "number" then rules[index] = rule end end
                 end

@@ -16,6 +16,10 @@ function monitor.new(rules)
             alerts[#alerts + 1] = { name = "Sign of life",
                 message = "Sign of life: " .. snapshot.signOfLifeCooldown .. " min", level = "critical" }
         end
+        if rules.excalibur and type(snapshot.excaliburCooldown) == "number" and snapshot.excaliburCooldown > 0 then
+            alerts[#alerts + 1] = { name = "Excalibur",
+                message = "Excalibur is on cooldown", level = "critical" }
+        end
         for _, rule in ipairs(rules) do
             local effective = settings.effective(rules, rule)
             local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]

@@ -107,6 +107,15 @@ assert(#charge.update(snapshot) == 0)
 snapshot.inventionCharge = nil
 assert(#charge.update(snapshot) == 0)
 -- Non-quantity warnings.
+local excaliburRules = { excalibur = true }
+local excalibur = monitor.new(excaliburRules)
+assert(#excalibur.update({}) == 0)
+assert(#excalibur.update({ excaliburCooldown = 0 }) == 0)
+local excaliburAlert = excalibur.update({ excaliburCooldown = 1 })[1]
+assert(excaliburAlert.message == "Excalibur is on cooldown" and excaliburAlert.level == "critical")
+assert(#excalibur.update({ excaliburCooldown = 500 }) == 1)
+excaliburRules.excalibur = false
+assert(#excalibur.update({ excaliburCooldown = 500 }) == 0)
 local signRules = { signOfLife = true }
 local deathRules = { deathReclaim = true }
 local deathMonitor = require("warnings/monitor").new(deathRules)

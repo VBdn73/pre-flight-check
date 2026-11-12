@@ -26,7 +26,6 @@ Some items are not currently possible due to API limitations and may depend on f
 - warning when beast of burden didn't load from presets
 - warning when abilities are on cooldown?
 - warning when powerburst on cooldown
-- warning when excalibur on cooldown
 - have compact symbols with hovers for obvious notifications?
 
 ## Catalogue verification

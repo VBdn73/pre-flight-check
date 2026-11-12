@@ -5,7 +5,7 @@ Get warnings about low supplies and other preparation issues when loading a bank
 ## Features
 
 - Checks runes, necromancy supplies, ammunition, armour spikes, selected consumables, Invention charge and equipped god book time.
-- Warns about death reclaim items and the Sign of life cooldown. Optional preset chat notifications report missing, insufficient or substituted items and game-reported low item durability.
+- Warns about death reclaim items and the Sign of life and Excalibur cooldowns (toggles under **Misc → Other**). Optional preset chat notifications report missing, insufficient or substituted items and game-reported low item durability.
 - Shows a popup and keeps the latest check's warnings in the ribbon panel. A clean check clears the popup and shows zero notifications. Adjust thresholds, colours, popup duration and visible rows in plugin settings.
 - Does not load presets or perform game actions for you.
 

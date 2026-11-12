@@ -19,6 +19,18 @@ assert(first.equipment.available and first.equipment.counts[52299] == 6872)
 assert(first.runeCounts[563] == 123 and first.runeCounts[565] == nil)
 assert(first.inventionCharge == 126399)
 assert(first.signOfLifeCooldown == nil)
+assert(first.excaliburCooldown == nil)
+-- The client timestamp can stay positive after an altar reset; use server state.
+var.VarClient.COMBATV2_COOLDOWN_EXCALIBUR = { value = 198961 }
+var.VarPlayer.COMBATV2_EXCALIBUR_SPEC = { value = 20 }
+assert(reader.read().excaliburCooldown == 20)
+var.VarPlayer.COMBATV2_EXCALIBUR_SPEC.value = 0
+assert(reader.read().excaliburCooldown == 0)
+var.VarPlayer.COMBATV2_EXCALIBUR_SPEC.value = -1
+assert(reader.read().excaliburCooldown == nil)
+var.VarPlayer.COMBATV2_EXCALIBUR_SPEC = nil
+var.VarClient.COMBATV2_COOLDOWN_EXCALIBUR = nil
+assert(reader.read().excaliburCooldown == nil)
 assert(first.deathReclaim == nil)
 -- Optional game variables distinguish unavailable data from zero.
 var.VarPlayer.GRAVESTONE_TIMER_INV_SLOTS = { value = 0 }

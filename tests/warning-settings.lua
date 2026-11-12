@@ -10,6 +10,7 @@ local rules = settings.load()
 assert(not rules.checkOnBankClose and rules.checkOnPreset and settings.defaults().checkOnPreset)
 assert(not rules.presetChatNotifications and not settings.defaults().presetChatNotifications)
 assert(rules.signOfLife and settings.defaults().signOfLife)
+assert(rules.excalibur and settings.defaults().excalibur)
 assert(rules.deathReclaim and settings.defaults().deathReclaim)
 assert(rules.popupDuration == 4)
 assert(rules.popupRows == 8)
@@ -63,6 +64,8 @@ for _, rule in ipairs(settings.load()) do
     assert(rule.itemId ~= 26295, "saved scrimshaw rules must not be loaded")
 end
 saved.signOfLife = false
+saved.excalibur = false
+assert(not settings.load().excalibur, "explicitly disabled Excalibur warning remains disabled")
 assert(not settings.load().signOfLife, "explicitly disabled sign warning remains disabled")
 saved.checkOnPreset = false
 assert(not settings.load().checkOnPreset, "explicitly disabled preset check remains disabled")
