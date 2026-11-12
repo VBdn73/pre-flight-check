@@ -53,6 +53,8 @@ local catalogue = {
     [55338] = { name = "Bone rune", category = "necromancy", nexus = true },
     [55339] = { name = "Flesh rune", category = "necromancy", nexus = true },
     [55340] = { name = "Miasma rune", category = "necromancy", nexus = true },
+    [2] = { name = "Cannonball", category = "ammunition", group = "Cannonballs" },
+    [59756] = { name = "Meteorite cannonball", category = "ammunition", group = "Cannonballs" },
     [10033] = { name = "Chinchompa", category = "ammunition", group = "Chinchompas" },
     [10034] = { name = "Red chinchompa", category = "ammunition", group = "Chinchompas" },
     [60791] = { name = "Black chinchompa", category = "ammunition", group = "Chinchompas" },

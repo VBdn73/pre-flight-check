@@ -587,8 +587,8 @@ refresh()
 -- Shared ammunition groups and the other combat-style tabs.
 local rangedRows = find(ranged.content, "layer", 14, ranged.flowText.y)
 assert(rangedRows.width == -28 and rangedRows.widthAnchor == 1)
-local arrowSwitch = find(rangedRows, "check", -30, 7)
-local boltSwitch = find(rangedRows, "check", -30, 47)
+local arrowSwitch = find(rangedRows, "check", -30, 47)
+local boltSwitch = find(rangedRows, "check", -30, 87)
 local collapsedY = rangedRows.y
 host.height = 300
 ranged.sections[1]:SetExpanded(true)
@@ -603,11 +603,27 @@ ranged.sections[1]:SetExpanded(false)
 refresh()
 assert(rangedRows.y == collapsedY and ranged.flowText.y == collapsedY)
 host.height = 600
-assert(find(rangedRows, "text", 48, 3).content == "Arrows")
-assert(find(rangedRows, "text", 48, 43).content == "Bolts")
-assert(find(rangedRows, "text", 48, 83).content == "Gem Bolts")
-assert(find(rangedRows, "text", 48, 123).content == "Bakriminel Bolts")
-assert(find(rangedRows, "text", 48, 163).content == "Enchanted Gem Bolts")
+assert(find(rangedRows, "text", 48, 3).content == "Cannonballs")
+assert(find(rangedRows, "text", 48, 43).content == "Arrows")
+assert(find(rangedRows, "text", 48, 83).content == "Bolts")
+assert(find(rangedRows, "text", 48, 123).content == "Gem Bolts")
+assert(find(rangedRows, "text", 48, 163).content == "Bakriminel Bolts")
+assert(find(rangedRows, "text", 48, 203).content == "Enchanted Gem Bolts")
+assert(find(rangedRows, "sprite", 8, 3).itemId == 2)
+find(rangedRows, "check", -30, 7).hooks.press()
+assert(not saved["2"].enabled and not saved["59756"].enabled)
+find(rangedRows, "button", -251, 5).hooks.press()
+local cannonLow = find(rangedRows, "input", -171, 5)
+cannonLow.content = "3000"
+cannonLow.hooks.change(cannonLow, ui.InputFieldActionResult.SUBMIT)
+assert(saved["2"].custom and saved["59756"].custom)
+assert(saved["2"].low == 3000 and saved["59756"].low == 3000)
+local cannonReload = require("warnings/settings").load()
+for _, rule in ipairs(cannonReload) do
+    if rule.itemId == 2 or rule.itemId == 59756 then
+        assert(not rule.enabled and rule.custom and rule.low == 3000)
+    end
+end
 arrowSwitch.hooks.press()
 for _, itemId in ipairs({ 882, 31737, 19152, 19157, 19162, 58036, 34235 }) do
     assert(not saved[tostring(itemId)].enabled)
@@ -619,16 +635,16 @@ for _, itemId in ipairs({ 877, 28465, 35989, 58041, 60322 }) do
 end
 assert(saved["41633"].enabled and saved["9242"].enabled)
 for _, group in ipairs({
-    { y = 87, ids = { 879, 31868, 9342 }, other = 9236 },
-    { y = 127, ids = { 24116, 41634, 41684 }, other = 41633 },
-    { y = 167, ids = { 9236, 31881, 9245 }, other = 41633 },
+    { y = 127, ids = { 879, 31868, 9342 }, other = 9236 },
+    { y = 167, ids = { 24116, 41634, 41684 }, other = 41633 },
+    { y = 207, ids = { 9236, 31881, 9245 }, other = 41633 },
 }) do
     find(rangedRows, "check", -30, group.y).hooks.press()
     for _, itemId in ipairs(group.ids) do assert(not saved[tostring(itemId)].enabled) end
     assert(saved[tostring(group.other)].enabled)
 end
-find(rangedRows, "button", -251, 5).hooks.press()
-local combinedLow = find(rangedRows, "input", -171, 5)
+find(rangedRows, "button", -251, 45).hooks.press()
+local combinedLow = find(rangedRows, "input", -171, 45)
 combinedLow.content = "2000"
 combinedLow.hooks.change(combinedLow, ui.InputFieldActionResult.SUBMIT)
 assert(saved["31737"].custom and saved["31737"].low == 2000 and saved["882"].low == 2000)

@@ -21,7 +21,6 @@ Some items are not currently possible due to API limitations and may depend on f
 
 ## Add supply warnings for
 
-- Cannonballs, meteorite cannonballs
 - Ushabti
 - warning when low on health, prayer, adren, sum points -> probably only when entering a boss instance/portal?
 - warning when beast of burden didn't load from presets

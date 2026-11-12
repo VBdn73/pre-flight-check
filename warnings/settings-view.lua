@@ -7,9 +7,9 @@ local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
 local combination = { [4694] = true, [4695] = true, [4696] = true,
     [4697] = true, [4698] = true, [4699] = true }
 local rowHeight = 40
-local rangedCombinedNames = { "Arrows", "Bolts", "Gem Bolts", "Bakriminel Bolts", "Enchanted Gem Bolts" }
+local rangedCombinedNames = { "Cannonballs", "Arrows", "Bolts", "Gem Bolts", "Bakriminel Bolts", "Enchanted Gem Bolts" }
 local rangedCombinedIcons = { Arrows = 882, Bolts = 877, ["Gem Bolts"] = 879,
-    ["Bakriminel Bolts"] = 24116, ["Enchanted Gem Bolts"] = 9236 }
+    ["Bakriminel Bolts"] = 24116, ["Enchanted Gem Bolts"] = 9236, Cannonballs = 2 }
 
 local function text(parent, x, y, width, value)
     local label = ui.Text.new(parent)
