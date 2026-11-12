@@ -23,6 +23,12 @@ Some items are not currently possible due to API limitations and may depend on f
 
 - Cannonballs, meteorite cannonballs
 - Ushabti
+- warning when low on health, prayer, adren, sum points -> probably only when entering a boss instance/portal?
+- warning when beast of burden didn't load from presets
+- warning when abilities are on cooldown?
+- warning when powerburst on cooldown
+- warning when excalibur on cooldown
+- have compact symbols with hovers for obvious notifications?
 
 ## Catalogue verification
 
