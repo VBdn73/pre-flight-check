@@ -32,6 +32,10 @@ for _, rule in ipairs(rules) do
     elseif rule.itemId == 22370 or rule.itemId == 22371 then
         assert(rule.custom and rule.low == 10 and rule.critical == 5)
         assert(settings.effective(rules, rule).low == 10)
+    elseif rule.itemId == 40407 then
+        assert(rule.custom and rule.low == 10 and rule.critical == 2)
+        assert(settings.effective(rules, rule).low == 10)
+        assert(settings.effective(rules, rule).critical == 2)
     elseif catalogue[rule.itemId] and catalogue[rule.itemId].godBook then
         assert(rule.custom and rule.low == 60 and rule.critical == 30)
         assert(settings.effective(rules, rule).low == 60)
@@ -43,6 +47,7 @@ for _, name in ipairs({ "Magic", "Necromancy", "Ranged", "Melee", "Misc" }) do
     assert(rules.styles[name].low == 1000 and rules.styles[name].critical == 250)
 end
 assert(settings.style(48951) == "Misc")
+assert(seen[40407] == 1 and settings.style(40407) == "Misc")
 -- Threshold validation and persistence.
 assert(settings.valid({ itemId = 52494, enabled = true, low = 1440, critical = 0 }))
 assert(not settings.valid({ itemId = 52494, enabled = true, low = 1441, critical = 0 }))

@@ -26,6 +26,7 @@ local catalogue = {
     [48957] = { name = "Sticky bomb", category = "misc", group = "Bombs" },
     [22370] = { name = "Dreadnip", category = "misc", group = "Other" },
     [22371] = { name = "Dominion mine", category = "misc", group = "Other" },
+    [40407] = { name = "Ushabti (empty)", category = "misc", group = "Other" },
     [554] = { name = "Fire rune", category = "rune", combatVar = "COMBATV2_RUNECOUNT_FIRE" },
     [555] = { name = "Water rune", category = "rune", combatVar = "COMBATV2_RUNECOUNT_WATER" },
     [556] = { name = "Air rune", category = "rune", combatVar = "COMBATV2_RUNECOUNT_AIR" },

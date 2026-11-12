@@ -104,6 +104,8 @@ local function fromSaved(saved)
                 rule = { enabled = true, custom = true, low = 50000, critical = 10000 }
             elseif itemId == 22370 or itemId == 22371 then
                 rule = { enabled = true, custom = true, low = 10, critical = 5 }
+            elseif itemId == 40407 then
+                rule = { enabled = true, custom = true, low = 10, critical = 2 }
             elseif catalogue[itemId] and catalogue[itemId].godBook then
                 rule = { enabled = true, custom = true, low = 60, critical = 30 }
             else
