@@ -53,6 +53,34 @@ Get-ChildItem tests/*.lua | ForEach-Object { lua $_.FullName; if ($LASTEXITCODE 
 
 Before submission, review the [plugin guidelines](https://developer.runescape.com/rs/submission/guidelines.html) and [submission process](https://developer.runescape.com/rs/submission/process.html). Required description sections must also appear in the mod.io listing.
 
+### Settings UI definitions
+
+Edit `warnings/settings-panels.lua` to arrange supply panels. `dropdowns` and
+`settings` are ordered lists; row heights and shared styling are handled by
+`warnings/settings-components.lua`, not repeated for each setting. For example:
+
+```lua
+{ key = "signOfLife", name = "Sign of life cooldown", icon = 29290,
+    usage = "Optional tooltip describing this warning" }
+```
+
+Use `itemId` for a quantity setting backed by an existing warning rule, `key`
+for a boolean setting, or `unavailable = true` for an informational row.
+Catalogue-backed dropdowns populate automatically. Their optional `settings`
+list specifies leading item order and can override `name` and `icon`; remaining
+items follow in rule order. For example:
+
+```lua
+{ name = "God Books", usage = "Only equipped books are checked.", settings = {
+    { itemId = 51814 },
+    { itemId = 52117, name = "Scripture of Wen", icon = 52117 },
+} }
+```
+
+Definitions configure presentation, not new warning behaviour: new warning
+types still need their rules and evaluation logic. Saving, validation, reset,
+scroll clipping and ranged dropdown virtualization remain in the view.
+
 ## Feedback and collaboration
 
 Report bugs or propose contributions through the repository's issue tracker, or email [vincent.rs.plugins@gmail.com](mailto:vincent.rs.plugins@gmail.com). Include reproduction steps and your client version; avoid posting personal information publicly.

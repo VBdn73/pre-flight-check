@@ -754,4 +754,24 @@ assert(rules.signOfLife and sign.value and saved.signOfLife)
 assert(saved["36389"].custom and saved["36389"].low == 50000)
 destroy()
 assert(tabs.destroyed)
+-- Definitions, rather than renderer branches, control row/dropdown order and metadata.
+local panels = require("warnings/settings-panels")
+local miscDefinitions = panels[5].settings
+miscDefinitions[1], miscDefinitions[9] = miscDefinitions[9], miscDefinitions[1]
+local books = panels[5].dropdowns[3].settings
+books[1], books[2] = books[2], books[1]
+books[1].name, books[1].icon = "Custom book label", 123
+controls = {}
+host.height = 600
+refresh, destroy = require("warnings/settings-view").build(host, rules, function() end, prettyui)
+misc = tabs.pages[6]
+miscRows = find(misc.content, "layer", 14, misc.flowText.y)
+assert(find(miscRows, "text", 48, 3).content == "Blessed flask: warning unavailable")
+assert(find(miscRows, "text", 48, 323).content == "Sign of life cooldown")
+assert(find(misc.sections[3].content, "text", 48, 43).content == "Custom book label")
+assert(find(misc.sections[3].content, "sprite", 8, 43).itemId == 123)
+destroy()
+miscDefinitions[1], miscDefinitions[9] = miscDefinitions[9], miscDefinitions[1]
+books[1].name, books[1].icon = nil, nil
+books[1], books[2] = books[2], books[1]
 print("Warning settings view tests passed.")

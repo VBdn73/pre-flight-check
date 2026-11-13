@@ -2,14 +2,18 @@ local catalogue = require("supplies/catalogue")
 local settings = require("warnings/settings")
 local spikes = require("supplies/armour-spikes")
 local colourValue = require("warnings/colour")
+local components = require("warnings/settings-components")
+local panels = require("warnings/settings-panels")
 local view = {}
 local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
 local combination = { [4694] = true, [4695] = true, [4696] = true,
     [4697] = true, [4698] = true, [4699] = true }
 local rowHeight = 40
-local rangedCombinedNames = { "Cannonballs", "Arrows", "Bolts", "Gem Bolts", "Bakriminel Bolts", "Enchanted Gem Bolts" }
-local rangedCombinedIcons = { Arrows = 882, Bolts = 877, ["Gem Bolts"] = 879,
-    ["Bakriminel Bolts"] = 24116, ["Enchanted Gem Bolts"] = 9236, Cannonballs = 2 }
+local rangedCombinedNames, rangedCombinedIcons = {}, {}
+for _, setting in ipairs(panels[3].settings) do
+    rangedCombinedNames[#rangedCombinedNames + 1] = setting.name
+    rangedCombinedIcons[setting.name] = setting.icon
+end
 
 local function text(parent, x, y, width, value)
     local label = ui.Text.new(parent)
@@ -50,7 +54,8 @@ function view.build(host, rules, onChange, prettyui)
     }, { width = 0, height = 0, widthAnchor = 1, heightAnchor = 1,
         contentLayout = { startY = 80 } })
     local pages = { tabs:GetPage(2), tabs:GetPage(3), tabs:GetPage(4), tabs:GetPage(5), tabs:GetPage(6), tabs:GetPage(1) }
-    local styleNames = { "Magic", "Necromancy", "Ranged", "Melee", "Misc" }
+    local styleNames = {}
+    for i, panel in ipairs(panels) do styleNames[i] = panel.name end
     local controls = { {}, {}, {}, {}, {}, {} }
     local checkboxes, tooltips, tooltipTargets = {}, {}, {}
     local pageIndex, currentSection, currentRow, currentRowOffset = 1, nil, nil, nil
@@ -76,6 +81,10 @@ function view.build(host, rules, onChange, prettyui)
     local function text(...) return track(originalText(...)) end
     local function input(...) return track(originalInput(...)) end
     local function icon(...) return track(originalIcon(...)) end
+    local function settingRow(parent, y, definition)
+        return components.row({ track = track, entries = controls[pageIndex],
+            text = text, icon = icon, rowHeight = rowHeight }, parent, y, definition)
+    end
     local function tooltip(target, parent, value)
         local tip
         target:Subscribe(ui.Hook.ONMOUSEOVER, "supplyCheck.tooltipPosition", function()
@@ -143,65 +152,44 @@ function view.build(host, rules, onChange, prettyui)
         end
         return checkbox
     end
-    triggerToggle(40, "checkOnPreset", "Check on preset load")
-    chatCheckbox = triggerToggle(75, "presetChatNotifications", "Preset chat notifications")
-    chatCheckbox.root:SetPos(25, 75)
-    tooltip(chatCheckbox.root, pages[6].content, "Read preset withdrawal messages for notifications. Requires chat access permission and preset checks.")
-    updateChatToggle()
-    triggerToggle(110, "checkOnBankClose", "Check on bank close")
-    local durationLabel = text(pages[6].content, 10, 150, 190, "Notification duration (seconds)")
-    durationLabel:SetSize(190, 25)
-    durationLabel.alignVertical = ui.AlignMode.CENTRE
-    local duration = input(pages[6].content, 205, 150, rules.popupDuration)
-    local durationStatus = text(pages[6].content, 274, 150, 110, "")
-    durationStatus:SetSize(110, 25)
-    durationStatus.alignVertical = ui.AlignMode.CENTRE
-    tooltip(duration, pages[6].content, "How long notifications remain visible, from 1 to 3600 seconds")
-    onSubmit(duration, function()
-        local value = tonumber(duration.content)
-        if not settings.validDuration(value) then
-            durationStatus.content = "Invalid (1-3600)"
-            return
-        end
-        local old = rules.popupDuration
-        rules.popupDuration = value
-        if not settings.save(rules) then
-            rules.popupDuration = old
-            durationStatus.content = "Save failed"
-            return
-        end
-        durationStatus.content = ""
-    end)
-    resetControls[6][#resetControls[6] + 1] = function()
-        duration.content = tostring(rules.popupDuration)
-        durationStatus.content = ""
+    for i, definition in ipairs(panels.general.toggles) do
+        local y = 40 + (i - 1) * 35
+        local checkbox = triggerToggle(y, definition.key, definition.name)
+        checkbox.root:SetPos(10 + (definition.indent or 0), y)
+        if definition.usage then tooltip(checkbox.root, pages[6].content, definition.usage) end
+        if definition.key == "presetChatNotifications" then chatCheckbox = checkbox end
     end
-    local rowsLabel = text(pages[6].content, 10, 185, 190, "Visible notifications")
-    rowsLabel:SetSize(190, 25)
-    rowsLabel.alignVertical = ui.AlignMode.CENTRE
-    local rows = input(pages[6].content, 205, 185, rules.popupRows)
-    local rowsStatus = text(pages[6].content, 274, 185, 110, "")
-    rowsStatus:SetSize(110, 25)
-    rowsStatus.alignVertical = ui.AlignMode.CENTRE
-    tooltip(rows, pages[6].content, "Maximum visible notifications in the popup, from 1 to 20")
-    onSubmit(rows, function()
-        local value = tonumber(rows.content)
-        if not settings.validPopupRows(value) then
-            rowsStatus.content = "Invalid (1-20)"
-            return
+    updateChatToggle()
+    local function numberControl(y, definition)
+        local key = definition.key
+        local label = text(pages[6].content, 10, y, 190, definition.name)
+        label:SetSize(190, 25); label.alignVertical = ui.AlignMode.CENTRE
+        local field = input(pages[6].content, 205, y, rules[key])
+        local status = text(pages[6].content, 274, y, 110, "")
+        status:SetSize(110, 25); status.alignVertical = ui.AlignMode.CENTRE
+        tooltip(field, pages[6].content, definition.usage)
+        onSubmit(field, function()
+            local value = tonumber(field.content)
+            if not definition.validate(value) then
+                status.content = definition.invalid
+                return
+            end
+            local old = rules[key]
+            rules[key] = value
+            if not settings.save(rules) then
+                rules[key] = old
+                status.content = "Save failed"
+                return
+            end
+            status.content = ""
+        end)
+        resetControls[6][#resetControls[6] + 1] = function()
+            field.content = tostring(rules[key])
+            status.content = ""
         end
-        local old = rules.popupRows
-        rules.popupRows = value
-        if not settings.save(rules) then
-            rules.popupRows = old
-            rowsStatus.content = "Save failed"
-            return
-        end
-        rowsStatus.content = ""
-    end)
-    resetControls[6][#resetControls[6] + 1] = function()
-        rows.content = tostring(rules.popupRows)
-        rowsStatus.content = ""
+    end
+    for i, definition in ipairs(panels.general.numbers) do
+        numberControl(150 + (i - 1) * 35, definition)
     end
     local function colourControl(y, key, label, defaultHex)
         local title = text(pages[6].content, 10, y, 190, label)
@@ -255,16 +243,16 @@ function view.build(host, rules, onChange, prettyui)
             status.content = ""
         end
     end
-    colourControl(220, "lowColour", "Low warning colour", "#FF9429")
-    colourControl(255, "criticalColour", "Critical warning colour", "#F24033")
+    for i, definition in ipairs(panels.general.colours) do
+        colourControl(220 + (i - 1) * 35, definition.key, definition.name, definition.default)
+    end
     pages[6]:SetContentHeight(290)
     pageIndex = 1
-    text(pages[1].content, 10, 8, 400, "Rune counts include combat rune sources.")
     local sections = { {}, {}, {}, {}, {} }
     local toggleLazy
-    local function addSection(page, name)
-        sections[page][name] = { count = 0, section = pages[page]:AddCollapseButton(name, {
-            expanded = false, indent = 0, onToggle = function(section, expanded)
+    local function addSection(page, definition)
+        sections[page][definition.name] = components.dropdown(pages[page], definition,
+            function(section, expanded)
                 layoutChanged = true
                 if expanded then
                     for _, group in pairs(sections[page]) do
@@ -274,8 +262,8 @@ function view.build(host, rules, onChange, prettyui)
                     end
                 end
                 if toggleLazy then toggleLazy(page, section, expanded) end
-            end,
-        }) }
+            end)
+        sections[page][definition.name].definition = definition
     end
     for i, style in ipairs(styleNames) do
         pageIndex = i
@@ -318,33 +306,32 @@ function view.build(host, rules, onChange, prettyui)
         end
     end
     currentSection = nil
-    pageIndex = 1
-    for _, name in ipairs({ "Elemental", "Catalytic", "Combination" }) do addSection(1, name) end
-    pageIndex = 2
-    text(pages[2].content, 10, 8, 400, "Counts include loose supplies and the nexus.")
-    local necroSpacer = pages[2]:AddText({ text = "", height = rowHeight })
-    necroSpacer.clickthrough = true
-    addSection(2, "Necrotic Runes")
-    pageIndex = 3
-    text(pages[3].content, 10, 8, 400, "Quivers unreadable; only loose supplies count.")
-    for _, name in ipairs({ "Elder God Arrows", "Special Arrows", "Enchanted Bakriminel Bolts",
-        "Chinchompas" }) do
-        addSection(3, name)
+    local spacers = {}
+    for i, panel in ipairs(panels) do
+        pageIndex = i
+        text(pages[i].content, 10, 8, 400, panel.usage)
+        local function reserveRows()
+            if not panel.settings then return end
+            spacers[i] = pages[i]:AddText({ text = "", height = #panel.settings * rowHeight })
+            spacers[i].clickthrough = true
+        end
+        if panel.settingsFirst then reserveRows() end
+        for _, definition in ipairs(panel.dropdowns) do
+            addSection(i, definition)
+            if definition.usage then
+                local group = sections[i][definition.name]
+                currentSection = group.section
+                local note = text(group.section.content, 8, 8, 400, definition.usage)
+                note:SetSize(-16, 25, 1, 0)
+                note.clickthrough = true
+                group.count = 1
+                currentSection = nil
+            end
+        end
+        if not panel.settingsFirst then reserveRows() end
     end
-    -- A managed flow item reserves space after the sections and follows their expansion.
-    local rangedSpacer = pages[3]:AddText({ text = "", height = #rangedCombinedNames * rowHeight })
-    rangedSpacer.clickthrough = true
-    pageIndex = 4
-    text(pages[4].content, 10, 8, 400, "Counts include loose spikes and one harness.")
-    local meleeSpacer = pages[4]:AddText({ text = "", height = rowHeight })
-    meleeSpacer.clickthrough = true
+    local rangedSpacer, miscSpacer = spacers[3], spacers[5]
     pageIndex = 5
-    text(pages[5].content, 10, 8, 400, "Counts include supplies in the backpack and equipment.")
-    addSection(5, "Bombs")
-    addSection(5, "Invention")
-    addSection(5, "God Books")
-    local miscSpacer = pages[5]:AddText({ text = "", height = 11 * rowHeight })
-    miscSpacer.clickthrough = true
     local rowLayers = {}
     local function rowLayer(page, spacer, height)
         local layer = ui.Layer.new(pages[page].content)
@@ -353,36 +340,17 @@ function view.build(host, rules, onChange, prettyui)
         rowLayers[#rowLayers + 1] = { layer = layer, spacer = spacer }
         return layer
     end
-    local miscRows = rowLayer(5, miscSpacer, 11 * rowHeight)
+    local miscRows = rowLayer(5, miscSpacer, #panels[5].settings * rowHeight)
     local otherGroup = { count = 0 }
-    do
-        local group = sections[5]["God Books"]
-        currentSection = group.section
-        local note = text(group.section.content, 8, 8, 400,
-            "Only equipped books are checked; backpack timers are unavailable.")
-        note:SetSize(-16, 25, 1, 0)
-        note.clickthrough = true
-        group.count = 1
-        currentSection = nil
-    end
-    local function addOtherSwitch(key, name, itemId)
+    local function addOtherSwitch(definition)
+        local key, name = definition.key, definition.name
         local group = otherGroup
         currentRowOffset = miscRows
         local parent = miscRows
         local y = group.count * rowHeight
-        local frame = track(ui.Rectangle.new(parent))
-        local frameEntry = controls[pageIndex][#controls[pageIndex]]
-        frame:SetPos(0, y); frame:SetSize(0, rowHeight - 4, 1, 0)
-        frame.fill, frame.rgba, frame.clickthrough = true, 0x514D45C0, true
-        frameEntry.background = { x = 0, y = y, width = 0, height = rowHeight - 4 }
-        local background = track(ui.Rectangle.new(parent))
-        background:SetPos(1, y + 1); background:SetSize(-2, rowHeight - 6, 1, 0)
-        background.fill, background.clickthrough = true, true
-        controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
-        icon(parent, 8, y + 3, itemId).clickthrough = true
-        local label = text(parent, 48, y + 3, 200, name)
-        label:SetSize(-85, 32, 1, 0)
-        label.alignVertical, label.clickthrough = ui.AlignMode.CENTRE, true
+        local frameEntry, background = settingRow(parent, y, {
+            name = name, icon = definition.icon, labelWidth = -85,
+        })
         local switch = track(ui.Check.new(parent))
         switch:SetPos(-30, y + 7, 1, 0); switch:SetSize(22, 22)
         switch.stylesheetID = id.StyleSheet.CHECKBOX_DEFAULT
@@ -411,9 +379,7 @@ function view.build(host, rules, onChange, prettyui)
             onChange()
             return true
         end)
-        tooltip(switch, parent, key == "itemDurability" and
-            "Requires preset checks, preset chat notifications, and chat access permission. Reports charge warnings from preset chat."
-            or "Enable or disable this warning")
+        tooltip(switch, parent, definition.usage or "Enable or disable this warning")
         frameEntry.update = updateRow
         resetControls[5][#resetControls[5] + 1] = updateRow
         updateRow()
@@ -421,36 +387,17 @@ function view.build(host, rules, onChange, prettyui)
         currentSection = nil
         currentRowOffset = nil
     end
-    addOtherSwitch("signOfLife", "Sign of life cooldown", 29290)
-    addOtherSwitch("deathReclaim", "Death reclaim", 39559) -- Death's scythe.
-    addOtherSwitch("itemDurability", "Item durability", 2347)
-    addOtherSwitch("excalibur", "Excalibur cooldown", 14632)
-    addOtherSwitch("powerburst", "Powerburst cooldown", 49095)
-    local function addUnavailableRows()
+    local function addUnavailableRow(item)
         pageIndex = 5
         local group = otherGroup
         currentRowOffset = miscRows
         local parent = miscRows
-        for _, item in ipairs({
-            { id = 48680, name = "Blessed flask" },
-            { id = 44548, name = "Grace of the elves" },
-            { id = 26295, name = "Scrimshaw" },
-        }) do
             local y = group.count * rowHeight
             group.count = group.count + 1
-            local unavailableFrame = track(ui.Rectangle.new(parent))
-            unavailableFrame:SetPos(0, y); unavailableFrame:SetSize(0, rowHeight - 4, 1, 0)
-            unavailableFrame.fill, unavailableFrame.rgba, unavailableFrame.clickthrough = true, 0x514D45C0, true
-            controls[pageIndex][#controls[pageIndex]].background = { x = 0, y = y, width = 0, height = rowHeight - 4 }
-            local unavailableBackground = track(ui.Rectangle.new(parent))
-            unavailableBackground:SetPos(1, y + 1); unavailableBackground:SetSize(-2, rowHeight - 6, 1, 0)
-            unavailableBackground.fill, unavailableBackground.rgba, unavailableBackground.clickthrough = true, 0x343434E8, true
-            controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
-            icon(parent, 8, y + 3, item.id).clickthrough = true
-            local label = text(parent, 48, y + 3, 300, item.name .. ": warning unavailable")
-            label:SetSize(-55, 32, 1, 0)
-            label.alignVertical, label.clickthrough = ui.AlignMode.CENTRE, true
-        end
+            local _, background = settingRow(parent, y, {
+                name = item.name .. ": warning unavailable", icon = item.icon, labelWidth = -55,
+            })
+            background.rgba = 0x343434E8
         currentSection = nil
         currentRowOffset = nil
     end
@@ -459,21 +406,9 @@ function view.build(host, rules, onChange, prettyui)
         pageIndex = rowPage
         currentSection = group and group.section or nil
         local parent = currentSection and currentSection.content or rowParent or pages[rowPage].content
-        -- PrettyUI's list uses a framed rectangle; use the same treatment for each row.
-        local frame = track(ui.Rectangle.new(parent))
-        local frameEntry = controls[pageIndex][#controls[pageIndex]]
-        frame:SetPos(0, y); frame:SetSize(0, rowHeight - 4, 1, 0)
-        frame.fill, frame.rgba, frame.clickthrough = true, 0x514D45C0, true
-        controls[pageIndex][#controls[pageIndex]].background = { x = 0, y = y, width = 0, height = rowHeight - 4 }
-        local background = track(ui.Rectangle.new(parent))
-        background:SetPos(1, y + 1); background:SetSize(-2, rowHeight - 6, 1, 0)
-        background.fill, background.clickthrough = true, true
-        controls[pageIndex][#controls[pageIndex]].background = { x = 1, y = y + 1, width = -2, height = rowHeight - 6 }
-        icon(parent, 8, y + 3, rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId).clickthrough = true
-        local itemLabel = text(parent, 48, y + 3, 90, item.name)
-        itemLabel:SetSize(-300, 32, 1, 0)
-        itemLabel.alignVertical = ui.AlignMode.CENTRE
-        itemLabel.clickthrough = true
+        local frameEntry, background = settingRow(parent, y, {
+            name = item.name, icon = item.icon or (rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId),
+        })
         local enabled, custom = rule.enabled, rule.custom
         local draft = rowDrafts[index] or { tostring(rule.low), tostring(rule.critical) }
         rowDrafts[index] = draft
@@ -624,15 +559,23 @@ function view.build(host, rules, onChange, prettyui)
         if combinedRows[item.group] then return item.group end
     end
     local orderedRules = {}
-    local scriptureOrder = { [51814] = 1, [52117] = 2, [52347] = 3,
-        [52494] = 4, [57126] = 5, [57526] = 6, [42787] = 7, [61425] = 8 }
+    local explicitOrder, itemDefinitions = {}, {}
+    for _, panel in ipairs(panels) do
+        for _, dropdown in ipairs(panel.dropdowns) do
+            for position, definition in ipairs(dropdown.settings or {}) do
+                explicitOrder[definition.itemId] = position
+                itemDefinitions[definition.itemId] = definition
+            end
+        end
+    end
     for index, rule in ipairs(rules) do orderedRules[#orderedRules + 1] = { index = index, rule = rule } end
     table.sort(orderedRules, function(a, b)
-        local pa, pb = scriptureOrder[a.rule.itemId] or 100, scriptureOrder[b.rule.itemId] or 100
+        local pa, pb = explicitOrder[a.rule.itemId] or math.huge, explicitOrder[b.rule.itemId] or math.huge
         if pa ~= pb then return pa < pb end
         return a.index < b.index
     end)
     local standalone = {}
+    local miscRuleIndices = {}
     for _, entry in ipairs(orderedRules) do
         local index, rule = entry.index, entry.rule
         local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
@@ -657,14 +600,18 @@ function view.build(host, rules, onChange, prettyui)
         end
         local group = pageIndex == 5 and name == "Other" and otherGroup or sections[pageIndex][name]
         local y = group.count * rowHeight
+        if group == otherGroup then
+            miscRuleIndices[rule.itemId] = index
+        else
         group.count = group.count + 1
-        if pageIndex == 3 then
+        if group.definition and group.definition.lazy then
             group.rows = group.rows or {}
             group.rows[#group.rows + 1] = { index = index, y = y }
         else
-            if group == otherGroup then currentRowOffset = miscRows end
-            buildRow(index, rule, item, group, pageIndex, y, nil, group == otherGroup and miscRows or nil)
-            currentRowOffset = nil
+            local definition = itemDefinitions[rule.itemId] or {}
+            buildRow(index, rule, { name = definition.name or item.name,
+                icon = definition.icon, godBook = item.godBook }, group, pageIndex, y)
+        end
         end
         end
         end
@@ -679,19 +626,38 @@ function view.build(host, rules, onChange, prettyui)
         for _, candidate in ipairs(indices) do
             if rules[candidate].itemId == representative then index = candidate; break end
         end
-        buildRow(index, rules[index], { name = name }, nil, 3, (i - 1) * rowHeight, indices, rangedRows)
+        buildRow(index, rules[index], { name = name, icon = representative }, nil, 3, (i - 1) * rowHeight, indices, rangedRows)
     end
     currentRowOffset = nil
-    for _, entry in ipairs({ { page = 2, spacer = necroSpacer, itemId = 55336 },
-        { page = 4, spacer = meleeSpacer, itemId = spikes.ruleId } }) do
-        local layer = rowLayer(entry.page, entry.spacer, rowHeight)
-        local index = standalone[entry.itemId]
+    for _, page in ipairs({ 2, 4 }) do
+        local definitions = panels[page].settings
+        local layer = rowLayer(page, spacers[page], #definitions * rowHeight)
         currentRowOffset = layer
-        buildRow(index, rules[index], entry.itemId == spikes.ruleId and spikes or catalogue[entry.itemId],
-            nil, entry.page, 0, nil, layer)
+        for position, definition in ipairs(definitions) do
+            local index = assert(standalone[definition.itemId], "Missing standalone setting rule")
+            local item = definition.itemId == spikes.ruleId and spikes or catalogue[definition.itemId]
+            buildRow(index, rules[index], { name = definition.name or item.name, icon = definition.icon },
+                nil, page, (position - 1) * rowHeight, nil, layer)
+        end
         currentRowOffset = nil
     end
-    addUnavailableRows()
+    for _, definition in ipairs(panels[5].settings) do
+        pageIndex = 5
+        if definition.key then
+            addOtherSwitch(definition)
+        elseif definition.unavailable then
+            addUnavailableRow(definition)
+        else
+            local index = assert(miscRuleIndices[definition.itemId], "Missing Misc setting rule")
+            local item = catalogue[definition.itemId]
+            currentRowOffset = miscRows
+            buildRow(index, rules[index], { name = definition.name or item.name,
+                icon = definition.icon, godBook = item.godBook }, otherGroup, 5,
+                otherGroup.count * rowHeight, nil, miscRows)
+            otherGroup.count = otherGroup.count + 1
+            currentRowOffset = nil
+        end
+    end
     local function destroyRows(page, section, keep)
         for i = #controls[page], 1, -1 do
             local entry = controls[page][i]
