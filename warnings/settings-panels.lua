@@ -47,7 +47,9 @@ for index, vital in ipairs(require("supplies/vitals")) do
     table.insert(panels[5].settings, 10 + index, {
         key = vital.key, name = vital.name, icon = vital.icon,
         threshold = vital.key .. "Threshold",
-        usage = "Warns when below the configured percentage during a pre-flight check.",
+        usage = vital.key == "summoning" and "Your own points used to summon familiars. Warns below the configured percentage."
+            or vital.key == "familiarSpecial" and "The familiar's special-move pool used for scroll abilities (60 points maximum). Warns below the configured percentage."
+            or "Warns when below the configured percentage during a pre-flight check.",
     })
 end
 panels.general = { toggles = {

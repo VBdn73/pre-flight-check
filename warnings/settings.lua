@@ -84,7 +84,11 @@ local function fromSaved(saved)
     if type(saved) ~= "table" then saved = {} end
     local rules = {}
     for _, vital in ipairs(require("supplies/vitals")) do
-        rules[vital.key] = saved[vital.key] ~= false
+        if vital.enabled == false then
+            rules[vital.key] = saved[vital.key] == true
+        else
+            rules[vital.key] = saved[vital.key] ~= false
+        end
         local key = vital.key .. "Threshold"
         rules[key] = settings.validPercentage(saved[key], key) and saved[key] or vital.threshold
     end

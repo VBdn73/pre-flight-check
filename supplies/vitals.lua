@@ -4,6 +4,7 @@ local vitals = {
     { key = "adrenaline", name = "Adrenaline", threshold = 100, icon = { sprite = 6935 } },
     { key = "prayer", name = "Prayer points", threshold = 75, icon = { sprite = 13197 } },
     { key = "summoning", name = "Summoning points", threshold = 50, icon = { sprite = 13216 } },
+    { key = "familiarSpecial", name = "Familiar special-move points", enabled = false, threshold = 50, icon = { sprite = 14466 } },
 }
 
 local function number(value)
@@ -32,9 +33,12 @@ function vitals.read()
         return var.VarPlayer.PRAYER_POINTS.value, Player.GetLevelCapped(5) * 100
     end)
     read("summoning", function()
-        return Player.GetLevelGameplay(23), Player.GetLevelCapped(23)
+        -- Like Prayer, the player's pool is stored in hundredths of a skill level.
+        return var.VarPlayer.LORE_POINTS.value, Player.GetLevelCapped(23) * 100
     end)
-    return result
+    read("familiarSpecial", function() return var.VarPlayer.LORE_SPELL_POINTS.value, 60 end)
+return result
 end
+
 
 return vitals
