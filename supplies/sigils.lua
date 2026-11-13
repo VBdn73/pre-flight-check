@@ -1,6 +1,7 @@
 -- Client cooldown endpoints use Event.Logic's 50 Hz clock. Never compare
 -- VarPlayer endpoints to that clock: they use a different time base.
 local sigils = {}
+local constants = require("constants")
 local tick
 local abilities = {
     { "Aggression", "DEFENCE_AGGRESSION" },
@@ -29,7 +30,8 @@ function sigils.read()
         end)
         if ok and type(endpoint) == "number" and endpoint < math.huge
             and endpoint % 1 == 0 and endpoint > tick then
-            cooling[#cooling + 1] = { name = ability[1], seconds = math.ceil((endpoint - tick) / 50) }
+            cooling[#cooling + 1] = { name = ability[1],
+                seconds = math.ceil((endpoint - tick) / constants.LOGIC_TICKS_PER_SECOND) }
         end
     end
     return cooling

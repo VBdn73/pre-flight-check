@@ -1,0 +1,12 @@
+-- Observed container IDs and game-variable units used by supply readers.
+return {
+    EMPTY_ITEM_ID = -1,
+    INVENTION_UNITS_PER_CHARGE = 3000,
+    NEXUS_ITEM_IDS = { 56141, 56142, 56143, 59358, 59359, 59360 },
+    NEXUS_INVENTORY_ID = 953,
+    SPIKE_HARNESS_INVENTORY_ID = 974,
+    ADRENALINE_MAX_UNITS = 1000,
+    POINT_UNITS_PER_LEVEL = 100,
+    FAMILIAR_SPECIAL_MAX_POINTS = 60,
+    SKILL = { PRAYER = 5, SUMMONING = 23 },
+}

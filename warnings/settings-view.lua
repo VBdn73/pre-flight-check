@@ -5,6 +5,7 @@ local colourValue = require("warnings/colour")
 local components = require("warnings/settings-components")
 local panels = require("warnings/settings-panels")
 local settingsScroll = require("warnings/settings-scroll")
+local fields = require("warnings/settings-fields")
 local view = {}
 local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
 local combination = { [4694] = true, [4695] = true, [4696] = true,
@@ -14,35 +15,6 @@ local rangedCombinedNames, rangedCombinedIcons = {}, {}
 for _, setting in ipairs(panels[3].settings) do
     rangedCombinedNames[#rangedCombinedNames + 1] = setting.name
     rangedCombinedIcons[setting.name] = setting.icon
-end
-
-local function text(parent, x, y, width, value)
-    local label = ui.Text.new(parent)
-    label:SetPos(x, y); label:SetSize(width, 22)
-    label.font = id.Font.MUSEO_SANS_11PT_REGULAR
-    label.content = value
-    return label
-end
-
-local function input(parent, x, y, value)
-    local field = ui.InputField.new(parent)
-    field:SetPos(x, y); field:SetSize(64, 25)
-    field.stylesheetID = id.StyleSheet.INPUT_DEFAULT
-    field:Setup(ui.TextContentVisibilityMode.VISIBLE, ui.InputFieldFilterMode.NUMBERS_AS_TEXT, 10)
-    field.content = tostring(value)
-    return field
-end
-
-local function icon(parent, x, y, itemId)
-    local sprite = ui.Sprite.new(parent)
-    sprite:SetPos(x, y); sprite:SetSize(36, 32)
-    if type(itemId) == "table" then
-        sprite:SetPos(x + 2, y); sprite:SetSize(32, 32)
-        sprite.sprite = itemId.sprite
-    else
-        sprite:SetAssociatedObject(itemId)
-    end
-    return sprite
 end
 
 function view.build(host, rules, onChange, prettyui)
@@ -81,7 +53,7 @@ function view.build(host, rules, onChange, prettyui)
         control:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.scroll", settingsScroll.wheelHandler(scroll))
         return control
     end
-    local originalText, originalInput, originalIcon = text, input, icon
+    local originalText, originalInput, originalIcon = fields.text, fields.input, fields.icon
     local function text(...) return track(originalText(...)) end
     local function input(...)
         local field = track(originalInput(...))

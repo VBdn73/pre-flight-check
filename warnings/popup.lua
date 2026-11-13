@@ -5,21 +5,12 @@ local rowHeight = 36
 local positionKey = "supplyWarnings.popupPosition"
 local iconView = require("warnings/popup-icons")
 local tooltips = {}
+local overlayPosition = require("warnings/overlay-position")
 
-local function validPosition(value)
-    return type(value) == "table" and type(value.x) == "number" and type(value.y) == "number"
-        and value.x == value.x and value.y == value.y
-        and math.abs(value.x) < 100000 and math.abs(value.y) < 100000
-end
+local validPosition = overlayPosition.valid
 
 local function clampPosition(x, y, parent, height, width)
-    if type(parent.width) == "number" and parent.width > 0 then
-        x = math.max(0, math.min(x, math.max(0, parent.width - (width or 340))))
-    end
-    if type(parent.height) == "number" and parent.height > 0 then
-        y = math.max(0, math.min(y, math.max(0, parent.height - height)))
-    end
-    return x, y
+    return overlayPosition.clamp(x, y, parent, width or 340, height)
 end
 
 local function formatCount(count)

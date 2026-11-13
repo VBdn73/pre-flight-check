@@ -1,4 +1,5 @@
 -- Resource percentages and shared artwork for settings and notifications.
+local constants = require("supplies/constants")
 local vitals = {
     { key = "health", name = "Health", threshold = 75, icon = { sprite = 24773 } },
     { key = "adrenaline", name = "Adrenaline", threshold = 100, icon = { sprite = 6935 } },
@@ -26,19 +27,20 @@ function vitals.read()
         return var.VarPlayer.LIFEPOINTS.value, var.VarPlayer.MAXLIFEPOINTS.value
     end)
     -- SA_ENERGY uses tenths of a percent; 100% is 1000, even with over-adrenaline.
-    read("adrenaline", function() return var.VarPlayer.SA_ENERGY.value, 1000 end)
+    read("adrenaline", function() return var.VarPlayer.SA_ENERGY.value, constants.ADRENALINE_MAX_UNITS end)
     read("prayer", function()
         -- PRAYER_POINTS uses 100 units per skill level (10 per displayed point).
-        -- For example, 4413 / (99 * 100) is 44.58%, displayed as 441/990.
-        return var.VarPlayer.PRAYER_POINTS.value, Player.GetLevelCapped(5) * 100
+        return var.VarPlayer.PRAYER_POINTS.value,
+            Player.GetLevelCapped(constants.SKILL.PRAYER) * constants.POINT_UNITS_PER_LEVEL
     end)
     read("summoning", function()
         -- Like Prayer, the player's pool is stored in hundredths of a skill level.
-        return var.VarPlayer.LORE_POINTS.value, Player.GetLevelCapped(23) * 100
+        return var.VarPlayer.LORE_POINTS.value,
+            Player.GetLevelCapped(constants.SKILL.SUMMONING) * constants.POINT_UNITS_PER_LEVEL
     end)
-    read("familiarSpecial", function() return var.VarPlayer.LORE_SPELL_POINTS.value, 60 end)
-return result
+    read("familiarSpecial", function()
+        return var.VarPlayer.LORE_SPELL_POINTS.value, constants.FAMILIAR_SPECIAL_MAX_POINTS
+    end)
+    return result
 end
-
-
 return vitals

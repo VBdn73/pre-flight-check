@@ -9,6 +9,9 @@ local presetMessages = require("bank/preset-messages")
 local portalTrigger = require("warnings/portal-trigger")
 local checkButton = require("warnings/check-button")
 local sigils = require("supplies/sigils")
+local constants = require("constants")
+local presetAlerts = require("bank/preset-alerts")
+local supplyCount = require("supplies/count")
 local manualCheckDeadline
 local portalCapture
 local portalCheckDeadline
@@ -21,7 +24,7 @@ local canRead = true
 local now
 local checkAfter, checkDeadline
 local anticipatedCloseUntil
-local presetSettleDelay = 0.6 -- Allow a server tick for the preset's supply data to arrive.
+local presetSettleDelay = constants.SERVER_TICK_SECONDS
 local chatAlerts, chatUntil, chatReady = {}, nil, nil
 
 local function clearPresetChat()
@@ -31,7 +34,7 @@ end
 local function beginPresetChat()
     if canRead and now and rules.checkOnPreset and rules.presetChatNotifications
         and Plugin.HasPermission(PluginPermissions.chatAccess) then
-        chatAlerts, chatUntil, chatReady = {}, now + 5, nil
+        chatAlerts, chatUntil, chatReady = {}, now + constants.PRESET_CHAT_WINDOW_SECONDS, nil
     end
 end
 
@@ -59,13 +62,13 @@ end
 -- Wait for server updates following the action before taking a fresh snapshot.
 local function scheduleCheck(delay)
     if not canRead or not now then return end
-    checkAfter, checkDeadline = now + delay, now + 5
+    checkAfter, checkDeadline = now + delay, now + constants.CHECK_RETRY_SECONDS
 end
 
 local function anticipateClose(alwaysCheck, delay)
     -- Avoid scheduling a second check when an anticipated bank close is observed.
     if alwaysCheck or not anticipatedCloseUntil then scheduleCheck(delay or 0) end
-    anticipatedCloseUntil = now + 5
+    anticipatedCloseUntil = now + constants.BANK_CLOSE_WINDOW_SECONDS
 end
 
 local function refresh()
@@ -75,31 +78,17 @@ local function refresh()
     local snapshot = canRead and reader.read() or {
         backpack = { available = false }, equipment = { available = false },
     }
-    if not snapshot.backpack.available or not snapshot.equipment.available then popup.clear() end
+    if not supplyCount.available(snapshot) then popup.clear() end
     if not canRead or not now or not checkAfter or now < checkAfter then return end
     if chatReady and now < chatReady then return end
     -- Retry unavailable snapshots until the deadline instead of treating them as empty.
-    if not snapshot.backpack.available or not snapshot.equipment.available then
+    if not supplyCount.available(snapshot) then
         if now >= checkDeadline then checkAfter, checkDeadline = nil, nil end
         return
     end
     checkAfter, checkDeadline = nil, nil
     local alerts = monitor.update(snapshot)
-    local trackedNames = {}
-    local function normaliseName(name)
-        return type(name) == "string" and name:match("^%s*(.-)%s*$"):lower() or nil
-    end
-    for _, alert in ipairs(alerts) do
-        local name = alert.itemId and normaliseName(alert.name)
-        if name then trackedNames[name] = true end
-    end
-    -- Prefer snapshot counts over duplicate withdrawal messages; charge percentages
-    -- carry different information and should still be shown.
-    for _, alert in ipairs(chatAlerts) do
-        if alert.status and alert.status:match("%%$") or not trackedNames[normaliseName(alert.name)] then
-            alerts[#alerts + 1] = alert
-        end
-    end
+    presetAlerts.merge(alerts, chatAlerts)
     chatAlerts, chatReady = {}, nil
     showAlerts(alerts)
 end
@@ -108,7 +97,7 @@ Event.ServerLogic.Subscribe("supplyCheck.refresh", function()
     refresh()
     if manualCheckDeadline and canRead and now then
         local snapshot = reader.read()
-        if snapshot.backpack.available and snapshot.equipment.available then
+        if supplyCount.available(snapshot) then
             manualCheckDeadline = nil
             showAlerts(monitor.update(snapshot))
         elseif now >= manualCheckDeadline then
@@ -119,23 +108,23 @@ Event.ServerLogic.Subscribe("supplyCheck.refresh", function()
     if not portalCheckDeadline or not canRead or not now then return end
     if now >= portalCheckDeadline then portalCheckDeadline = nil; return end
     local snapshot = reader.read()
-    if not snapshot.backpack.available or not snapshot.equipment.available then return end
+    if not supplyCount.available(snapshot) then return end
     portalCheckDeadline = nil
     -- Independent of preset chat collection and its settle timer.
     showAlerts(monitor.update(snapshot))
 end)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
-    now = event.logicTick / 50
+    now = event.logicTick / constants.LOGIC_TICKS_PER_SECOND
     sigils.setTick(canRead and event.logicTick or nil)
     checkButton.update(rules.showCheckButton and canRead, function()
         if not canRead or not now or not rules.showCheckButton then return end
         -- Manual checks never consume preset chat or depend on automatic triggers.
         local snapshot = reader.read()
-        if snapshot.backpack.available and snapshot.equipment.available then
+        if supplyCount.available(snapshot) then
             manualCheckDeadline = nil
             showAlerts(monitor.update(snapshot))
         else
-            manualCheckDeadline = now + 5
+            manualCheckDeadline = now + constants.CHECK_RETRY_SECONDS
         end
     end, rules.lockCheckButton)
     if not rules.checkOnPortalEntry then portalCapture = nil; portalCheckDeadline = nil end
@@ -144,7 +133,7 @@ Event.Logic.Subscribe("supplyCheck.clock", function(event)
         portalCapture, arrived = portalTrigger.advance(capture, now,
             canRead and portalTrigger.position() or nil)
         if arrived then
-            if rules.checkOnPortalEntry then portalCheckDeadline = now + 5 end
+            if rules.checkOnPortalEntry then portalCheckDeadline = now + constants.CHECK_RETRY_SECONDS end
         end
     end
     if not rules.checkOnPreset or not rules.presetChatNotifications then
@@ -179,7 +168,7 @@ Event.ChatMessage.Subscribe("supplyCheck.presetMessages", function(event)
         or not Plugin.HasPermission(PluginPermissions.chatAccess) then return end
     local kind, alert = presetMessages.parse(event)
     if kind == "start" then
-        chatAlerts, chatUntil, chatReady = {}, now + 5, now + presetSettleDelay
+        chatAlerts, chatUntil, chatReady = {}, now + constants.PRESET_CHAT_WINDOW_SECONDS, now + presetSettleDelay
     elseif (kind == "issue" or (kind == "charge" and rules.itemDurability))
         and (not alert.setting or rules[alert.setting]) and chatUntil and now < chatUntil then
         chatAlerts[#chatAlerts + 1] = alert
@@ -188,7 +177,7 @@ Event.ChatMessage.Subscribe("supplyCheck.presetMessages", function(event)
 end)
 Event.KeyDown.Subscribe("supplyCheck.presetShortcut", function(event)
     if not canRead or not now or not bankState.isMainPanelOpen() then return end
-    if event.gameKey == 13 and not event.isRepeat and rules.checkOnBankClose then -- Escape
+    if event.gameKey == constants.KEY_ESCAPE and not event.isRepeat and rules.checkOnBankClose then
         local ok, usable = pcall(function() return Keyboard.IsAvailable() and not Keyboard.IsBlocked() end)
         if not ok or not usable then return end
         anticipateClose()
@@ -201,7 +190,8 @@ Event.KeyDown.Subscribe("supplyCheck.presetShortcut", function(event)
         return Keyboard.IsControlDown(), Keyboard.IsShiftDown(), Keyboard.IsAltDown()
     end)
     if ok and ctrl ~= nil then
-        modifiers = (ctrl and 2 or 0) + (shift and 1 or 0) + (alt and 4 or 0)
+        modifiers = (ctrl and constants.MODIFIER.CONTROL or 0)
+            + (shift and constants.MODIFIER.SHIFT or 0) + (alt and constants.MODIFIER.ALT or 0)
     end
     if presetTrigger.isShortcut(event, modifiers) then
         beginPresetChat()
@@ -241,9 +231,9 @@ Event.MiniMenuEntrySelected.Subscribe("supplyCheck.preset", function(event)
     end
 end)
 Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
-    canRead = event.newState == 30 -- GameState.GAME
+    canRead = event.newState == constants.GAME_STATE.PLAYING
     -- Preserve the approach across LOADING, but never across logout/login.
-    if not canRead and event.newState ~= 40 then
+    if not canRead and event.newState ~= constants.GAME_STATE.LOADING then
         portalCapture, portalCheckDeadline = nil, nil
     end
     if not canRead then

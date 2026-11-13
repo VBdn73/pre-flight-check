@@ -1,6 +1,9 @@
 local catalogue = require("supplies/catalogue")
 local spikes = require("supplies/armour-spikes")
 local settings = require("warnings/settings")
+local supplyCount = require("supplies/count")
+local vitals = require("supplies/vitals")
+local constants = require("constants")
 local monitor = {}
 
 function monitor.new(rules)
@@ -8,7 +11,7 @@ function monitor.new(rules)
 
     function instance.update(snapshot)
         local alerts = {}
-        for _, vital in ipairs(require("supplies/vitals")) do
+        for _, vital in ipairs(vitals) do
             local percent = snapshot.vitals and snapshot.vitals[vital.key]
             if rules[vital.key] and type(percent) == "number" and percent >= 0
                 and percent < rules[vital.key .. "Threshold"] then
@@ -42,52 +45,25 @@ function monitor.new(rules)
         for _, rule in ipairs(rules) do
             local effective = settings.effective(rules, rule)
             local item = rule.itemId == spikes.ruleId and spikes or catalogue[rule.itemId]
-            local count
-            if rule.itemId == spikes.ruleId then
-                if snapshot.backpack.available and snapshot.equipment.available
-                    and snapshot.spikeHarness and snapshot.spikeHarness.available then
-                    count = 0
-                    for _, itemId in ipairs(spikes.itemIds) do
-                        count = count + (snapshot.backpack.counts[itemId] or 0)
-                            + (snapshot.equipment.counts[itemId] or 0)
-                            + (snapshot.spikeHarness.counts[itemId] or 0)
-                    end
-                end
-            elseif item.godBook then
-                if snapshot.equipment.available then
-                    for _, itemId in ipairs(item.equippedIds or { rule.itemId }) do
-                        if (snapshot.equipment.counts[itemId] or 0) > 0 then
-                            count = snapshot.godBookTicks
-                            break
-                        end
-                    end
-                end
-            elseif item.inventionCharge then
-                count = snapshot.inventionCharge
-            elseif item.combatVar then
-                count = snapshot.runeCounts and snapshot.runeCounts[rule.itemId]
-            elseif snapshot.backpack.available and snapshot.equipment.available
-                and (not item.nexus or (snapshot.nexus and snapshot.nexus.available)) then
-                count = (snapshot.backpack.counts[rule.itemId] or 0)
-                    + (snapshot.equipment.counts[rule.itemId] or 0)
-                if item.nexus then count = count + (snapshot.nexus.counts[rule.itemId] or 0) end
-            end
+            local count = supplyCount.read(snapshot, rule.itemId, item)
             -- Ordinary supplies are only tracked when carried; equipped books and
             -- the global Invention charge pool can still need warnings at zero.
             -- Book thresholds are in minutes.
             local timed = item.godBook
             if rule.enabled and count ~= nil and (count > 0 or timed or (item.inventionCharge and count == 0)) then
                 local level
-                local comparable = timed and count * 0.6 or count
-                local scale = timed and 60 or 1
+                local comparable = timed and count * constants.SERVER_TICK_SECONDS or count
+                local scale = timed and constants.SECONDS_PER_MINUTE or 1
                 if comparable < effective.critical * scale then level = "critical"
                 elseif comparable < effective.low * scale then level = "low" end
                 if level then
                     local alert = { itemId = rule.itemId, name = item.name, count = count, level = level }
                     if timed then
-                        local seconds = math.floor(count * 0.6)
+                        local seconds = math.floor(count * constants.SERVER_TICK_SECONDS)
                         alert.message = string.format("%s: %d:%02d:%02d remaining", item.name,
-                            math.floor(seconds / 3600), math.floor(seconds / 60) % 60, seconds % 60)
+                            math.floor(seconds / constants.SECONDS_PER_HOUR),
+                            math.floor(seconds / constants.SECONDS_PER_MINUTE) % constants.SECONDS_PER_MINUTE,
+                            seconds % constants.SECONDS_PER_MINUTE)
                     end
                     alerts[#alerts + 1] = alert
                 end

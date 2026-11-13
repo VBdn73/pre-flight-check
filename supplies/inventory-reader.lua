@@ -2,6 +2,9 @@
 local reader = {}
 local catalogue = require("supplies/catalogue")
 local spikes = require("supplies/armour-spikes")
+local constants = require("supplies/constants")
+local sigils = require("supplies/sigils")
+local vitals = require("supplies/vitals")
 
 local function integer(value, minimum)
     return type(value) == "number" and value >= minimum
@@ -33,7 +36,7 @@ local function readSource(name)
             local obj = slot.obj
             if not obj then return nil end
             local id, count = obj.id, slot.count
-            if id == -1 and count == 0 then
+            if id == constants.EMPTY_ITEM_ID and count == 0 then
                 -- Observed empty-slot representation in the client.
             elseif integer(id, 0) and integer(count, 1) then
                 local total = (counts[id] or 0) + count
@@ -85,7 +88,7 @@ function reader.read()
     local excaliburCooldown = readNonnegativeVar("VarPlayer", "COMBATV2_EXCALIBUR_SPEC")
     local powerburstCooldown = readNonnegativeVar("VarPlayer", "HERB_POW_COOLDOWN")
     local raw = readNonnegativeVar("VarPlayer", "INVENT_CHARGE")
-    local charge = raw and math.floor(raw / 3000)
+    local charge = raw and math.floor(raw / constants.INVENTION_UNITS_PER_CHARGE)
     for itemId, item in pairs(catalogue) do
         if item.combatVar then
             runes[itemId] = readNonnegativeVar("VarClient", item.combatVar)
@@ -93,13 +96,12 @@ function reader.read()
     end
     local backpack, equipment = readSource("INV"), readSource("WORN")
     -- Include uncharged nexus variants; their contents are not assumed empty.
-    local nexus = readCarriedContainer(backpack, equipment, { 56141, 56142, 56143, 59358, 59359, 59360 }, 953)
-    local spikeHarness = readCarriedContainer(backpack, equipment, { spikes.harnessId }, 974)
+    local nexus = readCarriedContainer(backpack, equipment, constants.NEXUS_ITEM_IDS, constants.NEXUS_INVENTORY_ID)
+    local spikeHarness = readCarriedContainer(backpack, equipment, { spikes.harnessId }, constants.SPIKE_HARNESS_INVENTORY_ID)
     return { backpack = backpack, equipment = equipment, runeCounts = runes, nexus = nexus,
         spikeHarness = spikeHarness, inventionCharge = charge, signOfLifeCooldown = signOfLifeCooldown,
         godBookTicks = bookTicks, deathReclaim = deathReclaim, excaliburCooldown = excaliburCooldown,
-        powerburstCooldown = powerburstCooldown, sigilCooldowns = require("supplies/sigils").read(),
-        vitals = require("supplies/vitals").read() }
+        powerburstCooldown = powerburstCooldown, sigilCooldowns = sigils.read(), vitals = vitals.read() }
 end
 
 return reader

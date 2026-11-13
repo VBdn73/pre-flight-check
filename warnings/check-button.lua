@@ -5,17 +5,12 @@ local positionX, positionY
 local moveDrag, locked
 local width, height = 36, 36
 local positionKey = "supplyWarnings.checkButtonPosition"
+local overlayPosition = require("warnings/overlay-position")
 
-local function valid(position)
-    return type(position) == "table" and type(position.x) == "number" and type(position.y) == "number"
-        and position.x == position.x and position.y == position.y
-        and math.abs(position.x) < 100000 and math.abs(position.y) < 100000
-end
+local valid = overlayPosition.valid
 
 local function clamp(x, y)
-    if type(host.width) == "number" and host.width > 0 then x = math.max(0, math.min(x, math.max(0, host.width - width))) end
-    if type(host.height) == "number" and host.height > 0 then y = math.max(0, math.min(y, math.max(0, host.height - height))) end
-    return x, y
+    return overlayPosition.clamp(x, y, host, width, height)
 end
 
 local function placeHandle()
