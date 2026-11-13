@@ -120,6 +120,15 @@ end
 start = #components
 assert(popup.show({ { message = "Cooldown: 1000 minutes", level = "low" } }, 200))
 assert(components[start + 5].content == "Cooldown: 1000 minutes")
+start = #components
+local cooldownMessage = "Dragon Slayer is on cooldown (59s)"
+assert(popup.show({ { message = cooldownMessage, level = "critical" } }, 200))
+local cooldownBox, cooldownLabel, cooldownSeverity = components[start + 3], components[start + 5], components[start + 6]
+assert(cooldownLabel.content == cooldownMessage and cooldownBox.size[2] == 32,
+    "message-only warnings use the empty severity column instead of wrapping early")
+assert(cooldownSeverity.content == "" and cooldownLabel.size[1] == cooldownBox.size[1] - 19)
+assert(cooldownLabel.pos[1] + cooldownLabel.size[1] == cooldownBox.pos[1] + cooldownBox.size[1] - 7,
+    "full-width labels retain right padding")
 popup.clear()
 for _, case in ipairs({ { "Powder of penance", "critical", "MISSING" },
     { "Ectoplasm", "low", "LOW" }, { "Perfect plus potion (1)", "low", "DOSE" } }) do
@@ -153,6 +162,19 @@ local prettyui = { SimpleView = { new = function(host, options)
     return view
 end } }
 local alerts = {}
+start = #components
+local scrollingMessage = string.rep("wideword ", 6) .. "end"
+assert(popup.show({ { message = scrollingMessage, level = "critical" },
+    { name = "Rune", count = 1, level = "low" } }, 200, 4, prettyui, 1))
+local messageView = views[#views]
+local messageLabel = components[start + 5]
+assert(messageLabel.size[1] == messageView.contentWidth - 19,
+    "scrolling message-only warnings use the available content width")
+assert(messageLabel.content == popup.wrapLabel(scrollingMessage, messageView.contentWidth - 19,
+    config.Font.FromID(id.Font.MUSEO_SANS_15PT_REGULAR))[1],
+    "scrolling labels wrap using the same full width as their controls")
+popup.clear()
+views = {}
 for i = 1, 11 do alerts[i] = { name = "Rune", count = i, level = "low" } end
 parent.height = 140
 start = #components

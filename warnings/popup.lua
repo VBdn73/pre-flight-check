@@ -54,6 +54,10 @@ function popup.formatAlert(alert)
     return alert.message or (displayName(alert.name, alert.count) .. ": " .. formatCount(alert.count))
 end
 
+local function severityText(alert)
+    return alert.status or (alert.message and "" or (alert.level == "critical" and "CRITICAL" or "LOW"))
+end
+
 function popup.wrapLabel(text, width, font)
     local function measure(value)
         if font then
@@ -131,9 +135,10 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
             end
             local rows, total, visible = {}, 0, 0
             for i, alert in ipairs(alerts) do
-                local lines = popup.wrapLabel(popup.formatAlert(alert), width - 104, labelFont)
+                local labelWidth = width - (severityText(alert) ~= "" and 104 or 19)
+                local lines = popup.wrapLabel(popup.formatAlert(alert), labelWidth, labelFont)
                 local height = math.max(rowHeight, #lines * 24 + 8)
-                rows[i] = { lines = lines, height = height }
+                rows[i] = { lines = lines, height = height, labelWidth = labelWidth }
                 total = total + height
                 if i <= (maxRows or 8) then visible = total end
             end
@@ -264,7 +269,6 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
                     background = background, accent = accent, prettyui = prettyui, tooltips = tooltips,
                     hoverTargets = hoverTargets, scroll = scroll, formatAlert = popup.formatAlert }, alert, i, columns)
             else
-            local critical = alert.level == "critical"
             local backgroundColour, accentColour = popup.colours(alert.level, rules)
             local y, height = rowY, rows[i].height
             rowY = rowY + height
@@ -281,7 +285,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
             accent.clickthrough = true
             for lineIndex, line in ipairs(rows[i].lines) do
                 local label = ui.Text.new(listParent)
-                label:SetPos(x + 12, y + (lineIndex - 1) * 24); label:SetSize(rowWidth - 104, #rows[i].lines == 1 and 32 or 24)
+                label:SetPos(x + 12, y + (lineIndex - 1) * 24); label:SetSize(rows[i].labelWidth, #rows[i].lines == 1 and 32 or 24)
                 label.font = id.Font.MUSEO_SANS_15PT_REGULAR
                 label.alignVertical = ui.AlignMode.CENTRE
                 label.clickthrough = not scroll
@@ -301,7 +305,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
             severity.alignHorizontal = ui.AlignMode.BOTTOMRIGHT
             severity.alignVertical = ui.AlignMode.CENTRE
             severity.clickthrough = true
-            severity.content = alert.status or (alert.message and "" or (critical and "CRITICAL" or "LOW"))
+            severity.content = severityText(alert)
             end
         end
         local pin = ui.Button.new(root)
