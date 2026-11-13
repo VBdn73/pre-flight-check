@@ -21,25 +21,24 @@ assert(first.inventionCharge == 126399)
 assert(first.signOfLifeCooldown == nil)
 assert(first.excaliburCooldown == nil)
 assert(first.powerburstCooldown == nil)
-var.VarPlayer.HERB_POW_COOLDOWN = { value = 120 }
-assert(reader.read().powerburstCooldown == 120)
-var.VarPlayer.HERB_POW_COOLDOWN.value = 0
-assert(reader.read().powerburstCooldown == 0)
-var.VarPlayer.HERB_POW_COOLDOWN.value = -1
-assert(reader.read().powerburstCooldown == nil)
-var.VarPlayer.HERB_POW_COOLDOWN = nil
-assert(reader.read().powerburstCooldown == nil)
 -- The client timestamp can stay positive after an altar reset; use server state.
 var.VarClient.COMBATV2_COOLDOWN_EXCALIBUR = { value = 198961 }
-var.VarPlayer.COMBATV2_EXCALIBUR_SPEC = { value = 20 }
-assert(reader.read().excaliburCooldown == 20)
-var.VarPlayer.COMBATV2_EXCALIBUR_SPEC.value = 0
-assert(reader.read().excaliburCooldown == 0)
-var.VarPlayer.COMBATV2_EXCALIBUR_SPEC.value = -1
-assert(reader.read().excaliburCooldown == nil)
-var.VarPlayer.COMBATV2_EXCALIBUR_SPEC = nil
+for _, case in ipairs({
+    { "HERB_POW_COOLDOWN", "powerburstCooldown", 120 },
+    { "COMBATV2_EXCALIBUR_SPEC", "excaliburCooldown", 20 },
+    { "DIV_LIFE_COOLDOWN", "signOfLifeCooldown", 30 },
+    { "GOD_BOOK_TIMELEFT", "godBookTicks", 92184 },
+}) do
+    local variable, field, positive = table.unpack(case)
+    for _, value in ipairs({ positive, 0, -1, math.huge, 0 / 0 }) do
+        var.VarPlayer[variable] = { value = value }
+        local expected = value >= 0 and value < math.huge and value or nil
+        assert(reader.read()[field] == expected, field .. ": " .. tostring(value))
+    end
+    var.VarPlayer[variable] = nil
+    assert(reader.read()[field] == nil, field .. ": missing variable")
+end
 var.VarClient.COMBATV2_COOLDOWN_EXCALIBUR = nil
-assert(reader.read().excaliburCooldown == nil)
 assert(first.deathReclaim == nil)
 -- Optional game variables distinguish unavailable data from zero.
 var.VarPlayer.GRAVESTONE_TIMER_INV_SLOTS = { value = 0 }
@@ -52,20 +51,6 @@ var.VarPlayer.GRAVESTONE_TIMER_OVERFLOW_SLOTS = nil
 assert(reader.read().deathReclaim == true)
 var.VarPlayer.GRAVESTONE_TIMER_WORN_SLOTS.value = 0
 assert(reader.read().deathReclaim == nil)
-var.VarPlayer.GOD_BOOK_TIMELEFT = { value = 92184 }
-assert(reader.read().godBookTicks == 92184)
-var.VarPlayer.GOD_BOOK_TIMELEFT.value = -1
-assert(reader.read().godBookTicks == nil)
-var.VarPlayer.GOD_BOOK_TIMELEFT = nil
-assert(reader.read().godBookTicks == nil)
-var.VarPlayer.DIV_LIFE_COOLDOWN = { value = 30 }
-assert(reader.read().signOfLifeCooldown == 30)
-var.VarPlayer.DIV_LIFE_COOLDOWN.value = 0
-assert(reader.read().signOfLifeCooldown == 0)
-var.VarPlayer.DIV_LIFE_COOLDOWN.value = -1
-assert(reader.read().signOfLifeCooldown == nil)
-var.VarPlayer.DIV_LIFE_COOLDOWN = nil
-assert(reader.read().signOfLifeCooldown == nil)
 -- The decoded charge can be consumed by the monitor.
 local chargeMonitor = require("warnings/monitor").new({
     { itemId = 36389, enabled = true, custom = true, low = 200000, critical = 175000 },

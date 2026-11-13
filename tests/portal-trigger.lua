@@ -25,4 +25,34 @@ for id, tile in pairs({ [114761] = {3283,10149}, [114762] = {3290,10154},
 end
 assert(not trigger.begin(nil, 1, start))
 assert(not trigger.position(), "unavailable API is safe")
+
+local entry = { verbText = "Enter", actionType = 2,
+    locData = { config = { id = 114762 }, coordGridX = 3290, coordGridZ = 10154 } }
+for _, case in ipairs({
+    { "exact approach limit", 3306, 10154, 3371, 10154, true },
+    { "outside approach limit", 3307, 10154, 3372, 10154, false },
+    { "exact jump limit", 3290, 10154, 3354, 10154, false },
+    { "beyond jump limit", 3290, 10154, 3355, 10154, true },
+    { "small mapsquare crossing", 3290, 10175, 3290, 10176, false },
+}) do
+    local name, x, z, nextX, nextZ, expected = table.unpack(case)
+    local pending = assert(trigger.begin(entry, 1, { level = 0, x = x, z = z }))
+    local remaining, arrived = trigger.advance(pending, 2, { level = 0, x = nextX, z = nextZ })
+    assert(not remaining and arrived == expected, name)
+end
+entry.locData.coordGridX = 3291
+assert(not trigger.begin(entry, 1, start), "known config at the wrong tile is ignored")
+entry.locData.coordGridX, entry.actionType = 3290, 1
+assert(not trigger.begin(entry, 1, start), "only location entry actions are accepted")
+
+local coord = { level = 0, x = 3290, z = 10154 }
+Player = { IsAvailable = function() return true end,
+    GetEntity = function() return { coordGrid = coord } end }
+local captured = assert(trigger.position())
+coord.x = 1
+assert(captured.x == 3290, "positions are copied from client proxies")
+coord.z = "invalid"
+assert(not trigger.position(), "malformed coordinates are ignored")
+Player.IsAvailable = function() return false end
+assert(not trigger.position(), "unavailable players are ignored")
 print("Portal trigger tests passed.")

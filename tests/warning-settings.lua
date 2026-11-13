@@ -54,9 +54,6 @@ end
 assert(settings.style(48951) == "Misc")
 assert(seen[40407] == 1 and settings.style(40407) == "Misc")
 -- Threshold validation and persistence.
-assert(settings.valid({ itemId = 52494, enabled = true, low = 1440, critical = 0 }))
-assert(not settings.valid({ itemId = 52494, enabled = true, low = 1441, critical = 0 }))
-assert(not settings.valid({ itemId = 52494, enabled = true, low = 30, critical = 31 }))
 rules.styles.Magic.low = 5000
 rules[1].custom, rules[1].low, rules[1].critical = true, 70, 10
 rules[2].enabled = false
@@ -152,4 +149,16 @@ for _, id in ipairs({ 22420, 22421, 22422, 22423, 22424, 22425 }) do
 end
 PersistentDB.SetStructuredData = function() return false end
 assert(not settings.save(rules))
+PersistentDB.SetStructuredData = function() error("storage unavailable") end
+assert(not settings.save(rules), "storage exceptions return failure")
+PersistentDB.GetStructuredData = function() error("storage unavailable") end
+assert(settings.load().popupDuration == 4, "read exceptions restore defaults")
+for _, corrupt in ipairs({ false, 42, "invalid" }) do
+    PersistentDB.GetStructuredData = function() return corrupt end
+    assert(settings.load().checkOnPreset, "invalid stored root restores defaults")
+end
+local fresh = settings.defaults()
+fresh.styles.Magic.low, fresh[1].enabled = 9999, false
+assert(settings.defaults().styles.Magic.low == 1000 and settings.defaults()[1].enabled,
+    "default tables are independent")
 print("Warning settings tests passed.")

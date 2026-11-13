@@ -311,24 +311,20 @@ assert(find(miscRows, "text", 48, 203).content == "Sigil ability cooldowns")
 assert(find(miscRows, "text", 48, 83).content == "Beast of burden preset")
 local bobIcon = find(miscRows, "sprite", 10, 83)
 assert(bobIcon.sprite == 13216 and bobIcon.width == 32 and bobIcon.height == 32)
-assert(find(miscRows, "text", 48, 123).content == "Excalibur cooldown")
-assert(find(miscRows, "sprite", 8, 123).itemId == 14632)
-local excalibur = find(miscRows, "check", -30, 127)
-assert(excalibur.value and rules.excalibur)
-excalibur.hooks.press()
-assert(not rules.excalibur and not saved.excalibur)
-assert(not require("warnings/settings").load().excalibur)
-excalibur.hooks.press()
-assert(rules.excalibur and saved.excalibur)
-assert(find(miscRows, "text", 48, 163).content == "Powerburst cooldown")
-assert(find(miscRows, "sprite", 8, 163).itemId == 49095)
-local powerburst = find(miscRows, "check", -30, 167)
-assert(powerburst.value and rules.powerburst)
-powerburst.hooks.press()
-assert(not rules.powerburst and not saved.powerburst)
-assert(not require("warnings/settings").load().powerburst)
-powerburst.hooks.press()
-assert(rules.powerburst and saved.powerburst)
+for _, case in ipairs({
+    { "excalibur", "Excalibur cooldown", 14632, 123 },
+    { "powerburst", "Powerburst cooldown", 49095, 163 },
+}) do
+    local key, label, icon, y = table.unpack(case)
+    assert(find(miscRows, "text", 48, y).content == label, key)
+    assert(find(miscRows, "sprite", 8, y).itemId == icon, key)
+    local toggle = find(miscRows, "check", -30, y + 4)
+    assert(toggle.value and rules[key], key .. ": default")
+    toggle.hooks.press()
+    assert(not rules[key] and not saved[key] and not require("warnings/settings").load()[key], key .. ": disabled")
+    toggle.hooks.press()
+    assert(rules[key] and saved[key], key .. ": enabled")
+end
 assert(find(miscRows, "sprite", 8, 203).itemId == 47507)
 assert(find(miscRows, "sprite", 8, 243).itemId == 22370)
 assert(find(miscRows, "sprite", 8, 283).itemId == 22371)
@@ -429,30 +425,25 @@ assert(criticalColour.value == 0xF24033FF)
 PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
 criticalColour:SetValue(0xABCDEFFF)
 assert(saved.criticalColour == "#ABCDEF")
-assert(rows.content == "8")
-rows.content = "10"
-rows.hooks.change(rows, ui.InputFieldActionResult.SUBMIT)
-assert(rules.popupRows == 10 and saved.popupRows == 10)
-rows.content = "21"
-rows.hooks.change(rows, ui.InputFieldActionResult.SUBMIT)
-assert(rules.popupRows == 10 and rowsStatus.content ~= "")
-rows.content = "5"
-PersistentDB.SetStructuredData = function() return false end
-rows.hooks.change(rows, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
-assert(rules.popupRows == 10 and rowsStatus.content == "Save failed")
-PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
-assert(duration.content == "4")
-duration.content = "15"
-duration.hooks.change(duration, ui.InputFieldActionResult.SUBMIT)
-assert(rules.popupDuration == 15 and saved.popupDuration == 15)
-duration.content = "0"
-duration.hooks.change(duration, ui.InputFieldActionResult.SUBMIT)
-assert(rules.popupDuration == 15 and durationStatus.content ~= "")
-duration.content = "20"
-PersistentDB.SetStructuredData = function() return false end
-duration.hooks.change(duration, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
-assert(rules.popupDuration == 15 and durationStatus.content == "Save failed")
-PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
+for _, case in ipairs({
+    { "popupRows", rows, rowsStatus, 8, 10, 21, 5 },
+    { "popupDuration", duration, durationStatus, 4, 15, 0, 20 },
+}) do
+    local key, input, status, default, valid, invalid, unsaved = table.unpack(case)
+    local function submit(value, action)
+        input.content = tostring(value)
+        input.hooks.change(input, action or ui.InputFieldActionResult.SUBMIT)
+    end
+    assert(input.content == tostring(default), key .. ": default")
+    submit(valid)
+    assert(rules[key] == valid and saved[key] == valid, key .. ": saved")
+    submit(invalid)
+    assert(rules[key] == valid and status.content ~= "", key .. ": invalid")
+    PersistentDB.SetStructuredData = function() return false end
+    submit(unsaved, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
+    assert(rules[key] == valid and status.content == "Save failed", key .. ": failed save")
+    PersistentDB.SetStructuredData = function(_, _, data) saved = data; return true end
+end
 assert(preset.checkbox.items[1].label.content == "Check on preset load")
 assert(bank.checkbox.items[1].label.content == "Check on bank close")
 assert(preset.checkbox.items[1].selected and not bank.checkbox.items[1].selected)

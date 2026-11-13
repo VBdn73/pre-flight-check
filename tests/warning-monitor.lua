@@ -8,14 +8,16 @@ local function check(count, now)
     return instance.update(snapshot, now)
 end
 -- Rune thresholds, repeated checks, and unavailable counts.
-assert(#check(0, 0) == 0)
-assert(#check(200, 1) == 0)
-assert(check(99, 2)[1].level == "low")
-assert(#check(50, 301) == 1, "each check reports low supplies")
-assert(check(24, 303)[1].level == "critical")
-assert(#check(24, 362) == 1)
-assert(#check(0, 364) == 0)
-assert(check(24, 365)[1].level == "critical")
+for _, case in ipairs({
+    { 0, false }, { 200, false }, { 100, false },
+    { 99, "low" }, { 25, "low" }, { 24, "critical" },
+    { 24, "critical" }, { 0, false }, { 24, "critical" },
+}) do
+    local count, level = table.unpack(case)
+    local alerts = check(count)
+    assert(#alerts == (level and 1 or 0), "rune count: " .. count)
+    if level then assert(alerts[1].level == level, "rune severity: " .. count) end
+end
 snapshot.runeCounts[565] = nil
 snapshot.runeCounts = nil
 assert(#instance.update(snapshot, 500) == 0)
@@ -107,24 +109,20 @@ assert(#charge.update(snapshot) == 0)
 snapshot.inventionCharge = nil
 assert(#charge.update(snapshot) == 0)
 -- Non-quantity warnings.
-local powerburstRules = { powerburst = true }
-local powerburst = monitor.new(powerburstRules)
-assert(#powerburst.update({}) == 0)
-assert(#powerburst.update({ powerburstCooldown = 0 }) == 0)
-local powerburstAlert = powerburst.update({ powerburstCooldown = 120 })[1]
-assert(powerburstAlert.name == "Powerburst" and powerburstAlert.message == "Powerburst is on cooldown"
-    and powerburstAlert.level == "critical")
-powerburstRules.powerburst = false
-assert(#powerburst.update({ powerburstCooldown = 120 }) == 0)
-local excaliburRules = { excalibur = true }
-local excalibur = monitor.new(excaliburRules)
-assert(#excalibur.update({}) == 0)
-assert(#excalibur.update({ excaliburCooldown = 0 }) == 0)
-local excaliburAlert = excalibur.update({ excaliburCooldown = 1 })[1]
-assert(excaliburAlert.message == "Excalibur is on cooldown" and excaliburAlert.level == "critical")
-assert(#excalibur.update({ excaliburCooldown = 500 }) == 1)
-excaliburRules.excalibur = false
-assert(#excalibur.update({ excaliburCooldown = 500 }) == 0)
+for _, case in ipairs({ { "powerburst", "Powerburst" }, { "excalibur", "Excalibur" } }) do
+    local key, name = table.unpack(case)
+    local rules = { [key] = true }
+    local cooldown = monitor.new(rules)
+    assert(#cooldown.update({}) == 0, name .. ": unavailable")
+    assert(#cooldown.update({ [key .. "Cooldown"] = 0 }) == 0, name .. ": ready")
+    for _, remaining in ipairs({ 1, 120, 500 }) do
+        local found = cooldown.update({ [key .. "Cooldown"] = remaining })
+        assert(#found == 1 and found[1].message == name .. " is on cooldown"
+            and found[1].level == "critical", name .. ": cooling down")
+    end
+    rules[key] = false
+    assert(#cooldown.update({ [key .. "Cooldown"] = 120 }) == 0, name .. ": disabled")
+end
 local signRules = { signOfLife = true }
 local deathRules = { deathReclaim = true }
 local deathMonitor = require("warnings/monitor").new(deathRules)

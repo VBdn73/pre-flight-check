@@ -1,32 +1,35 @@
 local messages = require("bank/preset-messages")
-local function parse(text, kind)
-    return messages.parse({ chatMessage = text, chatType = kind or 0 })
+local header = "Your preset is being withdrawn. Please see below for any issues whilst trying to load it..."
+local bob = "Unable to load beast of burden preset as this follower can't hold any items."
+local cases = {
+    { header, "start" },
+    { "Item could not be found: Powder of protection", "issue", "Powder of protection", "critical", "MISSING" },
+    { "Item could not be found in the quantity required: Ectoplasm", "issue", "Ectoplasm", "low", "LOW" },
+    { "Perfect plus potion (1) could not be found. Perfect plus potion (4) was loaded instead.",
+        "issue", "Perfect plus potion (1)", "low", "DOSE" },
+    { bob, "issue", "Beast of burden preset", "critical", "FAILED" },
+    { "Your Test armour has 3.9% of its charges left.", "charge", "Test armour", "critical", "3.9%" },
+    { "Your Test armour has 0% of its charges left.", "charge", "Test armour", "critical", "0%" },
+    { "Your Test armour has 100% of its charges left.", "charge", "Test armour", "critical", "100%" },
+}
+for _, case in ipairs(cases) do
+    local text, expected, name, level, status = table.unpack(case)
+    for _, chatType in ipairs({ 0, 4, 109 }) do
+        local kind, alert = messages.parse({ chatMessage = " <col=ff0000>" .. text .. "</col> ", chatType = chatType })
+        assert(kind == expected, text)
+        if name then
+            assert(alert.name == name and alert.level == level and alert.status == status, text)
+            if kind == "issue" then assert(alert.message == text, text) end
+        end
+    end
+    assert(not messages.parse({ chatMessage = text, chatType = 2 }), "player chat: " .. text)
 end
--- Withdrawal header and individual issue types.
-assert(parse("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...") == "start")
-assert(parse("Your preset is being withdrawn. Please see below for any issues whilst trying to load it...", 109) == "start")
-local kind, alert = parse("<col=ff0000>Item could not be found: Powder of protection</col>")
-assert(kind == "issue" and alert.name == "Powder of protection" and alert.level == "critical" and alert.status == "MISSING")
-kind, alert = parse("Super prayer renewal potion (2) could not be found. Super prayer renewal potion (6) was loaded instead.")
-assert(kind == "issue" and alert.level == "low")
-kind, alert = parse("Item could not be found in the quantity required: Ectoplasm")
-assert(kind == "issue" and alert.name == "Ectoplasm" and alert.status == "LOW")
-kind, alert = parse("Perfect plus potion (1) could not be found. Perfect plus potion (4) was loaded instead.", 109)
-assert(kind == "issue" and alert.name == "Perfect plus potion (1)" and alert.level == "low" and alert.status == "DOSE")
-kind, alert = parse("Item could not be found: Powder of penance", 109)
-assert(kind == "issue" and alert.name == "Powder of penance" and alert.level == "critical")
-local bobMessage = "Unable to load beast of burden preset as this follower can't hold any items."
-for _, chatType in ipairs({ 0, 4, 109 }) do
-    kind, alert = parse("<col=ff0000>" .. bobMessage .. "</col>", chatType)
-    assert(kind == "issue" and alert.name == "Beast of burden preset")
-    assert(alert.level == "critical" and alert.status == "FAILED" and alert.message == bobMessage)
+for _, text in ipairs({ "Unrelated message", "Item could not be found: ",
+    "Your armour has 101% of its charges left.", "Your armour has -1% of its charges left.",
+    "Your armour has many% of its charges left." }) do
+    assert(not messages.parse({ chatMessage = text, chatType = 0 }), text)
 end
-assert(not parse(bobMessage, 2))
--- Ignore unrelated chat and malformed charge warnings.
-assert(not parse("Item could not be found: Ectoplasm", 2))
-assert(not parse("Unrelated message"))
-kind, alert = parse("<col=ff0000>Your Augmented custom-fit trimmed spiked masterwork melee platelegs has 3.9% of its charges left.</col>", 109)
-assert(kind == "charge" and alert.name == "Augmented custom-fit trimmed spiked masterwork melee platelegs" and alert.status == "3.9%")
-assert(not parse("Your armour has 101% of its charges left."))
-assert(not parse("Your armour has 3.9% of its charges left.", 2))
+assert(not messages.parse(nil))
+assert(not messages.parse({ chatMessage = 42, chatType = 0 }))
+assert(not messages.parse({ chatMessage = header }))
 print("Preset message tests passed.")

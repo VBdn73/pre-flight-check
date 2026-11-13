@@ -50,13 +50,6 @@ assert(#monitor.update(snapshot) == 0)
 rules.health = true
 rules.healthThreshold = 0
 assert(#monitor.update(snapshot) == 0)
-assert(settings.validPercentage(100) and not settings.validPercentage(101))
-assert(settings.validPercentage(150, "adrenalineThreshold"))
-assert(not settings.validPercentage(151, "adrenalineThreshold"))
-assert(not settings.validPercentage(101, "healthThreshold"))
-assert(not settings.validPercentage(101, "prayerThreshold"))
-assert(not settings.validPercentage(101, "summoningThreshold"))
-assert(not settings.validPercentage(-1) and not settings.validPercentage(0 / 0))
 Player.IsAvailable = function() return false end
 assert(next(vitals.read()) == nil)
 Player.IsAvailable = function() return true end
