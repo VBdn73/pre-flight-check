@@ -9,6 +9,10 @@ local rules = settings.load()
 -- Defaults and catalogue coverage.
 assert(not rules.checkOnBankClose and rules.checkOnPreset and settings.defaults().checkOnPreset)
 assert(not rules.presetChatNotifications and not settings.defaults().presetChatNotifications)
+assert(not rules.showCheckButton and not settings.defaults().showCheckButton)
+rules.showCheckButton = true
+assert(settings.save(rules) and settings.load().showCheckButton)
+rules.showCheckButton = false
 assert(rules.signOfLife and settings.defaults().signOfLife)
 assert(rules.excalibur and settings.defaults().excalibur)
 assert(rules.deathReclaim and settings.defaults().deathReclaim)

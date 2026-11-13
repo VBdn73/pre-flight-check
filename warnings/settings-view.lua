@@ -749,7 +749,7 @@ function view.build(host, rules, onChange, prettyui)
             local old = {}
             if i == 6 then
                 dismissPicker()
-                for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "checkOnPortalEntry", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do
+                for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "checkOnPortalEntry", "showCheckButton", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do
                     old[key], rules[key] = rules[key], defaults[key]
                 end
             else
@@ -771,7 +771,7 @@ function view.build(host, rules, onChange, prettyui)
             end
             if not settings.save(rules) then
                 if i == 6 then
-                    for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "checkOnPortalEntry", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do rules[key] = old[key] end
+                    for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "checkOnPortalEntry", "showCheckButton", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do rules[key] = old[key] end
                 else
                     rules.styles[styleNames[i]] = old.style
                     if i == 5 then

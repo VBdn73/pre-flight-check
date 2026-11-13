@@ -7,6 +7,8 @@ local ribbon = require("warnings/ribbon")
 local presetTrigger = require("bank/preset-trigger")
 local presetMessages = require("bank/preset-messages")
 local portalTrigger = require("warnings/portal-trigger")
+local checkButton = require("warnings/check-button")
+local manualCheckDeadline
 local portalCapture
 local portalCheckDeadline
 local bankState = require("bank/state").new()
@@ -103,6 +105,15 @@ end
 
 Event.ServerLogic.Subscribe("supplyCheck.refresh", function()
     refresh()
+    if manualCheckDeadline and canRead and now then
+        local snapshot = reader.read()
+        if snapshot.backpack.available and snapshot.equipment.available then
+            manualCheckDeadline = nil
+            showAlerts(monitor.update(snapshot))
+        elseif now >= manualCheckDeadline then
+            manualCheckDeadline = nil
+        end
+    end
     if not rules.checkOnPortalEntry then portalCheckDeadline = nil end
     if not portalCheckDeadline or not canRead or not now then return end
     if now >= portalCheckDeadline then portalCheckDeadline = nil; return end
@@ -114,6 +125,17 @@ Event.ServerLogic.Subscribe("supplyCheck.refresh", function()
 end)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
     now = event.logicTick / 50
+    checkButton.update(rules.showCheckButton and canRead, function()
+        if not canRead or not now or not rules.showCheckButton then return end
+        -- Manual checks never consume preset chat or depend on automatic triggers.
+        local snapshot = reader.read()
+        if snapshot.backpack.available and snapshot.equipment.available then
+            manualCheckDeadline = nil
+            showAlerts(monitor.update(snapshot))
+        else
+            manualCheckDeadline = now + 5
+        end
+    end)
     if not rules.checkOnPortalEntry then portalCapture = nil; portalCheckDeadline = nil end
     if portalCapture then
         local capture, arrived = portalCapture, false
@@ -219,6 +241,8 @@ Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
         portalCapture, portalCheckDeadline = nil, nil
     end
     if not canRead then
+        checkButton.close()
+        manualCheckDeadline = nil
         popup.clear()
         bankState.reset()
         checkAfter, checkDeadline = nil, nil
@@ -229,6 +253,8 @@ Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
 end)
 
 function PluginShutdown()
+    checkButton.close()
+    manualCheckDeadline = nil
     portalCapture = nil
     portalCheckDeadline = nil
     refreshSettings = nil

@@ -9,7 +9,12 @@ end
 Event = { ServerLogic = event("server"), GameStateChanged = event("state"),
     Logic = event("logic"), SettingsLayerReady = event("settings"), ContentLayerReady = event("content"), MiniMenuEntrySelected = event("menu"),
     VarTransmit = event("var"), KeyDown = event("key"), ChatMessage = event("chat") }
-package.loaded["warnings/settings"] = { load = function() return {} end }
+local rules, manualClick, buttonVisible = {}, nil, false
+package.loaded["warnings/settings"] = { load = function() return rules end }
+package.loaded["warnings/check-button"] = {
+    update = function(enabled, callback) buttonVisible = enabled; manualClick = callback end,
+    close = function() buttonVisible = false end,
+}
 package.loaded["warnings/settings-view"] = { build = function() end }
 package.loaded["warnings/monitor"] = { new = function() return {
     update = function(snapshot) snapshots[#snapshots + 1] = snapshot; return {} end } end }
@@ -32,6 +37,19 @@ callbacks.state({ newState = 30 })
 assert(#snapshots == 0, "entering the game does not check warnings")
 callbacks.server()
 assert(#snapshots == 0, "warnings only run after an enabled action")
+rules.showCheckButton = true
+callbacks.logic({ logicTick = 100 })
+assert(buttonVisible)
+manualClick()
+assert(#snapshots == 1, "manual checks work with every automatic trigger disabled")
+rules.showCheckButton = false
+manualClick()
+assert(#snapshots == 1, "disabled button cannot trigger checks")
+rules.showCheckButton = true
+callbacks.state({ newState = 40 })
+assert(not buttonVisible)
+manualClick()
+assert(#snapshots == 1, "manual checks do not read outside the game")
 -- Shutdown unregisters each event subscription.
 PluginShutdown()
 assert(unsubscribed.server == "supplyCheck.refresh")

@@ -83,6 +83,7 @@ local function fromSaved(saved)
     rules.presetChatNotifications = rules.checkOnPreset and saved.presetChatNotifications == true
     rules.checkOnBankClose = saved.checkOnBankClose == true
     rules.checkOnPortalEntry = saved.checkOnPortalEntry == true
+    rules.showCheckButton = saved.showCheckButton == true
     rules.popupIconMode = saved.popupIconMode == true
     rules.signOfLife = saved.signOfLife ~= false
     rules.excalibur = saved.excalibur ~= false
@@ -141,6 +142,7 @@ function settings.save(rules)
         deathReclaim = rules.deathReclaim == true, itemDurability = rules.itemDurability == true,
         beastOfBurden = rules.beastOfBurden == true,
         checkOnPortalEntry = rules.checkOnPortalEntry == true,
+        showCheckButton = rules.showCheckButton == true,
         popupIconMode = rules.popupIconMode == true,
         excalibur = rules.excalibur == true,
         powerburst = rules.powerburst == true,
