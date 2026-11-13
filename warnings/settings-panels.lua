@@ -28,9 +28,9 @@ local panels = {
         { key = "signOfLife", name = "Sign of life cooldown", icon = 29290 },
         { key = "deathReclaim", name = "Death reclaim", icon = 39559 },
         { key = "itemDurability", name = "Item durability", icon = 2347,
-            usage = "Requires preset checks, preset chat notifications, and chat access permission. Reports charge warnings from preset chat." },
+            usage = "Reports charge warnings from preset chat.<br><br>Requires:<br>- Check on preset load<br>- Preset chat notifications<br>- Chat access permission" },
         { key = "beastOfBurden", name = "Beast of burden preset", icon = { sprite = 13216 },
-            usage = "Requires preset checks, preset chat notifications, and chat access permission. Warns when the follower cannot carry items for the beast of burden preset." },
+            usage = "Warns if your follower cannot carry the preset's items.<br><br>Requires:<br>- Check on preset load<br>- Preset chat notifications<br>- Chat access permission" },
         { key = "excalibur", name = "Excalibur cooldown", icon = 14632 },
         { key = "powerburst", name = "Powerburst cooldown", icon = 49095 },
         { itemId = 22370 }, { itemId = 22371 }, { itemId = 40407 },
@@ -44,7 +44,7 @@ local settings = require("warnings/settings")
 panels.general = { toggles = {
     { key = "checkOnPreset", name = "Check on preset load" },
     { key = "presetChatNotifications", name = "Preset chat notifications", indent = 15,
-        usage = "Read preset withdrawal messages for notifications. Requires chat access permission and preset checks." },
+        usage = "Reads preset withdrawal messages for notifications.<br><br>Requires:<br>- Check on preset load<br>- Chat access permission" },
     { key = "checkOnBankClose", name = "Check on bank close" },
 }, colours = {
     { key = "lowColour", name = "Low warning colour", default = "#FF9429" },
