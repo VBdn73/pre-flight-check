@@ -382,10 +382,11 @@ function view.build(host, rules, onChange, prettyui)
     end
     local miscRows = rowLayer(5, miscSpacer, #panels[5].settings * rowHeight)
     local otherGroup = { count = 0 }
-    local function addOtherSwitch(definition)
+    local function addOtherSwitch(definition, sectionGroup)
         local key, name = definition.key, definition.name
-        local group = otherGroup
-        local parent = miscRows
+        local group = sectionGroup or otherGroup
+        currentSection = sectionGroup and sectionGroup.section or nil
+        local parent = sectionGroup and sectionGroup.section.content or miscRows
         local y = group.count * rowHeight
         local frameEntry, background = settingRow(parent, y, {
             name = name, icon = definition.icon, labelWidth = definition.threshold and -165 or -85,
@@ -635,8 +636,10 @@ function view.build(host, rules, onChange, prettyui)
     for _, panel in ipairs(panels) do
         for _, dropdown in ipairs(panel.dropdowns) do
             for position, definition in ipairs(dropdown.settings or {}) do
+                if definition.itemId then
                 explicitOrder[definition.itemId] = position
                 itemDefinitions[definition.itemId] = definition
+                end
             end
         end
     end
@@ -707,6 +710,14 @@ function view.build(host, rules, onChange, prettyui)
             local item = definition.itemId == spikes.ruleId and spikes or catalogue[definition.itemId]
             buildRow(index, rules[index], { name = definition.name or item.name, icon = definition.icon },
                 nil, page, (position - 1) * rowHeight, nil, layer)
+        end
+    end
+    for _, dropdown in ipairs(panels[5].dropdowns) do
+        for _, definition in ipairs(dropdown.settings or {}) do
+            if definition.key then
+                pageIndex = 5
+                addOtherSwitch(definition, sections[5][dropdown.name])
+            end
         end
     end
     for _, definition in ipairs(panels[5].settings) do

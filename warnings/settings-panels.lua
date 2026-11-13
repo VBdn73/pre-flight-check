@@ -25,7 +25,6 @@ local panels = {
                 { itemId = 42787 }, { itemId = 61425 },
             } },
     }, settings = {
-        { key = "signOfLife", name = "Sign of life cooldown", icon = 29290 },
         { key = "deathReclaim", name = "Death reclaim", icon = 39559 },
         { key = "itemDurability", name = "Item durability", icon = 2347,
             usage = "Reports charge warnings from preset chat.<br><br>Requires:<br>- Check on preset load<br>- Preset chat notifications<br>- Chat access permission" },
@@ -43,15 +42,18 @@ local panels = {
 }
 
 local settings = require("warnings/settings")
-for index, vital in ipairs(require("supplies/vitals")) do
-    table.insert(panels[5].settings, 10 + index, {
+local vitalSettings = {}
+table.insert(panels[5].dropdowns, 1, { name = "Vitals", settings = vitalSettings })
+for _, vital in ipairs(require("supplies/vitals")) do
+    vitalSettings[#vitalSettings + 1] = {
         key = vital.key, name = vital.name, icon = vital.icon,
         threshold = vital.key .. "Threshold",
         usage = vital.key == "summoning" and "Your own points used to summon familiars. Warns below the configured percentage."
             or vital.key == "familiarSpecial" and "The familiar's special-move pool used for scroll abilities (60 points maximum). Warns below the configured percentage."
             or "Warns when below the configured percentage during a pre-flight check.",
-    })
+    }
 end
+table.insert(vitalSettings, 2, { key = "signOfLife", name = "Sign of life cooldown", icon = 29290 })
 panels.general = { toggles = {
     { key = "checkOnPreset", name = "Check on preset load" },
     { key = "presetChatNotifications", name = "Preset chat notifications", indent = 15,

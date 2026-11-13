@@ -213,10 +213,10 @@ assert(magic.sections[1].name == "Elemental" and magic.sections[2].name == "Cata
 assert(necro.sections[1].name == "Necrotic Runes" and ranged.sections[1].name == "Elder God Arrows")
 assert(ranged.sections[2].name == "Special Arrows" and ranged.sections[3].name == "Enchanted Bakriminel Bolts")
 assert(#necro.sections == 1 and #melee.sections == 0)
-assert(tabs.entries[6].text == "Misc" and misc.sections[1].name == "Bombs")
-assert(misc.sections[2].name == "Invention")
-assert(misc.sections[3].name == "God Books" and #misc.sections == 3)
-assert(misc.flowText.y > misc.sections[3].root.y and misc.flowText.height == 720)
+assert(tabs.entries[6].text == "Misc" and misc.sections[1].name == "Vitals")
+assert(misc.sections[2].name == "Bombs" and misc.sections[3].name == "Invention")
+assert(misc.sections[4].name == "God Books" and #misc.sections == 4)
+assert(misc.flowText.y > misc.sections[4].root.y and misc.flowText.height == 480)
 local miscRows
 for _, c in ipairs(controls) do
     if c.kind == "layer" and c.parent == misc.content then miscRows = c; break end
@@ -240,9 +240,11 @@ local function find(parent, kind, x, y)
 end
 -- Miscellaneous warnings, permissions, and persistence.
 local style = magic.content
-local sign = find(miscRows, "check", -30, 7)
-local death = find(miscRows, "check", -30, 47)
-local durability = find(miscRows, "check", -30, 87)
+local vitalRows = misc.sections[1].content
+misc.sections[1]:SetExpanded(true)
+local sign = find(vitalRows, "check", -30, 47)
+local death = find(miscRows, "check", -30, 7)
+local durability = find(miscRows, "check", -30, 47)
 local hoverAllocations = tooltipAllocations
 durability.hooks.over()
 durability.hooks.over()
@@ -253,7 +255,7 @@ assert(rowContext.parentContext == tooltipContexts[misc.content])
 durability.hooks.over()
 assert(durability.tooltip.y == miscRows.y + durability.y - misc.scrollY - 66,
     "overlay tooltip coordinates must include the row offset and page scroll")
-local bob = find(miscRows, "check", -30, 127)
+local bob = find(miscRows, "check", -30, 87)
 PluginPermissions = { chatAccess = 1 }
 local permission = false
 Plugin = { HasPermission = function() return permission end }
@@ -276,68 +278,70 @@ assert(rules.itemDurability and saved.itemDurability and require("warnings/setti
 durability.hooks.press()
 assert(not rules.itemDurability)
 rules.presetChatNotifications = false
-assert(find(miscRows, "text", 48, 43).content == "Death reclaim")
+assert(find(miscRows, "text", 48, 3).content == "Death reclaim")
 assert(death.value and rules.deathReclaim)
 death.hooks.press()
 assert(not rules.deathReclaim and not saved.deathReclaim)
 assert(not require("warnings/settings").load().deathReclaim)
 death.hooks.press()
 assert(rules.deathReclaim and saved.deathReclaim)
-assert(find(miscRows, "text", 48, 363).content == "Ushabti (empty)")
-assert(find(miscRows, "sprite", 8, 363).itemId == 40407)
+assert(find(miscRows, "text", 48, 323).content == "Ushabti (empty)")
+assert(find(miscRows, "sprite", 8, 323).itemId == 40407)
 for index, vital in ipairs(require("supplies/vitals")) do
-    assert(find(miscRows, "text", 48, 403 + (index - 1) * 40).content == vital.name)
-    local suffix = find(miscRows, "text", -60, 405 + (index - 1) * 40)
+    local row = index == 1 and 0 or index
+    assert(find(vitalRows, "text", 48, 3 + row * 40).content == vital.name)
+    local suffix = find(vitalRows, "text", -60, 5 + row * 40)
     assert(suffix.content == "%" and suffix.clickthrough)
     assert(suffix.alignVertical == ui.AlignMode.CENTRE and suffix.height == 25)
-    assert(find(miscRows, "input", -104, 405 + (index - 1) * 40).contentMargin.right == 20)
+    assert(find(vitalRows, "input", -104, 5 + row * 40).contentMargin.right == 20)
 end
-local flask = find(miscRows, "text", 48, 603)
+local flask = find(miscRows, "text", 48, 363)
 assert(flask.content == "Blessed flask: warning unavailable")
-assert(find(miscRows, "sprite", 8, 603).itemId == 48680)
-local grace = find(miscRows, "text", 48, 643)
+assert(find(miscRows, "sprite", 8, 363).itemId == 48680)
+local grace = find(miscRows, "text", 48, 403)
 assert(grace.content == "Grace of the elves: warning unavailable")
-assert(find(miscRows, "sprite", 8, 643).itemId == 44548)
-assert(find(miscRows, "text", 48, 683).content == "Scrimshaw: warning unavailable")
-assert(find(miscRows, "sprite", 8, 683).itemId == 26295)
-assert(find(miscRows, "text", 48, 83).content == "Item durability")
-assert(find(miscRows, "sprite", 8, 83).itemId == 2347)
-assert(miscRows.height == 720 and misc.sections[3].contentHeight == 600)
-assert(find(miscRows, "text", 48, 243).content == "Sigil ability cooldowns")
-assert(find(miscRows, "text", 48, 123).content == "Beast of burden preset")
-local bobIcon = find(miscRows, "sprite", 10, 123)
+assert(find(miscRows, "sprite", 8, 403).itemId == 44548)
+assert(find(miscRows, "text", 48, 443).content == "Scrimshaw: warning unavailable")
+assert(find(miscRows, "sprite", 8, 443).itemId == 26295)
+assert(find(miscRows, "text", 48, 43).content == "Item durability")
+assert(find(miscRows, "sprite", 8, 43).itemId == 2347)
+assert(miscRows.height == 480 and misc.sections[4].contentHeight == 600)
+assert(misc.sections[1].contentHeight == 240)
+assert(find(miscRows, "text", 48, 203).content == "Sigil ability cooldowns")
+assert(find(miscRows, "text", 48, 83).content == "Beast of burden preset")
+local bobIcon = find(miscRows, "sprite", 10, 83)
 assert(bobIcon.sprite == 13216 and bobIcon.width == 32 and bobIcon.height == 32)
-assert(find(miscRows, "text", 48, 163).content == "Excalibur cooldown")
-assert(find(miscRows, "sprite", 8, 163).itemId == 14632)
-local excalibur = find(miscRows, "check", -30, 167)
+assert(find(miscRows, "text", 48, 123).content == "Excalibur cooldown")
+assert(find(miscRows, "sprite", 8, 123).itemId == 14632)
+local excalibur = find(miscRows, "check", -30, 127)
 assert(excalibur.value and rules.excalibur)
 excalibur.hooks.press()
 assert(not rules.excalibur and not saved.excalibur)
 assert(not require("warnings/settings").load().excalibur)
 excalibur.hooks.press()
 assert(rules.excalibur and saved.excalibur)
-assert(find(miscRows, "text", 48, 203).content == "Powerburst cooldown")
-assert(find(miscRows, "sprite", 8, 203).itemId == 49095)
-local powerburst = find(miscRows, "check", -30, 207)
+assert(find(miscRows, "text", 48, 163).content == "Powerburst cooldown")
+assert(find(miscRows, "sprite", 8, 163).itemId == 49095)
+local powerburst = find(miscRows, "check", -30, 167)
 assert(powerburst.value and rules.powerburst)
 powerburst.hooks.press()
 assert(not rules.powerburst and not saved.powerburst)
 assert(not require("warnings/settings").load().powerburst)
 powerburst.hooks.press()
 assert(rules.powerburst and saved.powerburst)
-assert(find(miscRows, "sprite", 8, 243).itemId == 47507)
-assert(find(miscRows, "sprite", 8, 283).itemId == 22370)
-assert(find(miscRows, "sprite", 8, 323).itemId == 22371)
-assert(find(misc.sections[3].content, "text", 8, 8).content
+assert(find(miscRows, "sprite", 8, 203).itemId == 47507)
+assert(find(miscRows, "sprite", 8, 243).itemId == 22370)
+assert(find(miscRows, "sprite", 8, 283).itemId == 22371)
+assert(find(misc.sections[4].content, "text", 8, 8).content
     == "Only equipped books are checked; backpack timers are unavailable.")
 for i, name in ipairs({ "Scripture of Jas", "Scripture of Wen", "Scripture of Bik",
     "Scripture of Ful", "Scripture of Amascut", "Scripture of Elidinis" }) do
-    assert(find(misc.sections[3].content, "text", 48, i * 40 + 3).content == name)
+    assert(find(misc.sections[4].content, "text", 48, i * 40 + 3).content == name)
 end
-assert(find(misc.sections[3].content, "text", 48, 283).content == "Erethdor's grimoire")
-assert(find(misc.sections[3].content, "text", 48, 323).content == "Chaotic grimoire")
-local fulLow = find(misc.sections[3].content, "input", -171, 165)
-local fulCritical = find(misc.sections[3].content, "input", -104, 165)
+assert(find(misc.sections[4].content, "text", 48, 283).content == "Erethdor's grimoire")
+assert(find(misc.sections[4].content, "text", 48, 323).content == "Chaotic grimoire")
+local fulLow = find(misc.sections[4].content, "input", -171, 165)
+local fulCritical = find(misc.sections[4].content, "input", -104, 165)
 assert(fulLow.content == "60" and fulCritical.content == "30")
 fulLow.content = "1441"
 fulLow.hooks.change(fulLow, ui.InputFieldActionResult.SUBMIT)
@@ -346,7 +350,7 @@ fulLow.content = "120"
 fulLow.hooks.change(fulLow, ui.InputFieldActionResult.SUBMIT)
 assert(saved["52494"].low == 120 and saved["52494"].critical == 30)
 for _, rule in ipairs(rules) do assert(rule.itemId ~= 48680 and rule.itemId ~= 44548) end
-local signBackground = find(miscRows, "rectangle", 1, 1)
+local signBackground = find(vitalRows, "rectangle", 1, 41)
 assert(rules.signOfLife)
 assert(signBackground.rgba == 0x23412DE8 and sign.value)
 sign.hooks.press()
@@ -844,15 +848,15 @@ ectoplasmSwitch.hooks.press()
 assert(not saved["55336"].enabled)
 ectoplasmSwitch.hooks.press()
 tabs.active = 6
-misc.sections[1]:SetExpanded(true)
-refresh()
-assert(find(misc.sections[1].content, "sprite", 8, 3).itemId == 48951)
-assert(find(misc.sections[1].content, "sprite", 8, 43).itemId == 48954)
-assert(find(misc.sections[1].content, "sprite", 8, 83).itemId == 48957)
-assert(not find(misc.sections[1].content, "sprite", 8, 3).hidden)
 misc.sections[2]:SetExpanded(true)
 refresh()
-assert(find(misc.sections[2].content, "sprite", 8, 3).itemId == 36389)
+assert(find(misc.sections[2].content, "sprite", 8, 3).itemId == 48951)
+assert(find(misc.sections[2].content, "sprite", 8, 43).itemId == 48954)
+assert(find(misc.sections[2].content, "sprite", 8, 83).itemId == 48957)
+assert(not find(misc.sections[2].content, "sprite", 8, 3).hidden)
+misc.sections[3]:SetExpanded(true)
+refresh()
+assert(find(misc.sections[3].content, "sprite", 8, 3).itemId == 36389)
 -- Reset is explicitly confirmed, scoped to one tab, persisted, and updates open rows.
 local magicReset = find(magic.content, "button", -160, 5)
 local magicCancel = find(magic.content, "button", -235, 5)
@@ -905,7 +909,7 @@ assert(tabs.destroyed)
 local panels = require("warnings/settings-panels")
 local miscDefinitions = panels[5].settings
 miscDefinitions[1], miscDefinitions[11] = miscDefinitions[11], miscDefinitions[1]
-local books = panels[5].dropdowns[3].settings
+local books = panels[5].dropdowns[4].settings
 books[1], books[2] = books[2], books[1]
 books[1].name, books[1].icon = "Custom book label", 123
 controls = {}
@@ -913,10 +917,10 @@ host.height = 600
 refresh, destroy = require("warnings/settings-view").build(host, rules, function() end, prettyui)
 misc = tabs.pages[6]
 miscRows = find(misc.content, "layer", 14, misc.flowText.y)
-assert(find(miscRows, "text", 48, 3).content == "Health")
-assert(find(miscRows, "text", 48, 403).content == "Sign of life cooldown")
-assert(find(misc.sections[3].content, "text", 48, 43).content == "Custom book label")
-assert(find(misc.sections[3].content, "sprite", 8, 43).itemId == 123)
+assert(find(miscRows, "text", 48, 3).content == "Grace of the elves: warning unavailable")
+assert(find(miscRows, "text", 48, 403).content == "Death reclaim")
+assert(find(misc.sections[4].content, "text", 48, 43).content == "Custom book label")
+assert(find(misc.sections[4].content, "sprite", 8, 43).itemId == 123)
 destroy()
 miscDefinitions[1], miscDefinitions[11] = miscDefinitions[11], miscDefinitions[1]
 books[1].name, books[1].icon = nil, nil

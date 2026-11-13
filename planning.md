@@ -23,8 +23,10 @@ Some items are not currently possible due to API limitations and may depend on f
 
 ## Add supply warnings for
 
-- warning when low on health, prayer, adren, sum points -> probably only when entering a boss instance/portal?
 - warning when abilities are on cooldown?
+- No familiar summoned
+- Familiar health
+- Run energy
 - Familiar about to despawn
 
 ## Catalogue verification
