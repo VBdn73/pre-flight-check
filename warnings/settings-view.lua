@@ -498,7 +498,9 @@ function view.build(host, rules, onChange, prettyui)
         switch.stylesheetID = id.StyleSheet.CHECKBOX_DEFAULT
         switch.buttonSize = 22
         switch:Subscribe(ui.Hook.ONBUTTONPRESSED, toggleEnabled)
-        tooltip(switch, parent, "Enable or disable this warning")
+        local variantName = catalogue[rule.itemId] and catalogue[rule.itemId].variantName
+        tooltip(switch, parent, "Enable or disable this warning"
+            .. (variantName and (". Also includes the non-illuminated " .. variantName .. ".") or ""))
         local modeButton = track(ui.Button.new(parent))
         modeButton:SetPos(-251, y + 5, 1, 0); modeButton:SetSize(75, 25)
         modeButton.stylesheetID = id.StyleSheet.BUTTON_DEFAULT

@@ -166,7 +166,7 @@ assert(#ful.update(snapshot) == 0)
 snapshot.equipment = { available = true, counts = { [52494] = 1 } }
 snapshot.godBookTicks = nil
 assert(#ful.update(snapshot) == 0)
-local books = { 3840, 3842, 3844, 19613, 19615, 19617, 22420, 22421, 22422,
+local books = { 22420, 22421, 22422,
     22423, 22424, 22425, 42787, 51814, 52117, 52347, 52494, 57126, 57526, 61425 }
 local catalogue = require("supplies/catalogue")
 for _, id in ipairs(books) do
@@ -176,6 +176,12 @@ for _, id in ipairs(books) do
     local found = book.update(snapshot)
     assert(#found == 1 and found[1].itemId == id and found[1].level == "critical")
     assert(catalogue[id].godBook and catalogue[id].group == "God Books")
+    for _, variantId in ipairs(catalogue[id].equippedIds or {}) do
+        snapshot.equipment.counts = { [variantId] = 1 }
+        local variantAlerts = book.update(snapshot)
+        assert(#variantAlerts == 1 and variantAlerts[1].itemId == id)
+        assert(variantAlerts[1].name == catalogue[id].name)
+    end
     snapshot.equipment.counts = {}
     assert(#book.update(snapshot) == 0)
 end

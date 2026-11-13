@@ -131,6 +131,23 @@ loaded.styles.Magic.critical = 5001
 assert(not settings.save(loaded))
 saved.styles.Magic.critical = -1
 assert(settings.load().styles.Magic.critical == 250)
+-- Each illuminated book owns one rule covering both equipped variants.
+for _, id in ipairs({ 22420, 22421, 22422, 22423, 22424, 22425 }) do
+    local ordinaryId = catalogue[id].equippedIds[2]
+    assert(seen[id] == 1 and seen[ordinaryId] == nil)
+    saved = { [tostring(ordinaryId)] = { enabled = false, low = 45, critical = 15 } }
+    for _, rule in ipairs(settings.load()) do
+        if rule.itemId == id then
+            assert(not rule.enabled and rule.low == 45 and rule.critical == 15)
+        end
+    end
+    saved[tostring(id)] = { enabled = true, low = 90, critical = 20 }
+    local merged = settings.load()
+    for _, rule in ipairs(merged) do
+        if rule.itemId == id then assert(rule.enabled and rule.low == 90 and rule.critical == 20) end
+    end
+    assert(settings.save(merged) and saved[tostring(ordinaryId)] == nil)
+end
 PersistentDB.SetStructuredData = function() return false end
 assert(not settings.save(rules))
 print("Warning settings tests passed.")

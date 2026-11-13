@@ -39,8 +39,13 @@ function monitor.new(rules)
                     end
                 end
             elseif item.godBook then
-                if snapshot.equipment.available and (snapshot.equipment.counts[rule.itemId] or 0) > 0 then
-                    count = snapshot.godBookTicks
+                if snapshot.equipment.available then
+                    for _, itemId in ipairs(item.equippedIds or { rule.itemId }) do
+                        if (snapshot.equipment.counts[itemId] or 0) > 0 then
+                            count = snapshot.godBookTicks
+                            break
+                        end
+                    end
                 end
             elseif item.inventionCharge then
                 count = snapshot.inventionCharge

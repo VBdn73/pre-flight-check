@@ -291,7 +291,7 @@ assert(find(miscRows, "text", 48, 443).content == "Scrimshaw: warning unavailabl
 assert(find(miscRows, "sprite", 8, 443).itemId == 26295)
 assert(find(miscRows, "text", 48, 83).content == "Item durability")
 assert(find(miscRows, "sprite", 8, 83).itemId == 2347)
-assert(miscRows.height == 480 and misc.sections[3].contentHeight == 840)
+assert(miscRows.height == 480 and misc.sections[3].contentHeight == 600)
 assert(find(miscRows, "text", 48, 123).content == "Beast of burden preset")
 local bobIcon = find(miscRows, "sprite", 10, 123)
 assert(bobIcon.sprite == 13216 and bobIcon.width == 32 and bobIcon.height == 32)

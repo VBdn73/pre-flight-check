@@ -103,6 +103,11 @@ local function fromSaved(saved)
     end
     for _, itemId in ipairs(ids) do
         local rule = saved[tostring(itemId)]
+        local item = catalogue[itemId]
+        -- Prefer the illuminated setting, falling back to the old ordinary-book setting.
+        if rule == nil and item and item.godBook and item.equippedIds then
+            rule = saved[tostring(item.equippedIds[2])]
+        end
         local candidate = type(rule) == "table" and { itemId = itemId, enabled = rule.enabled,
             low = rule.low, critical = rule.critical } or nil
         if not settings.valid(candidate) then
