@@ -76,6 +76,14 @@ Before submission, review the [plugin guidelines](https://developer.runescape.co
 
 ### Settings UI definitions
 
+Settings rows keep fixed positions inside PrettyUI's native scroll viewport.
+Ranged dropdowns build their rows once on first opening and retain them until
+the settings window closes. Scrolling does not recycle, reposition, resize or
+hide/show individual rows. Numeric inputs register with PrettyUI's scroll
+controller to suppress escaped input text at viewport edges without hiding the
+field itself. This requires PrettyUI's `RegisterClipTarget` / `UnregisterClipTarget`
+scroll API.
+
 Edit `warnings/settings-panels.lua` to arrange supply panels. `dropdowns` and
 `settings` are ordered lists; row heights and shared styling are handled by
 `warnings/settings-components.lua`, not repeated for each setting. For example:

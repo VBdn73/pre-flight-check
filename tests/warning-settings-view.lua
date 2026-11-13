@@ -2,8 +2,14 @@
 local controls = {}
 local function control(kind, parent)
     local c = { kind = kind, parent = parent, hooks = {} }
-    function c:SetPos(x, y, xa, ya) self.x, self.y, self.xAnchor, self.yAnchor = x, y, xa, ya end
-    function c:SetSize(w, h, wa, ha) self.width, self.height, self.widthAnchor, self.heightAnchor = w, h, wa, ha end
+    function c:SetPos(x, y, xa, ya)
+        self.positionUpdates = (self.positionUpdates or 0) + 1
+        self.x, self.y, self.xAnchor, self.yAnchor = x, y, xa, ya
+    end
+    function c:SetSize(w, h, wa, ha)
+        self.sizeUpdates = (self.sizeUpdates or 0) + 1
+        self.width, self.height, self.widthAnchor, self.heightAnchor = w, h, wa, ha
+    end
     function c:Subscribe(hook, id, callback)
         if type(id) == "function" then callback = id end
         self.hooks[hook] = callback
@@ -21,6 +27,9 @@ local function control(kind, parent)
         self.itemId = itemId
     end
     if kind == "input" then
+        c.text = { rgba = 0xFFFFFFFF, isShadowed = true }
+        c.emptyTextRGBA, c.caretRGBA = 1, 2
+        c.errorCaretRGBA, c.selectionHighlightRGBA = 3, 4
         setmetatable(c, {
             __index = function(t, key) if key == "content" then return rawget(t, "_content") end end,
             __newindex = function(t, key, value)
@@ -104,10 +113,19 @@ end }, Tabs = { new = function(host, entries, options)
         tooltipContexts[page.content] = { parent = host, active = true, position = function(target)
             return (target.x or 0), (target.y or 0) - page.scrollY
         end }
-        page._scroll = { Refresh = function()
+        page._scroll = { clipTargets = {}, Refresh = function()
             page.height = math.max(1, host.height - 42)
             page.scrollbarVisible = page.contentHeight > page.height
         end }
+        function page._scroll:RegisterClipTarget(target)
+            self.clipTargets[#self.clipTargets + 1] = target
+        end
+        function page._scroll:UnregisterClipTarget(target)
+            target:_SetContentClipped(false)
+            for i, entry in ipairs(self.clipTargets) do
+                if entry == target then table.remove(self.clipTargets, i); break end
+            end
+        end
         function page:SetContentHeight(h) self.contentHeight = h; self._scroll:Refresh() end
         function page:ScrollBy(delta) self.scrollY = math.max(0, math.min(self.contentHeight - self.height, self.scrollY + delta)) end
         function page:reflow()
@@ -513,13 +531,13 @@ assert(not fireIcon.hidden, "partially visible icon at the top remains visible")
 for _, c in ipairs({ itemLabel, override, mode, customLow, customCritical, switch }) do
     assert(not c.hidden, "partially visible row controls at the top remain visible")
 end
- assert(not frame.hidden and frame.y == 20 and frame.height == 16)
- assert(not background.hidden and background.y == 20 and background.height == 15)
+assert(not frame.hidden and frame.y == 0 and frame.height == 36)
+assert(not background.hidden and background.y == 1 and background.height == 34)
 magic.scrollY = magic.sections[1].root.y + fire.y + fireIcon.y + fireIcon.height
 refresh()
-assert(fireIcon.hidden, "icon completely above the viewport is hidden")
+assert(not fireIcon.hidden, "offscreen icons rely on native ancestor clipping, not hide/show polling")
 for _, c in ipairs({ itemLabel, override, mode, customLow, customCritical, switch }) do
-    assert(c.hidden, "row controls completely above the viewport are hidden")
+    assert(not c.hidden, "offscreen controls retain visibility and native identity")
 end
 magic.scrollY = 0
 refresh()
@@ -656,7 +674,10 @@ draftLow.hooks.change(draftLow, ui.InputFieldActionResult.CONTENT_CHANGE)
 local function liveRows()
     local count = 0
     for _, c in ipairs(controls) do
-        if c.parent == large.content and c.kind == "sprite" and not c.destroyed and not c.hidden then count = count + 1 end
+        if c.parent == large.content and c.kind == "sprite" and not c.destroyed and not c.hidden then
+            local top = large.root.y + large.content.y + c.y - ranged.scrollY
+            if top < host.height - 42 and top + c.height > 0 then count = count + 1 end
+        end
     end
     return count
 end
@@ -664,15 +685,31 @@ assert(liveRows() <= math.ceil((host.height - 42) / 40) + 1)
 ranged.scrollY = large.root.y + large.content.y + large.contentHeight - (host.height - 42)
 local beforeScrollAllocations = #controls
 refresh()
-assert(not firstIcon.destroyed, "scrolling rebinds controls instead of destroying them")
-assert(#controls == beforeScrollAllocations, "scrolling to new items reuses existing viewport slots")
+assert(not firstIcon.destroyed and firstIcon.itemId == firstId, "scrolling must preserve row identity")
+assert(#controls == beforeScrollAllocations, "all section rows are built before scrolling")
 assert(find(large.content, "sprite", 8, large.contentHeight - 37))
 assert(liveRows() <= math.ceil((host.height - 42) / 40) + 1)
 ranged.scrollY = large.root.y + large.content.y
 refresh()
-assert(not find(large.content, "check", -30, 7).value, "recreated rows retain saved settings")
+assert(find(large.content, "sprite", 8, 3) == firstIcon, "returning must reuse the original row")
+assert(find(large.content, "input", -171, 5) == draftLow, "scrolling must preserve native input identity")
+assert(not find(large.content, "check", -30, 7).value, "retained rows retain saved settings")
 assert(find(large.content, "input", -171, 5).content == "1234", "scrolling retains an unsaved draft")
 assert(#controls == beforeScrollAllocations, "returning to previous items allocates no new controls")
+local stableFrame = find(large.content, "rectangle", 0, 0)
+local interiorFrame = find(large.content, "rectangle", 0, 40)
+local interiorPositions, interiorSizes = interiorFrame.positionUpdates, interiorFrame.sizeUpdates
+local positionUpdates, sizeUpdates = stableFrame.positionUpdates, stableFrame.sizeUpdates
+local originalIconY = firstIcon.y
+ranged.scrollY = ranged.scrollY + 1
+refresh()
+assert(stableFrame.positionUpdates == positionUpdates, "scrolling must not move any row backgrounds")
+assert(firstIcon.y == originalIconY and firstIcon.itemId == firstId, "scrolling does not rebind icons")
+ranged.scrollY = ranged.scrollY + 1
+refresh()
+assert(stableFrame.sizeUpdates == sizeUpdates, "native clipping must not resize edge backgrounds")
+assert(interiorFrame.positionUpdates == interiorPositions and interiorFrame.sizeUpdates == interiorSizes,
+    "fully visible backgrounds must not be repositioned or resized on each scroll")
 find(large.content, "check", -30, 7).hooks.press()
 large:SetExpanded(false)
 assert(liveRows() == 0)
@@ -702,7 +739,7 @@ ranged.sections[1]:SetExpanded(true)
 ranged.scrollY = 0
 refresh()
 assert(rangedRows.y == ranged.flowText.y and rangedRows.y > collapsedY)
-assert(arrowSwitch.hidden, "rows below an expanded section are clipped outside the viewport")
+assert(not arrowSwitch.hidden, "offscreen rows remain native children, clipped by the viewport")
 ranged.scrollY = rangedRows.y
 refresh()
 assert(not arrowSwitch.hidden, "scrolling reaches the shared rows")

@@ -4,6 +4,7 @@ local spikes = require("supplies/armour-spikes")
 local colourValue = require("warnings/colour")
 local components = require("warnings/settings-components")
 local panels = require("warnings/settings-panels")
+local settingsScroll = require("warnings/settings-scroll")
 local view = {}
 local elemental = { [554] = true, [555] = true, [556] = true, [557] = true }
 local combination = { [4694] = true, [4695] = true, [4696] = true,
@@ -64,10 +65,11 @@ function view.build(host, rules, onChange, prettyui)
     local controls = { {}, {}, {}, {}, {}, {} }
     local checkboxes, tooltips, tooltipTargets = {}, {}, {}
     local createdControls, createdTooltips, createdRows = 0, 0, 0
-    local pageIndex, currentSection, currentRow, currentRowOffset = 1, nil, nil, nil
+    local pageIndex, currentSection, currentRow = 1, nil, nil
     local layoutChanged = true
     local resetControls = { {}, {}, {}, {}, {}, {} }
     local colourPickers = {}
+    local inputClipTargets = {}
     local function dismissPicker()
         for _, picker in ipairs(colourPickers) do picker:Close() end
     end
@@ -75,8 +77,7 @@ function view.build(host, rules, onChange, prettyui)
         createdControls = createdControls + 1
         local scroll = pages[pageIndex]
         local list = controls[pageIndex]
-        list[#list + 1] = { control = control, section = currentSection, row = currentRow,
-            rowOffset = currentRowOffset, viewportClipped = currentSection ~= nil or currentRowOffset ~= nil }
+        list[#list + 1] = { control = control, section = currentSection, row = currentRow }
         control:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.scroll", function(_, delta)
             if not scroll.scrollbarVisible then return true end
             scroll:ScrollBy(delta * 32)
@@ -86,7 +87,14 @@ function view.build(host, rules, onChange, prettyui)
     end
     local originalText, originalInput, originalIcon = text, input, icon
     local function text(...) return track(originalText(...)) end
-    local function input(...) return track(originalInput(...)) end
+    local function input(...)
+        local field = track(originalInput(...))
+        local controller = pages[pageIndex]._scroll
+        inputClipTargets[#inputClipTargets + 1] = {
+            controller = controller, target = settingsScroll.registerInput(controller, field),
+        }
+        return field
+    end
     local function icon(...) return track(originalIcon(...)) end
     local function settingRow(parent, y, definition)
         return components.row({ track = track, entries = controls[pageIndex],
@@ -372,7 +380,6 @@ function view.build(host, rules, onChange, prettyui)
     local function addOtherSwitch(definition)
         local key, name = definition.key, definition.name
         local group = otherGroup
-        currentRowOffset = miscRows
         local parent = miscRows
         local y = group.count * rowHeight
         local frameEntry, background = settingRow(parent, y, {
@@ -412,12 +419,10 @@ function view.build(host, rules, onChange, prettyui)
         updateRow()
         group.count = group.count + 1
         currentSection = nil
-        currentRowOffset = nil
     end
     local function addUnavailableRow(item)
         pageIndex = 5
         local group = otherGroup
-        currentRowOffset = miscRows
         local parent = miscRows
             local y = group.count * rowHeight
             group.count = group.count + 1
@@ -426,16 +431,14 @@ function view.build(host, rules, onChange, prettyui)
             })
             background.rgba = 0x343434E8
         currentSection = nil
-        currentRowOffset = nil
     end
     local rowDrafts = {}
     local function buildRow(index, rule, item, group, rowPage, y, combined, rowParent)
         createdRows = createdRows + 1
-        local firstEntry = #controls[rowPage] + 1
         pageIndex = rowPage
         currentSection = group and group.section or nil
         local parent = currentSection and currentSection.content or rowParent or pages[rowPage].content
-        local frameEntry, background, rowIcon, rowLabel = settingRow(parent, y, {
+        local frameEntry, background = settingRow(parent, y, {
             name = item.name, icon = item.icon or (rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId),
         })
         local enabled, custom = rule.enabled, rule.custom
@@ -577,40 +580,6 @@ function view.build(host, rules, onChange, prettyui)
             updateRow()
         end
         frameEntry.reset = resetRow
-        if currentRow then
-            local slot = { index = index, entries = {} }
-            for position = firstEntry, #controls[rowPage] do
-                slot.entries[#slot.entries + 1] = controls[rowPage][position]
-            end
-            function slot:Bind(nextIndex, nextY)
-                -- Save drafts independently of the controls before changing their
-                -- identity. Ignore synchronous native input events while binding.
-                active = false
-                local delta = nextY - y
-                index, rule, item = nextIndex, rules[nextIndex], catalogue[rules[nextIndex].itemId]
-                y, self.index = nextY, nextIndex
-                for _, entry in ipairs(self.entries) do
-                    entry.row = nextIndex
-                    local c = entry.control
-                    if entry.background then
-                        entry.background.y = entry.background.y + delta
-                        c:SetPos(entry.background.x, entry.background.y)
-                    else
-                        c:SetPos(c.x, c.y + delta, c.xAnchor, c.yAnchor)
-                    end
-                end
-                rowIcon:SetAssociatedObject(rule.itemId)
-                rowLabel.content = item.name
-                enabled, custom = rule.enabled, rule.custom
-                draft = rowDrafts[index] or { tostring(rule.low), tostring(rule.critical) }
-                rowDrafts[index] = draft
-                for i, field in ipairs(fields) do setField(field, draft[i]) end
-                updateRow()
-                active = true
-            end
-            group.slots = group.slots or {}
-            group.slots[#group.slots + 1] = slot
-        end
         if rowParent then resetControls[rowPage][#resetControls[rowPage] + 1] = resetRow end
         updateRow()
     end
@@ -683,7 +652,6 @@ function view.build(host, rules, onChange, prettyui)
     end
     -- Match PrettyUI's flow padding and follow the managed spacer as sections reflow.
     local rangedRows = rowLayer(3, rangedSpacer, #rangedCombinedNames * rowHeight)
-    currentRowOffset = rangedRows
     for i, name in ipairs(rangedCombinedNames) do
         local indices = combinedRows[name]
         local representative = rangedCombinedIcons[name]
@@ -693,18 +661,15 @@ function view.build(host, rules, onChange, prettyui)
         end
         buildRow(index, rules[index], { name = name, icon = representative }, nil, 3, (i - 1) * rowHeight, indices, rangedRows)
     end
-    currentRowOffset = nil
     for _, page in ipairs({ 2, 4 }) do
         local definitions = panels[page].settings
         local layer = rowLayer(page, spacers[page], #definitions * rowHeight)
-        currentRowOffset = layer
         for position, definition in ipairs(definitions) do
             local index = assert(standalone[definition.itemId], "Missing standalone setting rule")
             local item = definition.itemId == spikes.ruleId and spikes or catalogue[definition.itemId]
             buildRow(index, rules[index], { name = definition.name or item.name, icon = definition.icon },
                 nil, page, (position - 1) * rowHeight, nil, layer)
         end
-        currentRowOffset = nil
     end
     for _, definition in ipairs(panels[5].settings) do
         pageIndex = 5
@@ -715,16 +680,14 @@ function view.build(host, rules, onChange, prettyui)
         else
             local index = assert(miscRuleIndices[definition.itemId], "Missing Misc setting rule")
             local item = catalogue[definition.itemId]
-            currentRowOffset = miscRows
             buildRow(index, rules[index], { name = definition.name or item.name,
                 icon = definition.icon, godBook = item.godBook }, otherGroup, 5,
                 otherGroup.count * rowHeight, nil, miscRows)
             otherGroup.count = otherGroup.count + 1
-            currentRowOffset = nil
         end
     end
-    -- Ranged sections use reusable viewport slots. Neither visiting new items
-    -- nor returning to old ones should allocate a permanent row per item.
+    -- Build a lazy section once on opening, not as individual rows enter the
+    -- viewport. Keep their native controls and input identity while scrolling.
     toggleLazy = function(page, section, expanded)
         local selected
         for _, group in pairs(sections[page]) do
@@ -854,62 +817,39 @@ function view.build(host, rules, onChange, prettyui)
             for i = 1, 6 do tabs:GetPage(i)._scroll:Refresh() end
         end
         if active == 3 then
-            local page = pages[3]
             for _, group in pairs(sections[3]) do
                 if group.rows and group.section.expanded then
-                    local keep, existing = {}, {}
-                    local offset = group.section.root.y + group.section.content.y - page.scrollY
-                    for _, row in ipairs(group.rows) do
-                        if offset + row.y < h and offset + row.y + rowHeight > 0 then
-                            keep[row.index] = true
+                    if not group.built then
+                        for _, row in ipairs(group.rows) do
+                            currentRow = row.index
+                            local rule = rules[row.index]
+                            buildRow(row.index, rule, catalogue[rule.itemId], group, 3, row.y)
                         end
-                    end
-                    for _, entry in ipairs(controls[3]) do
-                        if entry.section == group.section and entry.row then existing[entry.row] = true end
-                    end
-                    for _, row in ipairs(group.rows) do
-                        if keep[row.index] and not existing[row.index] then
-                            local reusable
-                            for _, slot in ipairs(group.slots or {}) do
-                                if not keep[slot.index] then reusable = slot; break end
-                            end
-                            if reusable then
-                                reusable:Bind(row.index, row.y)
-                            else
-                                currentRow = row.index
-                                local rule = rules[row.index]
-                                buildRow(row.index, rule, catalogue[rule.itemId], group, 3, row.y)
-                            end
-                            layoutChanged = true
-                        end
+                        group.built = true
+                        layoutChanged = true
                     end
                     currentRow, currentSection = nil, nil
                 end
             end
         end
         for i, page in ipairs(pages) do
-            if layoutChanged or page.scrollY ~= scrollPositions[i] then
+            if page.scrollY ~= scrollPositions[i] then
                 scrollPositions[i] = page.scrollY
-                -- Input text and other native controls may draw outside the viewport.
+                for _, entry in ipairs(controls[i]) do
+                    local tip = tooltipTargets[entry.control]
+                    if tip then tip:Hide() end
+                end
+            end
+            if layoutChanged then
+                -- Tabs and collapsed sections own visibility. Viewport clipping
+                -- belongs exclusively to PrettyUI's native scroll container.
                 for _, entry in ipairs(controls[i]) do
                     local control, section = entry.control, entry.section
                     if entry.update then entry.update() end
-                    local box = entry.background
-                    local top = (box and box.y or control.y) - page.scrollY
-                    if section then top = top + section.root.y + section.content.y end
-                    if entry.rowOffset then top = top + entry.rowOffset.y end
-                    if box then
-                        local inset = math.max(0, -top)
-                        local clippedHeight = math.max(0, math.min(box.height - inset, height - math.max(0, top)))
-                        control:SetPos(box.x, box.y + inset)
-                        control:SetSize(box.width, clippedHeight, 1, 0)
-                        control.hidden = active ~= i or (section and not section.expanded) or clippedHeight == 0
-                    else
-                    control.hidden = active ~= i or (section and not section.expanded)
+                    local hidden = active ~= i or (section and not section.expanded)
                         or (entry.visibleWhen and not entry.visibleWhen())
-                        or (entry.viewportClipped and (top >= height or top + control.height <= 0))
-                        or (not entry.viewportClipped and (top < 0 or top + control.height > height))
-                    end
+                    hidden = not not hidden
+                    if control.hidden ~= hidden then control.hidden = hidden end
                     if control.hidden and tooltipTargets[control] then tooltipTargets[control]:Hide() end
                 end
             end
@@ -931,6 +871,9 @@ function view.build(host, rules, onChange, prettyui)
             end
         end
         dismissPicker()
+        for _, entry in ipairs(inputClipTargets) do
+            entry.controller:UnregisterClipTarget(entry.target)
+        end
         for _, picker in ipairs(colourPickers) do picker:Destroy() end
         for _, tip in ipairs(tooltips) do tip:Destroy() end
         for _, checkbox in ipairs(checkboxes) do
