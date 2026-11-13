@@ -103,4 +103,15 @@ assert(saved.x == 140 and saved.y == 150, "scaled dragging follows mouse deltas"
 for _ = 1, 100 do button.update(true, check) end
 assert(scaledRoot.xyGlobal.x == 320 and scaledRoot.xyGlobal.y == 360)
 button.close()
+Mouse, game = nil, nil
+local before = #components
+button.update(true, check, true)
+local lockedHandle = components[before + 3]
+local oldChecks, oldX, oldY = checks, saved.x, saved.y
+lockedHandle.hooks.click(nil, 5, 5)
+lockedHandle.hooks.hold(nil, 600, 500)
+lockedHandle.hooks.release()
+assert(saved.x == oldX and saved.y == oldY, "locked button must not move or save a new position")
+assert(checks == oldChecks + 1, "locked button still runs checks")
+button.close()
 print("Check button tests passed.")

@@ -52,6 +52,8 @@ panels.general = { toggles = {
         usage = "Checks supplies after detected travel through either attuned portal, the reaper portal or the featured portal. Independent of preset and bank checks. Uses a location-jump heuristic, not boss-instance detection." },
     { key = "showCheckButton", name = "Show on-screen check button",
         usage = "Keeps a Check now button on screen. Click to check, or hold and drag the button to move it; the position is saved. Runs your enabled supply checks independently of automatic triggers." },
+    { key = "lockCheckButton", name = "Lock check button position", indent = 15,
+        usage = "Prevents dragging the on-screen check button. Clicking it still runs your supply checks." },
     { key = "popupIconMode", name = "Compact notification icons",
         usage = "Shows coloured warning icons with hover details in the main popup only. The ribbon is unchanged." },
 }, colours = {

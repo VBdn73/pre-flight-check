@@ -137,7 +137,7 @@ Event.Logic.Subscribe("supplyCheck.clock", function(event)
         else
             manualCheckDeadline = now + 5
         end
-    end)
+    end, rules.lockCheckButton)
     if not rules.checkOnPortalEntry then portalCapture = nil; portalCheckDeadline = nil end
     if portalCapture then
         local capture, arrived = portalCapture, false

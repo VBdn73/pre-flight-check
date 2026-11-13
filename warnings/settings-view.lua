@@ -138,8 +138,12 @@ function view.build(host, rules, onChange, prettyui)
     end
     pageIndex = 6
     text(pages[6].content, 10, 8, 380, "Additional supply checks")
-    local chatCheckbox
+    local chatCheckbox, lockCheckbox
     local function updateChatToggle()
+        if lockCheckbox then
+            lockCheckbox:SetSelected("lockCheckButton", rules.lockCheckButton, false)
+            lockCheckbox:SetDisabled(not rules.showCheckButton)
+        end
         if not chatCheckbox then return end
         chatCheckbox:SetSelected("presetChatNotifications", rules.presetChatNotifications, false)
         chatCheckbox:SetDisabled(not rules.checkOnPreset)
@@ -151,6 +155,10 @@ function view.build(host, rules, onChange, prettyui)
         }, { width = 300, onChange = function(_, _, _, selected)
             local old = rules[key]
             local oldChat = rules.presetChatNotifications
+            if key == "lockCheckButton" and not rules.showCheckButton then
+                checkbox:SetSelected(key, rules[key], false)
+                return
+            end
             if key == "presetChatNotifications" and not rules.checkOnPreset then
                 checkbox:SetSelected(key, false, false)
                 return
@@ -183,6 +191,7 @@ function view.build(host, rules, onChange, prettyui)
         checkbox.root:SetPos(10 + (definition.indent or 0), y)
         if definition.usage then tooltip(checkbox.root, pages[6].content, definition.usage) end
         if definition.key == "presetChatNotifications" then chatCheckbox = checkbox end
+        if definition.key == "lockCheckButton" then lockCheckbox = checkbox end
     end
     updateChatToggle()
     local function numberControl(y, definition)
@@ -754,7 +763,7 @@ function view.build(host, rules, onChange, prettyui)
             local old = {}
             if i == 6 then
                 dismissPicker()
-                for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "checkOnPortalEntry", "showCheckButton", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do
+                for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "checkOnPortalEntry", "showCheckButton", "lockCheckButton", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do
                     old[key], rules[key] = rules[key], defaults[key]
                 end
             else
@@ -777,7 +786,7 @@ function view.build(host, rules, onChange, prettyui)
             end
             if not settings.save(rules) then
                 if i == 6 then
-                    for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "checkOnPortalEntry", "showCheckButton", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do rules[key] = old[key] end
+                    for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "checkOnPortalEntry", "showCheckButton", "lockCheckButton", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do rules[key] = old[key] end
                 else
                     rules.styles[styleNames[i]] = old.style
                     if i == 5 then

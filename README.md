@@ -40,6 +40,8 @@ Inventory is read after arrival, retrying unavailable data for up to five
 seconds. Existing supply-reading and zero-count limitations still apply.
 **Beast of burden preset** under Misc → Other reports preset failures when the follower cannot carry items. This warning is on by default and requires the same preset chat settings and permission.
 
+The indented **Lock check button position** setting prevents moving the button while keeping click-to-check available. It defaults off and is disabled while **Show on-screen check button** is off.
+
 ## Limitations
 
 - Ammunition counts exclude quivers.

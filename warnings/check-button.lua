@@ -2,7 +2,7 @@
 local button = {}
 local root, handle, host, drag, skin
 local positionX, positionY
-local moveDrag
+local moveDrag, locked
 local width, height = 36, 36
 local positionKey = "supplyWarnings.checkButtonPosition"
 
@@ -41,7 +41,8 @@ function button.close()
     positionX, positionY = nil, nil
 end
 
-function button.update(enabled, onCheck)
+function button.update(enabled, onCheck, lockPosition)
+    locked = lockPosition == true
     if not enabled then button.close(); return end
     local parent = ui.Interfaces:GetComponent(id.Component.TOPLEVEL_V2__PLUGIN_BUILD_LAYER_TOP)
     if not parent then button.close(); return end
@@ -105,6 +106,7 @@ function button.update(enabled, onCheck)
             return false
         end)
         local function move(_, x, y)
+            if locked then return false end
             if not drag or type(x) ~= "number" or type(y) ~= "number" then return false end
             local raw = mousePosition()
             local dx, dy = x - drag.x, y - drag.y
