@@ -9,7 +9,12 @@ local function control(kind, parent)
         self.hooks[hook] = callback
     end
     function c:Setup() end
-    function c:Destroy() self.destroyed = true end
+    function c:Destroy()
+        self.destroyed = true
+        if self.submitOnDestroy and self.hooks.change then
+            self.hooks.change(self, ui.InputFieldActionResult.SUBMIT_ON_FOCUS_LOSS)
+        end
+    end
     function c:SetAssociatedObject(itemId, ...)
         assert(type(itemId) == "number", "SetAssociatedObject requires a numeric item ID")
         assert(select("#", ...) == 0, "SetAssociatedObject takes one argument")
@@ -45,6 +50,7 @@ ui = { Text = { new = function(parent) return control("text", parent) end },
 id = { Font = { MUSEO_SANS_11PT_REGULAR = 1 }, StyleSheet = {
     BUTTON_DEFAULT = 1, INPUT_DEFAULT = 2, CHECKBOX_DEFAULT_LEFT_ALIGNED = 3, CHECKBOX_DEFAULT = 4 } }
 local tabs
+local tooltipAllocations = 0
 local tooltipContexts = {}
 local prettyui = { Tooltip = {
 getContext = function(parent) return tooltipContexts[parent] end,
@@ -54,6 +60,7 @@ registerContext = function(collection, parent, position, parentContext)
     return context
 end,
 attach = function(target, parent, value)
+    tooltipAllocations = tooltipAllocations + 1
     target.tooltip = value
     local tip = { options = value, width = 240, height = 60, Hide = function() end, Destroy = function() end }
     tip.context = tooltipContexts[parent]
@@ -171,6 +178,7 @@ prettyui.ColourPicker = { new = function(parent, options)
 end }
 -- Tab layout, sections, and accordion behavior.
 local refresh, destroy = require("warnings/settings-view").build(host, rules, function() changes = changes + 1 end, prettyui)
+assert(tooltipAllocations == 0, "hidden/unhovered settings must not allocate native tooltips")
 local general, magic, necro, ranged, melee, misc = table.unpack(tabs.pages)
 assert(tabs.entries[1].text == "General" and tabs.entries[5].text == "Melee")
 assert(tabs.options.contentLayout.startY == 80)
@@ -200,7 +208,11 @@ necro.sections[1]:SetExpanded(true)
 necro.sections[1]:SetExpanded(false)
 local function find(parent, kind, x, y)
     for _, c in ipairs(controls) do
-        if not c.destroyed and c.parent == parent and c.kind == kind and c.x == x and c.y == y then return c end
+        if not c.destroyed and c.parent == parent and c.kind == kind and c.x == x and c.y == y then
+            -- Simulate first hover when a test inspects a control's tooltip.
+            if c.hooks.over and not c.attachment then c.hooks.over() end
+            return c
+        end
     end
     error("control not found: " .. kind .. " " .. x .. "," .. y)
 end
@@ -209,6 +221,10 @@ local style = magic.content
 local sign = find(miscRows, "check", -30, 7)
 local death = find(miscRows, "check", -30, 47)
 local durability = find(miscRows, "check", -30, 87)
+local hoverAllocations = tooltipAllocations
+durability.hooks.over()
+durability.hooks.over()
+assert(tooltipAllocations == hoverAllocations, "repeated hover must reuse the attached tooltip")
 local rowContext = durability.attachment.context
 assert(rowContext and rowContext.parent == host, "row tooltips must use the page overlay")
 assert(rowContext.parentContext == tooltipContexts[misc.content])
@@ -587,7 +603,7 @@ assert(saved["554"].low == 7000 and saved["554"].critical == 300)
 local reloadedFire = require("warnings/settings").load()[4]
 assert(reloadedFire.custom and reloadedFire.low == 7000 and reloadedFire.critical == 300)
 customLow.simulateProgrammaticChange, customCritical.simulateProgrammaticChange = false, false
--- Collapsed sections release rows; scrolling virtualizes and restores drafts.
+-- Lazy rows are retained and hidden, avoiding repeated native ID allocation.
 tabs.active = 4
 for _, c in ipairs(controls) do
     for _, section in ipairs(ranged.sections) do
@@ -604,9 +620,16 @@ assert(not ranged.sections[1].expanded, "only one ranged section stays open")
 local arrow = ranged.sections[2].content
 assert(find(arrow, "sprite", 8, 3).itemId == 52299)
 assert(not find(arrow, "button", -251, 5).hidden)
+-- Collapsing a custom row must not destroy or submit its native input.
+find(arrow, "button", -251, 5).hooks.press()
+local retiringInput = find(arrow, "input", -171, 5)
+retiringInput.submitOnDestroy = true
+local saveBeforeDestroy = PersistentDB.SetStructuredData
+PersistentDB.SetStructuredData = function() error("destroyed rows must not save") end
 ranged.sections[2]:SetExpanded(false)
+PersistentDB.SetStructuredData = saveBeforeDestroy
 for _, c in ipairs(controls) do
-    if c.parent == arrow then assert(c.destroyed, "collapsed ranged rows must be released") end
+    if c.parent == arrow then assert(c.hidden and not c.destroyed, "collapsed ranged rows must be cached and hidden") end
 end
 ranged.sections[2]:SetExpanded(true)
 refresh()
@@ -633,23 +656,39 @@ draftLow.hooks.change(draftLow, ui.InputFieldActionResult.CONTENT_CHANGE)
 local function liveRows()
     local count = 0
     for _, c in ipairs(controls) do
-        if c.parent == large.content and c.kind == "sprite" and not c.destroyed then count = count + 1 end
+        if c.parent == large.content and c.kind == "sprite" and not c.destroyed and not c.hidden then count = count + 1 end
     end
     return count
 end
 assert(liveRows() <= math.ceil((host.height - 42) / 40) + 1)
 ranged.scrollY = large.root.y + large.content.y + large.contentHeight - (host.height - 42)
+local beforeScrollAllocations = #controls
 refresh()
-assert(firstIcon.destroyed, "offscreen rows must release their controls")
+assert(not firstIcon.destroyed, "scrolling rebinds controls instead of destroying them")
+assert(#controls == beforeScrollAllocations, "scrolling to new items reuses existing viewport slots")
 assert(find(large.content, "sprite", 8, large.contentHeight - 37))
 assert(liveRows() <= math.ceil((host.height - 42) / 40) + 1)
 ranged.scrollY = large.root.y + large.content.y
 refresh()
 assert(not find(large.content, "check", -30, 7).value, "recreated rows retain saved settings")
 assert(find(large.content, "input", -171, 5).content == "1234", "scrolling retains an unsaved draft")
+assert(#controls == beforeScrollAllocations, "returning to previous items allocates no new controls")
 find(large.content, "check", -30, 7).hooks.press()
 large:SetExpanded(false)
 assert(liveRows() == 0)
+-- Once visited, repeated dropdown/category changes must allocate no new controls.
+local allocated = #controls
+for i = 1, 100 do
+    tabs.active = 2
+    refresh()
+    tabs.active = 4
+    large:SetExpanded(true)
+    ranged.scrollY = large.root.y + large.content.y
+    refresh()
+    large:SetExpanded(false)
+    refresh()
+end
+assert(#controls == allocated, "repeated navigation must not consume additional dynamic UI IDs")
 host.height = 600
 refresh()
 -- Shared ammunition groups and the other combat-style tabs.

@@ -163,9 +163,13 @@ Event.Logic.Subscribe("supplyCheck.clock", function(event)
         if rules.checkOnBankClose and not anticipatedCloseUntil then scheduleCheck(0) end
         anticipatedCloseUntil = nil
     end
-    if refreshSettings and not pcall(refreshSettings) then
-        refreshSettings = nil
-        if destroySettings then pcall(destroySettings); destroySettings = nil end
+    if refreshSettings then
+        local ok, err = pcall(refreshSettings)
+        if not ok then
+            print("[pre-flight-check] Settings refresh failed: " .. tostring(err))
+            refreshSettings = nil
+            if destroySettings then pcall(destroySettings); destroySettings = nil end
+        end
     end
 end)
 Event.ChatMessage.Subscribe("supplyCheck.presetMessages", function(event)

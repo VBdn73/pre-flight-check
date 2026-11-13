@@ -13,11 +13,12 @@ function components.row(context, parent, y, definition)
     background:SetPos(1, y + 1); background:SetSize(-2, context.rowHeight - 6, 1, 0)
     background.fill, background.clickthrough = true, true
     entries[#entries].background = { x = 1, y = y + 1, width = -2, height = context.rowHeight - 6 }
-    context.icon(parent, 8, y + 3, definition.icon).clickthrough = true
+    local sprite = context.icon(parent, 8, y + 3, definition.icon)
+    sprite.clickthrough = true
     local label = context.text(parent, 48, y + 3, 90, definition.name)
     label:SetSize(definition.labelWidth or -300, 32, 1, 0)
     label.alignVertical, label.clickthrough = ui.AlignMode.CENTRE, true
-    return entry, background
+    return entry, background, sprite, label
 end
 
 function components.dropdown(page, definition, onToggle)

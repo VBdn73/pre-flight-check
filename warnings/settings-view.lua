@@ -63,6 +63,7 @@ function view.build(host, rules, onChange, prettyui)
     for i, panel in ipairs(panels) do styleNames[i] = panel.name end
     local controls = { {}, {}, {}, {}, {}, {} }
     local checkboxes, tooltips, tooltipTargets = {}, {}, {}
+    local createdControls, createdTooltips, createdRows = 0, 0, 0
     local pageIndex, currentSection, currentRow, currentRowOffset = 1, nil, nil, nil
     local layoutChanged = true
     local resetControls = { {}, {}, {}, {}, {}, {} }
@@ -71,6 +72,7 @@ function view.build(host, rules, onChange, prettyui)
         for _, picker in ipairs(colourPickers) do picker:Close() end
     end
     local function track(control)
+        createdControls = createdControls + 1
         local scroll = pages[pageIndex]
         local list = controls[pageIndex]
         list[#list + 1] = { control = control, section = currentSection, row = currentRow,
@@ -91,22 +93,32 @@ function view.build(host, rules, onChange, prettyui)
             text = text, icon = icon, rowHeight = rowHeight }, parent, y, definition)
     end
     local function tooltip(target, parent, value)
+        -- PrettyUI tooltips own native controls too. Do not allocate a tooltip
+        -- for every input/button in every hidden category during construction.
         local tip
+        local options = { text = value, placement = "above", constrainToParent = false }
+        local handle = {}
+        function handle:Hide() if tip then tip:Hide() end end
+        function handle:Destroy() if tip then tip:Destroy(); tip = nil end end
         target:Subscribe(ui.Hook.ONMOUSEOVER, "supplyCheck.tooltipPosition", function()
+            if not tip then
+                tip = prettyui.Tooltip.attach(target, parent, options)
+                createdTooltips = createdTooltips + 1
+                -- attach subscribes its own mouse hooks. The first mouse-over
+                -- is already being dispatched, so show the new tip explicitly.
+            end
             if tip then
                 local x, y = target.x, target.y
                 if tip.context and tip.context.active then x, y = tip.context.position(target) end
                 tip.options.x = math.max(0, x + target.width - tip.width)
                 tip.options.y = y - tip.height - 6
+                if tip.Show then tip:Show() end
             end
             return true
         end)
-        tip = prettyui.Tooltip.attach(target, parent, {
-            text = value, placement = "above", constrainToParent = false,
-        })
-        tooltips[#tooltips + 1] = tip
-        tooltipTargets[target] = tip
-        return tip
+        tooltips[#tooltips + 1] = handle
+        tooltipTargets[target] = handle
+        return handle
     end
     local function onSubmit(field, callback, onEdit)
         field:Subscribe(ui.Hook.ONCONTENTCHANGED, function(_, reason)
@@ -418,16 +430,20 @@ function view.build(host, rules, onChange, prettyui)
     end
     local rowDrafts = {}
     local function buildRow(index, rule, item, group, rowPage, y, combined, rowParent)
+        createdRows = createdRows + 1
+        local firstEntry = #controls[rowPage] + 1
         pageIndex = rowPage
         currentSection = group and group.section or nil
         local parent = currentSection and currentSection.content or rowParent or pages[rowPage].content
-        local frameEntry, background = settingRow(parent, y, {
+        local frameEntry, background, rowIcon, rowLabel = settingRow(parent, y, {
             name = item.name, icon = item.icon or (rule.itemId == spikes.ruleId and spikes.harnessId or rule.itemId),
         })
         local enabled, custom = rule.enabled, rule.custom
         local draft = rowDrafts[index] or { tostring(rule.low), tostring(rule.critical) }
         rowDrafts[index] = draft
         local fields, mode, switch
+        local active = true
+        frameEntry.deactivate = function() active = false end
         local settingFields = false
         local function saveCombined()
             if not combined then return settings.save(rules) end
@@ -525,12 +541,12 @@ function view.build(host, rules, onChange, prettyui)
             tooltip(field, parent, description)
         end
         local function editItem()
-            if settingFields then return end
+            if not active or settingFields then return end
             if not custom then return end
             for i, field in ipairs(fields) do draft[i] = field.content end
         end
         local function saveItem()
-            if settingFields then return end
+            if not active or settingFields then return end
             if not custom then return end
             if custom then for i, field in ipairs(fields) do draft[i] = field.content end end
             local candidate = { itemId = rule.itemId, enabled = enabled, custom = custom,
@@ -561,6 +577,40 @@ function view.build(host, rules, onChange, prettyui)
             updateRow()
         end
         frameEntry.reset = resetRow
+        if currentRow then
+            local slot = { index = index, entries = {} }
+            for position = firstEntry, #controls[rowPage] do
+                slot.entries[#slot.entries + 1] = controls[rowPage][position]
+            end
+            function slot:Bind(nextIndex, nextY)
+                -- Save drafts independently of the controls before changing their
+                -- identity. Ignore synchronous native input events while binding.
+                active = false
+                local delta = nextY - y
+                index, rule, item = nextIndex, rules[nextIndex], catalogue[rules[nextIndex].itemId]
+                y, self.index = nextY, nextIndex
+                for _, entry in ipairs(self.entries) do
+                    entry.row = nextIndex
+                    local c = entry.control
+                    if entry.background then
+                        entry.background.y = entry.background.y + delta
+                        c:SetPos(entry.background.x, entry.background.y)
+                    else
+                        c:SetPos(c.x, c.y + delta, c.xAnchor, c.yAnchor)
+                    end
+                end
+                rowIcon:SetAssociatedObject(rule.itemId)
+                rowLabel.content = item.name
+                enabled, custom = rule.enabled, rule.custom
+                draft = rowDrafts[index] or { tostring(rule.low), tostring(rule.critical) }
+                rowDrafts[index] = draft
+                for i, field in ipairs(fields) do setField(field, draft[i]) end
+                updateRow()
+                active = true
+            end
+            group.slots = group.slots or {}
+            group.slots[#group.slots + 1] = slot
+        end
         if rowParent then resetControls[rowPage][#resetControls[rowPage] + 1] = resetRow end
         updateRow()
     end
@@ -673,24 +723,8 @@ function view.build(host, rules, onChange, prettyui)
             currentRowOffset = nil
         end
     end
-    local function destroyRows(page, section, keep)
-        for i = #controls[page], 1, -1 do
-            local entry = controls[page][i]
-            if entry.section == section and entry.row and not keep[entry.row] then
-                local tip = tooltipTargets[entry.control]
-                if tip then
-                    tip:Destroy()
-                    tooltipTargets[entry.control] = nil
-                    for j = #tooltips, 1, -1 do
-                        if tooltips[j] == tip then table.remove(tooltips, j); break end
-                    end
-                end
-                entry.control:Destroy()
-                table.remove(controls[page], i)
-            end
-        end
-    end
-    -- Ranged sections create only viewport rows to conserve dynamic UI IDs.
+    -- Ranged sections use reusable viewport slots. Neither visiting new items
+    -- nor returning to old ones should allocate a permanent row per item.
     toggleLazy = function(page, section, expanded)
         local selected
         for _, group in pairs(sections[page]) do
@@ -698,7 +732,13 @@ function view.build(host, rules, onChange, prettyui)
         end
         if not selected or not selected.rows then return end
         if not expanded then
-            destroyRows(page, section, {})
+            for _, entry in ipairs(controls[page]) do
+                if entry.section == section and entry.row then
+                    entry.control.hidden = true
+                    local tip = tooltipTargets[entry.control]
+                    if tip then tip:Hide() end
+                end
+            end
         end
         currentSection = nil
     end
@@ -827,12 +867,19 @@ function view.build(host, rules, onChange, prettyui)
                     for _, entry in ipairs(controls[3]) do
                         if entry.section == group.section and entry.row then existing[entry.row] = true end
                     end
-                    destroyRows(3, group.section, keep)
                     for _, row in ipairs(group.rows) do
                         if keep[row.index] and not existing[row.index] then
-                            currentRow = row.index
-                            local rule = rules[row.index]
-                            buildRow(row.index, rule, catalogue[rule.itemId], group, 3, row.y)
+                            local reusable
+                            for _, slot in ipairs(group.slots or {}) do
+                                if not keep[slot.index] then reusable = slot; break end
+                            end
+                            if reusable then
+                                reusable:Bind(row.index, row.y)
+                            else
+                                currentRow = row.index
+                                local rule = rules[row.index]
+                                buildRow(row.index, rule, catalogue[rule.itemId], group, 3, row.y)
+                            end
                             layoutChanged = true
                         end
                     end
@@ -869,8 +916,20 @@ function view.build(host, rules, onChange, prettyui)
         end
         layoutChanged = false
     end
-    refresh()
-    return refresh, function()
+    local function checkedRefresh()
+        local ok, err = pcall(refresh)
+        if not ok then
+            error(tostring(err) .. string.format(" [settings allocations: controls=%d, rows=%d, tooltips=%d]",
+                createdControls, createdRows, createdTooltips), 0)
+        end
+    end
+    checkedRefresh()
+    return checkedRefresh, function()
+        for _, entries in ipairs(controls) do
+            for _, entry in ipairs(entries) do
+                if entry.deactivate then entry.deactivate() end
+            end
+        end
         dismissPicker()
         for _, picker in ipairs(colourPickers) do picker:Destroy() end
         for _, tip in ipairs(tooltips) do tip:Destroy() end

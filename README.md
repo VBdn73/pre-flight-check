@@ -100,7 +100,12 @@ items follow in rule order. For example:
 
 Definitions configure presentation, not new warning behaviour: new warning
 types still need their rules and evaluation logic. Saving, validation, reset,
-scroll clipping and ranged dropdown virtualization remain in the view.
+scroll clipping and ranged viewport row pools remain in the view. Ranged sections
+reuse a bounded set of visible row slots, rebinding item identities and restoring
+drafts as you scroll instead of allocating controls for every visited item.
+Tooltips are attached only on first hover rather than eagerly allocating tooltip
+controls for every setting in every category. Refresh errors include counts of
+tracked controls, constructed rows and attached tooltips for diagnosis.
 
 ## Feedback and collaboration
 

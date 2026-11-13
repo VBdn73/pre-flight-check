@@ -15,7 +15,13 @@ package.loaded["warnings/check-button"] = {
     update = function(enabled, callback) buttonVisible = enabled; manualClick = callback end,
     close = function() buttonVisible = false end,
 }
-package.loaded["warnings/settings-view"] = { build = function() end }
+local settingsDestroyed, settingsRefreshes = 0, 0
+package.loaded["warnings/settings-view"] = { build = function()
+    return function()
+        settingsRefreshes = settingsRefreshes + 1
+        error("simulated settings failure")
+    end, function() settingsDestroyed = settingsDestroyed + 1 end
+end }
 package.loaded["warnings/monitor"] = { new = function() return {
     update = function(snapshot) snapshots[#snapshots + 1] = snapshot; return {} end } end }
 package.loaded["warnings/popup"] = { clear = function() end, update = function() end }
@@ -50,6 +56,17 @@ callbacks.state({ newState = 40 })
 assert(not buttonVisible)
 manualClick()
 assert(#snapshots == 1, "manual checks do not read outside the game")
+-- Refresh failures report the reason instead of silently blanking settings.
+local originalPrint, diagnostic = print
+print = function(message) diagnostic = message end
+callbacks.settings({ component = {} })
+callbacks.logic({ logicTick = 101 })
+print = originalPrint
+assert(diagnostic:find("Settings refresh failed:", 1, true)
+    and diagnostic:find("simulated settings failure", 1, true))
+assert(settingsDestroyed == 1 and settingsRefreshes == 1)
+callbacks.logic({ logicTick = 102 })
+assert(settingsRefreshes == 1, "failed settings must not refresh again")
 -- Shutdown unregisters each event subscription.
 PluginShutdown()
 assert(unsubscribed.server == "supplyCheck.refresh")
