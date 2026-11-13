@@ -343,7 +343,18 @@ function view.build(host, rules, onChange, prettyui)
     addSection(5, "Bombs")
     addSection(5, "Invention")
     addSection(5, "God Books")
-    addSection(5, "Other")
+    local miscSpacer = pages[5]:AddText({ text = "", height = 11 * rowHeight })
+    miscSpacer.clickthrough = true
+    local rowLayers = {}
+    local function rowLayer(page, spacer, height)
+        local layer = ui.Layer.new(pages[page].content)
+        layer:SetPos(14, spacer.y); layer:SetSize(-28, height, 1, 0)
+        layer.clickthrough = true
+        rowLayers[#rowLayers + 1] = { layer = layer, spacer = spacer }
+        return layer
+    end
+    local miscRows = rowLayer(5, miscSpacer, 11 * rowHeight)
+    local otherGroup = { count = 0 }
     do
         local group = sections[5]["God Books"]
         currentSection = group.section
@@ -355,9 +366,9 @@ function view.build(host, rules, onChange, prettyui)
         currentSection = nil
     end
     local function addOtherSwitch(key, name, itemId)
-        local group = sections[5]["Other"]
-        currentSection = group.section
-        local parent = group.section.content
+        local group = otherGroup
+        currentRowOffset = miscRows
+        local parent = miscRows
         local y = group.count * rowHeight
         local frame = track(ui.Rectangle.new(parent))
         local frameEntry = controls[pageIndex][#controls[pageIndex]]
@@ -408,6 +419,7 @@ function view.build(host, rules, onChange, prettyui)
         updateRow()
         group.count = group.count + 1
         currentSection = nil
+        currentRowOffset = nil
     end
     addOtherSwitch("signOfLife", "Sign of life cooldown", 29290)
     addOtherSwitch("deathReclaim", "Death reclaim", 39559) -- Death's scythe.
@@ -416,9 +428,9 @@ function view.build(host, rules, onChange, prettyui)
     addOtherSwitch("powerburst", "Powerburst cooldown", 49095)
     local function addUnavailableRows()
         pageIndex = 5
-        local group = sections[5]["Other"]
-        currentSection = group.section
-        local parent = group.section.content
+        local group = otherGroup
+        currentRowOffset = miscRows
+        local parent = miscRows
         for _, item in ipairs({
             { id = 48680, name = "Blessed flask" },
             { id = 44548, name = "Grace of the elves" },
@@ -440,6 +452,7 @@ function view.build(host, rules, onChange, prettyui)
             label.alignVertical, label.clickthrough = ui.AlignMode.CENTRE, true
         end
         currentSection = nil
+        currentRowOffset = nil
     end
     local rowDrafts = {}
     local function buildRow(index, rule, item, group, rowPage, y, combined, rowParent)
@@ -642,27 +655,21 @@ function view.build(host, rules, onChange, prettyui)
         elseif pageIndex == 3 or pageIndex == 5 then
             name = item.group
         end
-        local group = sections[pageIndex][name]
+        local group = pageIndex == 5 and name == "Other" and otherGroup or sections[pageIndex][name]
         local y = group.count * rowHeight
         group.count = group.count + 1
         if pageIndex == 3 then
             group.rows = group.rows or {}
             group.rows[#group.rows + 1] = { index = index, y = y }
         else
-            buildRow(index, rule, item, group, pageIndex, y)
+            if group == otherGroup then currentRowOffset = miscRows end
+            buildRow(index, rule, item, group, pageIndex, y, nil, group == otherGroup and miscRows or nil)
+            currentRowOffset = nil
         end
         end
         end
     end
     -- Match PrettyUI's flow padding and follow the managed spacer as sections reflow.
-    local rowLayers = {}
-    local function rowLayer(page, spacer, height)
-        local layer = ui.Layer.new(pages[page].content)
-        layer:SetPos(14, spacer.y); layer:SetSize(-28, height, 1, 0)
-        layer.clickthrough = true
-        rowLayers[#rowLayers + 1] = { layer = layer, spacer = spacer }
-        return layer
-    end
     local rangedRows = rowLayer(3, rangedSpacer, #rangedCombinedNames * rowHeight)
     currentRowOffset = rangedRows
     for i, name in ipairs(rangedCombinedNames) do
