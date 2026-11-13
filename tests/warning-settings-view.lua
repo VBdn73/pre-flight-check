@@ -45,9 +45,18 @@ ui = { Text = { new = function(parent) return control("text", parent) end },
 id = { Font = { MUSEO_SANS_11PT_REGULAR = 1 }, StyleSheet = {
     BUTTON_DEFAULT = 1, INPUT_DEFAULT = 2, CHECKBOX_DEFAULT_LEFT_ALIGNED = 3, CHECKBOX_DEFAULT = 4 } }
 local tabs
-local prettyui = { Tooltip = { attach = function(target, _, value)
+local tooltipContexts = {}
+local prettyui = { Tooltip = {
+getContext = function(parent) return tooltipContexts[parent] end,
+registerContext = function(collection, parent, position, parentContext)
+    local context = { parent = parent, position = position, parentContext = parentContext, active = true }
+    tooltipContexts[collection] = context
+    return context
+end,
+attach = function(target, parent, value)
     target.tooltip = value
     local tip = { options = value, width = 240, height = 60, Hide = function() end, Destroy = function() end }
+    tip.context = tooltipContexts[parent]
     target.attachment = tip
     return tip
 end }, CheckboxButton = { new = function(parent, entries, options)
@@ -85,6 +94,9 @@ end }, Tabs = { new = function(host, entries, options)
     tabs = { entries = entries, options = options, pages = {}, active = 1 }
     for i = 1, 6 do
         local page = { content = {}, scrollY = 0, contentHeight = 0, sections = {} }
+        tooltipContexts[page.content] = { parent = host, active = true, position = function(target)
+            return (target.x or 0), (target.y or 0) - page.scrollY
+        end }
         page._scroll = { Refresh = function()
             page.height = math.max(1, host.height - 42)
             page.scrollbarVisible = page.contentHeight > page.height
@@ -197,6 +209,12 @@ local style = magic.content
 local sign = find(miscRows, "check", -30, 7)
 local death = find(miscRows, "check", -30, 47)
 local durability = find(miscRows, "check", -30, 87)
+local rowContext = durability.attachment.context
+assert(rowContext and rowContext.parent == host, "row tooltips must use the page overlay")
+assert(rowContext.parentContext == tooltipContexts[misc.content])
+durability.hooks.over()
+assert(durability.tooltip.y == miscRows.y + durability.y - misc.scrollY - 66,
+    "overlay tooltip coordinates must include the row offset and page scroll")
 local bob = find(miscRows, "check", -30, 127)
 PluginPermissions = { chatAccess = 1 }
 local permission = false

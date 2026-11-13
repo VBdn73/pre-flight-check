@@ -342,6 +342,14 @@ function view.build(host, rules, onChange, prettyui)
         local layer = ui.Layer.new(pages[page].content)
         layer:SetPos(14, spacer.y); layer:SetSize(-28, height, 1, 0)
         layer.clickthrough = true
+        -- Keep row tooltips in the page overlay, above sibling dropdown headers.
+        local context = prettyui.Tooltip.getContext(pages[page].content)
+        if context then
+            prettyui.Tooltip.registerContext(layer, context.parent, function(target)
+                local x, y = context.position(layer)
+                return x + (target.x or 0), y + (target.y or 0)
+            end, context)
+        end
         rowLayers[#rowLayers + 1] = { layer = layer, spacer = spacer }
         return layer
     end
