@@ -98,7 +98,8 @@ function reader.read()
     return { backpack = backpack, equipment = equipment, runeCounts = runes, nexus = nexus,
         spikeHarness = spikeHarness, inventionCharge = charge, signOfLifeCooldown = signOfLifeCooldown,
         godBookTicks = bookTicks, deathReclaim = deathReclaim, excaliburCooldown = excaliburCooldown,
-        powerburstCooldown = powerburstCooldown, sigilCooldowns = require("supplies/sigils").read() }
+        powerburstCooldown = powerburstCooldown, sigilCooldowns = require("supplies/sigils").read(),
+        vitals = require("supplies/vitals").read() }
 end
 
 return reader

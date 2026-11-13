@@ -43,6 +43,13 @@ local panels = {
 }
 
 local settings = require("warnings/settings")
+for index, vital in ipairs(require("supplies/vitals")) do
+    table.insert(panels[5].settings, 10 + index, {
+        key = vital.key, name = vital.name, icon = vital.icon,
+        threshold = vital.key .. "Threshold",
+        usage = "Warns when below the configured percentage during a pre-flight check.",
+    })
+end
 panels.general = { toggles = {
     { key = "checkOnPreset", name = "Check on preset load" },
     { key = "presetChatNotifications", name = "Preset chat notifications", indent = 15,

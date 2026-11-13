@@ -51,7 +51,11 @@ ui = { Text = { new = function(parent) return control("text", parent) end },
     Rectangle = { new = function(parent) return control("rectangle", parent) end },
     Check = { new = function(parent) return control("check", parent) end },
     Button = { new = function(parent) return control("button", parent) end },
-    InputField = { new = function(parent) return control("input", parent) end },
+    InputField = { new = function(parent)
+        local field = control("input", parent)
+        field.contentMargin = {}
+        return field
+    end },
     Hook = { ONBUTTONPRESSED = "press", ONCLICK = "click", ONSCROLLWHEEL = "wheel", ONCONTENTCHANGED = "change", ONMOUSEOVER = "over" },
     InputFieldActionResult = { SUBMIT = 1, SUBMIT_ON_FOCUS_LOSS = 2, CONTENT_CHANGE = 3 },
     TextContentVisibilityMode = { VISIBLE = 1 }, InputFieldFilterMode = { NUMBERS_AS_TEXT = 1 },
@@ -212,7 +216,7 @@ assert(#necro.sections == 1 and #melee.sections == 0)
 assert(tabs.entries[6].text == "Misc" and misc.sections[1].name == "Bombs")
 assert(misc.sections[2].name == "Invention")
 assert(misc.sections[3].name == "God Books" and #misc.sections == 3)
-assert(misc.flowText.y > misc.sections[3].root.y and misc.flowText.height == 520)
+assert(misc.flowText.y > misc.sections[3].root.y and misc.flowText.height == 680)
 local miscRows
 for _, c in ipairs(controls) do
     if c.kind == "layer" and c.parent == misc.content then miscRows = c; break end
@@ -281,17 +285,24 @@ death.hooks.press()
 assert(rules.deathReclaim and saved.deathReclaim)
 assert(find(miscRows, "text", 48, 363).content == "Ushabti (empty)")
 assert(find(miscRows, "sprite", 8, 363).itemId == 40407)
-local flask = find(miscRows, "text", 48, 403)
+for index, vital in ipairs(require("supplies/vitals")) do
+    assert(find(miscRows, "text", 48, 403 + (index - 1) * 40).content == vital.name)
+    local suffix = find(miscRows, "text", -60, 405 + (index - 1) * 40)
+    assert(suffix.content == "%" and suffix.clickthrough)
+    assert(suffix.alignVertical == ui.AlignMode.CENTRE and suffix.height == 25)
+    assert(find(miscRows, "input", -104, 405 + (index - 1) * 40).contentMargin.right == 20)
+end
+local flask = find(miscRows, "text", 48, 563)
 assert(flask.content == "Blessed flask: warning unavailable")
-assert(find(miscRows, "sprite", 8, 403).itemId == 48680)
-local grace = find(miscRows, "text", 48, 443)
+assert(find(miscRows, "sprite", 8, 563).itemId == 48680)
+local grace = find(miscRows, "text", 48, 603)
 assert(grace.content == "Grace of the elves: warning unavailable")
-assert(find(miscRows, "sprite", 8, 443).itemId == 44548)
-assert(find(miscRows, "text", 48, 483).content == "Scrimshaw: warning unavailable")
-assert(find(miscRows, "sprite", 8, 483).itemId == 26295)
+assert(find(miscRows, "sprite", 8, 603).itemId == 44548)
+assert(find(miscRows, "text", 48, 643).content == "Scrimshaw: warning unavailable")
+assert(find(miscRows, "sprite", 8, 643).itemId == 26295)
 assert(find(miscRows, "text", 48, 83).content == "Item durability")
 assert(find(miscRows, "sprite", 8, 83).itemId == 2347)
-assert(miscRows.height == 520 and misc.sections[3].contentHeight == 600)
+assert(miscRows.height == 680 and misc.sections[3].contentHeight == 600)
 assert(find(miscRows, "text", 48, 243).content == "Sigil ability cooldowns")
 assert(find(miscRows, "text", 48, 123).content == "Beast of burden preset")
 local bobIcon = find(miscRows, "sprite", 10, 123)
@@ -902,7 +913,7 @@ host.height = 600
 refresh, destroy = require("warnings/settings-view").build(host, rules, function() end, prettyui)
 misc = tabs.pages[6]
 miscRows = find(misc.content, "layer", 14, misc.flowText.y)
-assert(find(miscRows, "text", 48, 3).content == "Blessed flask: warning unavailable")
+assert(find(miscRows, "text", 48, 3).content == "Health")
 assert(find(miscRows, "text", 48, 403).content == "Sign of life cooldown")
 assert(find(misc.sections[3].content, "text", 48, 43).content == "Custom book label")
 assert(find(misc.sections[3].content, "sprite", 8, 43).itemId == 123)

@@ -5,6 +5,7 @@ local named = { ["Death reclaim"] = 39559, ["Sign of life"] = 29290,
 local byName
 
 function icons.source(alert)
+    if alert.icon then return alert.icon end
     if alert.itemId then
         local spikes = require("supplies/armour-spikes")
         return alert.itemId == spikes.ruleId and spikes.itemIds[1] or alert.itemId

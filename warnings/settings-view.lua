@@ -388,8 +388,34 @@ function view.build(host, rules, onChange, prettyui)
         local parent = miscRows
         local y = group.count * rowHeight
         local frameEntry, background = settingRow(parent, y, {
-            name = name, icon = definition.icon, labelWidth = -85,
+            name = name, icon = definition.icon, labelWidth = definition.threshold and -165 or -85,
         })
+        local threshold
+        if definition.threshold then
+            threshold = input(parent, -104, y + 5, tostring(rules[definition.threshold]))
+            threshold:SetPos(-104, y + 5, 1, 0)
+            threshold:Setup(ui.TextContentVisibilityMode.VISIBLE, ui.InputFieldFilterMode.NUMBERS_AS_TEXT, 3)
+            threshold.contentMargin.right = 20
+            local suffix = text(parent, -60, y + 5, 16, "%")
+            suffix:SetPos(-60, y + 5, 1, 0)
+            suffix:SetSize(16, 25)
+            suffix.alignHorizontal = ui.AlignMode.CENTRE
+            suffix.alignVertical = ui.AlignMode.CENTRE
+            suffix.clickthrough = true
+            local maximum = definition.threshold == "adrenalineThreshold" and 150 or 100
+            tooltip(threshold, parent, "Warning threshold (%) from 0 to " .. maximum
+                .. "; warns below this value. 0 disables warnings.")
+            onSubmit(threshold, function()
+                local value = tonumber(threshold.content)
+                local old = rules[definition.threshold]
+                if settings.validPercentage(value, definition.threshold) then
+                    rules[definition.threshold] = value
+                    if settings.save(rules) then onChange(); return end
+                    rules[definition.threshold] = old
+                end
+                threshold.content = tostring(old)
+            end)
+        end
         local switch = track(ui.Check.new(parent))
         switch:SetPos(-30, y + 7, 1, 0); switch:SetSize(22, 22)
         switch.stylesheetID = id.StyleSheet.CHECKBOX_DEFAULT
@@ -421,6 +447,11 @@ function view.build(host, rules, onChange, prettyui)
         tooltip(switch, parent, definition.usage or "Enable or disable this warning")
         frameEntry.update = updateRow
         resetControls[5][#resetControls[5] + 1] = updateRow
+        if threshold then
+            resetControls[5][#resetControls[5] + 1] = function()
+                threshold.content = tostring(rules[definition.threshold])
+            end
+        end
         updateRow()
         group.count = group.count + 1
         currentSection = nil

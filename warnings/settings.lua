@@ -76,9 +76,18 @@ function settings.validPopupRows(value)
     return validInteger(value, 1, 20)
 end
 
+function settings.validPercentage(value, key)
+    return validInteger(value, 0, key == "adrenalineThreshold" and 150 or 100)
+end
+
 local function fromSaved(saved)
     if type(saved) ~= "table" then saved = {} end
     local rules = {}
+    for _, vital in ipairs(require("supplies/vitals")) do
+        rules[vital.key] = saved[vital.key] ~= false
+        local key = vital.key .. "Threshold"
+        rules[key] = settings.validPercentage(saved[key], key) and saved[key] or vital.threshold
+    end
     rules.checkOnPreset = saved.checkOnPreset ~= false
     rules.presetChatNotifications = saved.presetChatNotifications == true
     rules.checkOnBankClose = saved.checkOnBankClose == true
@@ -157,6 +166,11 @@ function settings.save(rules)
         sigilCooldowns = rules.sigilCooldowns == true,
         popupDuration = rules.popupDuration, popupRows = rules.popupRows,
         lowColour = colourValue.normalize(rules.lowColour), criticalColour = colourValue.normalize(rules.criticalColour) }
+    for _, vital in ipairs(require("supplies/vitals")) do
+        local key = vital.key .. "Threshold"
+        if not settings.validPercentage(rules[key], key) then return false end
+        data[vital.key], data[key] = rules[vital.key] == true, rules[key]
+    end
     if (rules.lowColour and not data.lowColour) or (rules.criticalColour and not data.criticalColour) then return false end
     for _, style in ipairs(styles) do
         if not rules.styles or not settings.valid(rules.styles[style]) then return false end

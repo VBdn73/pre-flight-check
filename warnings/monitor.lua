@@ -8,6 +8,14 @@ function monitor.new(rules)
 
     function instance.update(snapshot)
         local alerts = {}
+        for _, vital in ipairs(require("supplies/vitals")) do
+            local percent = snapshot.vitals and snapshot.vitals[vital.key]
+            if rules[vital.key] and type(percent) == "number" and percent >= 0
+                and percent < rules[vital.key .. "Threshold"] then
+                alerts[#alerts + 1] = { name = vital.name, icon = vital.icon, level = "low",
+                    message = string.format("%s: %d%% remaining", vital.name, math.floor(percent)) }
+            end
+        end
         if rules.deathReclaim and snapshot.deathReclaim then
             alerts[#alerts + 1] = { name = "Death reclaim",
                 message = "Items may be awaiting reclaim from Death", level = "critical" }
