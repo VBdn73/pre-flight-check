@@ -61,6 +61,8 @@ prf
 pon pre-flight-check
 ```
 
+To enable the chat access setting in the beta client, first run `ppr pre-flight-check;` in the client console.
+
 After Lua changes, use `prl pre-flight-check`; after manifest changes, run `prf` first. Run individual mocked tests with Lua 5.4, for example `lua tests/warning-integration.lua`. Also test in-client; mocked tests do not verify client behavior.
 
 Run the whole mocked suite from PowerShell (each file runs in a separate Lua process):

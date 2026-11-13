@@ -5,7 +5,7 @@ Some items are not currently possible due to API limitations and may depend on f
 
 ## General
 
-- 
+- Smoothen out the scrolling in the settings menu -> right now it goes in blocks of x rows instead of a smooth scroll.
 
 ## Supply and preparation checks
 
