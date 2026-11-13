@@ -1,4 +1,12 @@
 local scroll = require("warnings/settings-scroll")
+local page = { scrollbarVisible = true, position = 64 }
+function page:ScrollBy(delta) self.position = self.position + delta end
+local wheel = scroll.wheelHandler(page)
+assert(wheel({}, 1) == false and page.position == 96)
+assert(wheel({}, -2) == false and page.position == 32)
+page.scrollbarVisible = false
+assert(wheel({}, 1) == true and page.position == 32)
+
 local controller = {}
 function controller:RegisterClipTarget(target) self.target = target end
 local field = { interfaceID = 123, content = "1234", enabled = true,

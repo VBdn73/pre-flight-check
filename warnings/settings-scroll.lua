@@ -2,6 +2,14 @@
 -- clipping: the client can draw it outside an ancestor's scroll viewport.
 local scroll = {}
 
+function scroll.wheelHandler(page)
+    return function(_, delta)
+        if not page.scrollbarVisible then return true end
+        page:ScrollBy(delta * 32)
+        return false
+    end
+end
+
 function scroll.registerInput(controller, field)
     local target = { root = field, interfaceID = field.interfaceID }
     function target:_SetContentClipped(clipped)

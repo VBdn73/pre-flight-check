@@ -78,11 +78,7 @@ function view.build(host, rules, onChange, prettyui)
         local scroll = pages[pageIndex]
         local list = controls[pageIndex]
         list[#list + 1] = { control = control, section = currentSection, row = currentRow }
-        control:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.scroll", function(_, delta)
-            if not scroll.scrollbarVisible then return true end
-            scroll:ScrollBy(delta * 32)
-            return false
-        end)
+        control:Subscribe(ui.Hook.ONSCROLLWHEEL, "supplyCheck.scroll", settingsScroll.wheelHandler(scroll))
         return control
     end
     local originalText, originalInput, originalIcon = text, input, icon
@@ -152,7 +148,10 @@ function view.build(host, rules, onChange, prettyui)
         local checkbox
         checkbox = prettyui.CheckboxButton.new(pages[6].content, {
             { text = label, value = key, selected = rules[key] },
-        }, { width = 300, onChange = function(_, _, _, selected)
+        }, { width = 300,
+            -- PrettyUI binds this to both the root and its interactive choice rows.
+            _onScrollWheel = settingsScroll.wheelHandler(pages[6]),
+            onChange = function(_, _, _, selected)
             local old = rules[key]
             local oldChat = rules.presetChatNotifications
             if key == "lockCheckButton" and not rules.showCheckButton then
