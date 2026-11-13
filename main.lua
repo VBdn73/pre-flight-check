@@ -8,6 +8,7 @@ local presetTrigger = require("bank/preset-trigger")
 local presetMessages = require("bank/preset-messages")
 local portalTrigger = require("warnings/portal-trigger")
 local checkButton = require("warnings/check-button")
+local sigils = require("supplies/sigils")
 local manualCheckDeadline
 local portalCapture
 local portalCheckDeadline
@@ -125,6 +126,7 @@ Event.ServerLogic.Subscribe("supplyCheck.refresh", function()
 end)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
     now = event.logicTick / 50
+    sigils.setTick(canRead and event.logicTick or nil)
     checkButton.update(rules.showCheckButton and canRead, function()
         if not canRead or not now or not rules.showCheckButton then return end
         -- Manual checks never consume preset chat or depend on automatic triggers.
@@ -245,6 +247,7 @@ Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
         portalCapture, portalCheckDeadline = nil, nil
     end
     if not canRead then
+        sigils.setTick(nil)
         checkButton.close()
         manualCheckDeadline = nil
         popup.clear()

@@ -8,6 +8,7 @@ Get warnings about low supplies and other preparation issues when loading a bank
 - Warns about death reclaim items and the Sign of life, Excalibur and powerburst cooldowns (toggles under **Misc → Other**). Optional preset chat notifications report missing, insufficient or substituted items, beast of burden preset failures when the follower cannot carry items, and game-reported low item durability.
 - Shows a popup and keeps the latest check's warnings in the ribbon panel. A clean check clears the popup and shows zero notifications. Adjust thresholds, colours, popup duration and visible rows in plugin settings.
 - Does not load presets or perform game actions for you.
+- **Misc → Other → Sigil ability cooldowns** groups Aggression, Ingenuity of the Humans, Demon/Dragon/Undead/Vampyre Slayer, Limitless, Slayer's Insight, Slayer's Aggression and Vital Drain behind one toggle (on by default). Normal checks name each ability still on cooldown and show remaining seconds.
 
 ## How to use
 

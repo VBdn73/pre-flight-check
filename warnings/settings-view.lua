@@ -764,6 +764,7 @@ function view.build(host, rules, onChange, prettyui)
                     old.signOfLife, rules.signOfLife = rules.signOfLife, defaults.signOfLife
                     old.excalibur, rules.excalibur = rules.excalibur, defaults.excalibur
                     old.powerburst, rules.powerburst = rules.powerburst, defaults.powerburst
+                    old.sigilCooldowns, rules.sigilCooldowns = rules.sigilCooldowns, defaults.sigilCooldowns
                     old.deathReclaim, rules.deathReclaim = rules.deathReclaim, defaults.deathReclaim
                     old.itemDurability, rules.itemDurability = rules.itemDurability, defaults.itemDurability
                     old.beastOfBurden, rules.beastOfBurden = rules.beastOfBurden, defaults.beastOfBurden
@@ -784,6 +785,7 @@ function view.build(host, rules, onChange, prettyui)
                         rules.beastOfBurden = old.beastOfBurden
                         rules.excalibur = old.excalibur
                         rules.powerburst = old.powerburst
+                        rules.sigilCooldowns = old.sigilCooldowns
                     end
                     for index, rule in pairs(old) do if type(index) == "number" then rules[index] = rule end end
                 end

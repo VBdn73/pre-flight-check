@@ -88,6 +88,7 @@ local function fromSaved(saved)
     rules.signOfLife = saved.signOfLife ~= false
     rules.excalibur = saved.excalibur ~= false
     rules.powerburst = saved.powerburst ~= false
+    rules.sigilCooldowns = saved.sigilCooldowns ~= false
     rules.deathReclaim = saved.deathReclaim ~= false
     rules.itemDurability = saved.itemDurability == true
     rules.beastOfBurden = saved.beastOfBurden ~= false
@@ -151,6 +152,7 @@ function settings.save(rules)
         popupIconMode = rules.popupIconMode == true,
         excalibur = rules.excalibur == true,
         powerburst = rules.powerburst == true,
+        sigilCooldowns = rules.sigilCooldowns == true,
         popupDuration = rules.popupDuration, popupRows = rules.popupRows,
         lowColour = colourValue.normalize(rules.lowColour), criticalColour = colourValue.normalize(rules.criticalColour) }
     if (rules.lowColour and not data.lowColour) or (rules.criticalColour and not data.criticalColour) then return false end

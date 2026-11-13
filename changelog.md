@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added **Sigil ability cooldowns** under Misc → Other: one toggle for sigil cooldown warnings, naming each affected ability and showing remaining seconds. Enabled by default.
 - Added optional supply checks after detected travel through War's Retreat's two attuned portals, reaper portal and featured portal. Enable **Check on War's Retreat portal entry** in General. Checks are independent of preset and bank-close settings.
 - Portal checks preserve pending travel through interface confirmation dialogs, including God Wars Dungeon teleport warnings.
 

@@ -33,6 +33,8 @@ local panels = {
             usage = "Warns if your follower cannot carry the preset's items.<br><br>Requires:<br>- Check on preset load<br>- Preset chat notifications<br>- Chat access permission" },
         { key = "excalibur", name = "Excalibur cooldown", icon = 14632 },
         { key = "powerburst", name = "Powerburst cooldown", icon = 49095 },
+        { key = "sigilCooldowns", name = "Sigil ability cooldowns", icon = 47507,
+            usage = "Warns for sigil abilities still on cooldown, including slayer abilities, Limitless and Ingenuity of the Humans." },
         { itemId = 22370 }, { itemId = 22371 }, { itemId = 40407 },
         { name = "Blessed flask", icon = 48680, unavailable = true },
         { name = "Grace of the elves", icon = 44548, unavailable = true },

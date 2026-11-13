@@ -212,7 +212,7 @@ assert(#necro.sections == 1 and #melee.sections == 0)
 assert(tabs.entries[6].text == "Misc" and misc.sections[1].name == "Bombs")
 assert(misc.sections[2].name == "Invention")
 assert(misc.sections[3].name == "God Books" and #misc.sections == 3)
-assert(misc.flowText.y > misc.sections[3].root.y and misc.flowText.height == 480)
+assert(misc.flowText.y > misc.sections[3].root.y and misc.flowText.height == 520)
 local miscRows
 for _, c in ipairs(controls) do
     if c.kind == "layer" and c.parent == misc.content then miscRows = c; break end
@@ -279,19 +279,20 @@ assert(not rules.deathReclaim and not saved.deathReclaim)
 assert(not require("warnings/settings").load().deathReclaim)
 death.hooks.press()
 assert(rules.deathReclaim and saved.deathReclaim)
-assert(find(miscRows, "text", 48, 323).content == "Ushabti (empty)")
-assert(find(miscRows, "sprite", 8, 323).itemId == 40407)
-local flask = find(miscRows, "text", 48, 363)
+assert(find(miscRows, "text", 48, 363).content == "Ushabti (empty)")
+assert(find(miscRows, "sprite", 8, 363).itemId == 40407)
+local flask = find(miscRows, "text", 48, 403)
 assert(flask.content == "Blessed flask: warning unavailable")
-assert(find(miscRows, "sprite", 8, 363).itemId == 48680)
-local grace = find(miscRows, "text", 48, 403)
+assert(find(miscRows, "sprite", 8, 403).itemId == 48680)
+local grace = find(miscRows, "text", 48, 443)
 assert(grace.content == "Grace of the elves: warning unavailable")
-assert(find(miscRows, "sprite", 8, 403).itemId == 44548)
-assert(find(miscRows, "text", 48, 443).content == "Scrimshaw: warning unavailable")
-assert(find(miscRows, "sprite", 8, 443).itemId == 26295)
+assert(find(miscRows, "sprite", 8, 443).itemId == 44548)
+assert(find(miscRows, "text", 48, 483).content == "Scrimshaw: warning unavailable")
+assert(find(miscRows, "sprite", 8, 483).itemId == 26295)
 assert(find(miscRows, "text", 48, 83).content == "Item durability")
 assert(find(miscRows, "sprite", 8, 83).itemId == 2347)
-assert(miscRows.height == 480 and misc.sections[3].contentHeight == 600)
+assert(miscRows.height == 520 and misc.sections[3].contentHeight == 600)
+assert(find(miscRows, "text", 48, 243).content == "Sigil ability cooldowns")
 assert(find(miscRows, "text", 48, 123).content == "Beast of burden preset")
 local bobIcon = find(miscRows, "sprite", 10, 123)
 assert(bobIcon.sprite == 13216 and bobIcon.width == 32 and bobIcon.height == 32)
@@ -313,8 +314,9 @@ assert(not rules.powerburst and not saved.powerburst)
 assert(not require("warnings/settings").load().powerburst)
 powerburst.hooks.press()
 assert(rules.powerburst and saved.powerburst)
-assert(find(miscRows, "sprite", 8, 243).itemId == 22370)
-assert(find(miscRows, "sprite", 8, 283).itemId == 22371)
+assert(find(miscRows, "sprite", 8, 243).itemId == 47507)
+assert(find(miscRows, "sprite", 8, 283).itemId == 22370)
+assert(find(miscRows, "sprite", 8, 323).itemId == 22371)
 assert(find(misc.sections[3].content, "text", 8, 8).content
     == "Only equipped books are checked; backpack timers are unavailable.")
 for i, name in ipairs({ "Scripture of Jas", "Scripture of Wen", "Scripture of Bik",
@@ -877,7 +879,7 @@ assert(tabs.destroyed)
 -- Definitions, rather than renderer branches, control row/dropdown order and metadata.
 local panels = require("warnings/settings-panels")
 local miscDefinitions = panels[5].settings
-miscDefinitions[1], miscDefinitions[10] = miscDefinitions[10], miscDefinitions[1]
+miscDefinitions[1], miscDefinitions[11] = miscDefinitions[11], miscDefinitions[1]
 local books = panels[5].dropdowns[3].settings
 books[1], books[2] = books[2], books[1]
 books[1].name, books[1].icon = "Custom book label", 123
@@ -887,11 +889,11 @@ refresh, destroy = require("warnings/settings-view").build(host, rules, function
 misc = tabs.pages[6]
 miscRows = find(misc.content, "layer", 14, misc.flowText.y)
 assert(find(miscRows, "text", 48, 3).content == "Blessed flask: warning unavailable")
-assert(find(miscRows, "text", 48, 363).content == "Sign of life cooldown")
+assert(find(miscRows, "text", 48, 403).content == "Sign of life cooldown")
 assert(find(misc.sections[3].content, "text", 48, 43).content == "Custom book label")
 assert(find(misc.sections[3].content, "sprite", 8, 43).itemId == 123)
 destroy()
-miscDefinitions[1], miscDefinitions[10] = miscDefinitions[10], miscDefinitions[1]
+miscDefinitions[1], miscDefinitions[11] = miscDefinitions[11], miscDefinitions[1]
 books[1].name, books[1].icon = nil, nil
 books[1], books[2] = books[2], books[1]
 print("Warning settings view tests passed.")
