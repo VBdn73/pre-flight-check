@@ -291,6 +291,104 @@ load()
 chat(bobMessage, 109)
 time(80.7)
 assert(#alerts == 20 and alerts[20][1].name == "Beast of burden preset", "enabled beast of burden warning is displayed")
+-- Portal checks are independent, run after arrival, and never merge preset chat.
+rules.checkOnPreset, rules.checkOnBankClose, rules.presetChatNotifications = false, false, false
+local playerTile = { level = 0, x = 3290, z = 10150 }
+Player = { IsAvailable = function() return true end,
+    GetEntity = function() return { coordGrid = playerTile } end }
+local portalAvailable, portalAmount = true, 10
+package.loaded["supplies/inventory-reader"].read = function()
+    return { backpack = { available = portalAvailable, counts = {} },
+        equipment = { available = portalAvailable, counts = {} }, runeCounts = { [563] = portalAmount } }
+end
+local function enterPortal()
+    callbacks.menu({ entry = { verbText = "Enter", actionType = 2,
+        locData = { config = { id = 114762 }, coordGridX = 3290, coordGridZ = 10154 } } })
+end
+time(90)
+enterPortal()
+playerTile = { level = 0, x = 4609, z = 5130 }
+time(91)
+callbacks.server()
+assert(#alerts == 20, "portal checks default off")
+rules.checkOnPortalEntry = true
+playerTile = { level = 0, x = 3290, z = 10150 }
+time(92)
+enterPortal()
+callbacks.server()
+assert(#alerts == 20, "click alone does not check")
+callbacks.state({ newState = 40 })
+time(93)
+playerTile = { level = 0, x = 4609, z = 5130 }
+callbacks.state({ newState = 30 })
+portalAvailable = false
+time(94)
+callbacks.server()
+assert(#alerts == 20, "arrival waits for available inventory")
+portalAvailable = true
+time(94.6)
+callbacks.server()
+assert(#alerts == 21 and #alerts[21] == 1 and alerts[21][1].count == 10,
+    "portal check uses normal supply warnings, without preset chat")
+callbacks.server()
+assert(#alerts == 21, "arrival checks once")
+playerTile = { level = 0, x = 3290, z = 10150 }
+time(96)
+enterPortal()
+portalAmount = 200
+playerTile = { level = 0, x = 4609, z = 5130 }
+time(97)
+callbacks.server()
+assert(#lastBatch == 0 and not popupOpen, "clean portal check clears old warnings")
+playerTile = { level = 0, x = 3290, z = 10150 }
+time(98)
+enterPortal()
+callbacks.menu({ entry = { verbText = "Walk" } })
+portalAmount = 10
+playerTile = { level = 0, x = 4609, z = 5130 }
+time(99)
+callbacks.server()
+assert(#alerts == 21, "another action cancels a pending portal attempt")
+playerTile = { level = 0, x = 3290, z = 10150 }
+time(100)
+enterPortal()
+callbacks.state({ newState = 10 })
+callbacks.state({ newState = 30 })
+playerTile = { level = 0, x = 4609, z = 5130 }
+time(101)
+callbacks.server()
+assert(#alerts == 21, "logout discards pending portal attempts")
+-- GWD1 warning dialogs must not discard the entry attempt on Yes/checkbox.
+playerTile = { level = 0, x = 3290, z = 10150 }
+time(102)
+enterPortal()
+callbacks.menu({ entry = { verbText = "Select", componentData = { component = {} } } })
+callbacks.menu({ entry = { verbText = "Yes", componentData = { component = {} } } })
+time(103)
+callbacks.server()
+assert(#alerts == 21, "dialog clicks alone do not trigger supply checks")
+callbacks.state({ newState = 40 })
+playerTile = { level = 0, x = 4609, z = 5130 }
+callbacks.state({ newState = 30 })
+time(104)
+callbacks.server()
+assert(#alerts == 22 and alerts[22][1].count == 10,
+    "confirmed travel after interface confirmation checks supplies")
+callbacks.server()
+assert(#alerts == 22, "confirmation arrival only checks once")
+playerTile = { level = 0, x = 3290, z = 10150 }
+time(105)
+enterPortal()
+callbacks.menu({ entry = { verbText = "No", componentData = { component = {} } } })
+time(106)
+callbacks.server()
+assert(#alerts == 22, "declined dialog with no travel is silent")
+time(134)
+callbacks.menu({ entry = { verbText = "Yes", componentData = { component = {} } } })
+time(136)
+playerTile = { level = 0, x = 4609, z = 5130 }
+callbacks.server()
+assert(#alerts == 22, "dialog interactions do not extend the original timeout")
 callbacks.state({ newState = 40 })
 PluginShutdown()
 print("Warning integration tests passed.")

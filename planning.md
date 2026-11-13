@@ -19,9 +19,7 @@ Some items are not currently possible due to API limitations and may depend on f
 
 ## Warning triggers
 
-- Add an explicit button to trigger a supply check without loading a preset or closing the bank. 
-- Investigate displaying warning notifications when entering a War's Retreat portal.
-- Investigate displaying warning notifications when entering a specific boss instance or area, including how to identify the destination reliably.
+- Add an explicit button to trigger a supply check without loading a preset or closing the bank.
 - Investigate improving preset and bank-close trigger reliability and handling delayed or unavailable data; observed actions do not always confirm a successful preset load.
 
 ## Add supply warnings for

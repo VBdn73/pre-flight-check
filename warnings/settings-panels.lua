@@ -46,6 +46,8 @@ panels.general = { toggles = {
     { key = "presetChatNotifications", name = "Preset chat notifications", indent = 15,
         usage = "Reads preset withdrawal messages for notifications.<br><br>Requires:<br>- Check on preset load<br>- Chat access permission" },
     { key = "checkOnBankClose", name = "Check on bank close" },
+    { key = "checkOnPortalEntry", name = "Check on War's Retreat portal entry",
+        usage = "Checks supplies after detected travel through either attuned portal, the reaper portal or the featured portal. Independent of preset and bank checks. Uses a location-jump heuristic, not boss-instance detection." },
     { key = "popupIconMode", name = "Compact notification icons",
         usage = "Shows coloured warning icons with hover details in the main popup only. The ribbon is unchanged." },
 }, colours = {

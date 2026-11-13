@@ -19,6 +19,22 @@ Get warnings about low supplies and other preparation issues when loading a bank
 To receive preset withdrawal messages, enable **Preset chat notifications** in General and grant optional chat access. For game-reported low durability messages, also enable **Item durability** under Misc → Other.
 
 Enable **General → Compact notification icons** to replace the main popup's text list with coloured warning icons and hover details. This is off by default and does not affect the ribbon. **Visible notifications** limits the icon tiles before scrolling, rounded up to a complete row. Warning colours, dragging, duration, and **Keep open / Close** work in either display mode. The display choice applies to the next notification.
+
+Enable **General → Check on War's Retreat portal entry** (off by default) to run
+the normal supply checklist after travelling through either attuned portal, the
+reaper portal or the featured portal. This setting is independent of preset and
+bank-close checks and needs no chat permission. Clicking or walking toward a
+portal does not display warnings. A clean check clears old warnings as usual.
+
+Arrival uses the four observed portal configs/positions and a location-jump
+heuristic: a jump of more than 64 tiles from within 16 tiles of the portal to
+outside the Retreat mapsquare. This detects portal travel, not entry into the boss
+instance itself. An unrelated teleport from beside a pending portal could still
+match. Attempts expire after 30 seconds; another selected world action cancels the
+attempt. Interface clicks preserve the original deadline so teleport-warning
+dialogs can complete; they never trigger a check without detected travel.
+Inventory is read after arrival, retrying unavailable data for up to five
+seconds. Existing supply-reading and zero-count limitations still apply.
 **Beast of burden preset** under Misc → Other reports preset failures when the follower cannot carry items. This warning is on by default and requires the same preset chat settings and permission.
 
 ## Limitations

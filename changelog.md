@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added optional supply checks after detected travel through War's Retreat's two attuned portals, reaper portal and featured portal. Enable **Check on War's Retreat portal entry** in General. Checks are independent of preset and bank-close settings.
+- Portal checks preserve pending travel through interface confirmation dialogs, including God Wars Dungeon teleport warnings.
+
 ## 0.0.1 - 2026-11-08
 
 - Added supply checks on preset loads and optionally when closing the bank, covering runes, necromancy supplies, ammunition, armour spikes, consumables, Invention charge and god book time.

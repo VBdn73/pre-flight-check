@@ -193,8 +193,9 @@ function view.build(host, rules, onChange, prettyui)
             status.content = ""
         end
     end
+    local generalNumbersY = 45 + #panels.general.toggles * 35
     for i, definition in ipairs(panels.general.numbers) do
-        numberControl(185 + (i - 1) * 35, definition)
+        numberControl(generalNumbersY + (i - 1) * 35, definition)
     end
     local function colourControl(y, key, label, defaultHex)
         local title = text(pages[6].content, 10, y, 190, label)
@@ -248,10 +249,11 @@ function view.build(host, rules, onChange, prettyui)
             status.content = ""
         end
     end
+    local generalColoursY = generalNumbersY + #panels.general.numbers * 35
     for i, definition in ipairs(panels.general.colours) do
-        colourControl(255 + (i - 1) * 35, definition.key, definition.name, definition.default)
+        colourControl(generalColoursY + (i - 1) * 35, definition.key, definition.name, definition.default)
     end
-    pages[6]:SetContentHeight(325)
+    pages[6]:SetContentHeight(generalColoursY + #panels.general.colours * 35)
     pageIndex = 1
     local sections = { {}, {}, {}, {}, {} }
     local toggleLazy
@@ -747,7 +749,7 @@ function view.build(host, rules, onChange, prettyui)
             local old = {}
             if i == 6 then
                 dismissPicker()
-                for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do
+                for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "checkOnPortalEntry", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do
                     old[key], rules[key] = rules[key], defaults[key]
                 end
             else
@@ -769,7 +771,7 @@ function view.build(host, rules, onChange, prettyui)
             end
             if not settings.save(rules) then
                 if i == 6 then
-                    for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do rules[key] = old[key] end
+                    for _, key in ipairs({ "checkOnPreset", "presetChatNotifications", "checkOnBankClose", "checkOnPortalEntry", "popupIconMode", "popupDuration", "popupRows", "lowColour", "criticalColour" }) do rules[key] = old[key] end
                 else
                     rules.styles[styleNames[i]] = old.style
                     if i == 5 then

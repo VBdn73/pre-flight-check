@@ -6,6 +6,9 @@ local popup = require("warnings/popup")
 local ribbon = require("warnings/ribbon")
 local presetTrigger = require("bank/preset-trigger")
 local presetMessages = require("bank/preset-messages")
+local portalTrigger = require("warnings/portal-trigger")
+local portalCapture
+local portalCheckDeadline
 local bankState = require("bank/state").new()
 local prettyUILibrary = prettyui
 local rules = warningSettings.load()
@@ -36,6 +39,18 @@ local function showAlerts(alerts)
         return
     end
     popup.show(alerts, now, rules.popupDuration, prettyUILibrary, rules.popupRows, rules)
+end
+
+local function capturePortal(event)
+    if not rules.checkOnPortalEntry or not canRead or not now then
+        portalCapture = nil
+        return
+    end
+    -- Warning dialogs use interface actions for Yes/No and their checkbox.
+    -- Keep the original deadline: clicking a dialog is not evidence of travel.
+    if portalCapture and event.entry and event.entry.componentData then return end
+    portalCapture = nil -- Another world action cancels the previous attempt.
+    portalCapture = portalTrigger.begin(event.entry, now, portalTrigger.position())
 end
 
 -- Wait for server updates following the action before taking a fresh snapshot.
@@ -86,9 +101,28 @@ local function refresh()
     showAlerts(alerts)
 end
 
-Event.ServerLogic.Subscribe("supplyCheck.refresh", refresh)
+Event.ServerLogic.Subscribe("supplyCheck.refresh", function()
+    refresh()
+    if not rules.checkOnPortalEntry then portalCheckDeadline = nil end
+    if not portalCheckDeadline or not canRead or not now then return end
+    if now >= portalCheckDeadline then portalCheckDeadline = nil; return end
+    local snapshot = reader.read()
+    if not snapshot.backpack.available or not snapshot.equipment.available then return end
+    portalCheckDeadline = nil
+    -- Independent of preset chat collection and its settle timer.
+    showAlerts(monitor.update(snapshot))
+end)
 Event.Logic.Subscribe("supplyCheck.clock", function(event)
     now = event.logicTick / 50
+    if not rules.checkOnPortalEntry then portalCapture = nil; portalCheckDeadline = nil end
+    if portalCapture then
+        local capture, arrived = portalCapture, false
+        portalCapture, arrived = portalTrigger.advance(capture, now,
+            canRead and portalTrigger.position() or nil)
+        if arrived then
+            if rules.checkOnPortalEntry then portalCheckDeadline = now + 5 end
+        end
+    end
     if not rules.checkOnPreset or not rules.presetChatNotifications then
         clearPresetChat()
     end
@@ -168,6 +202,7 @@ Event.ContentLayerReady.Subscribe("supplyCheck.content", function(event)
     if not ok then print("[pre-flight-check] Ribbon creation failed: " .. tostring(err)) end
 end)
 Event.MiniMenuEntrySelected.Subscribe("supplyCheck.preset", function(event)
+    capturePortal(event)
     if not presetTrigger.isLoad(event.entry) then return end
     beginPresetChat()
     if rules.checkOnBankClose and canRead and now and bankState.isMainPanelOpen() then
@@ -179,6 +214,10 @@ Event.MiniMenuEntrySelected.Subscribe("supplyCheck.preset", function(event)
 end)
 Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
     canRead = event.newState == 30 -- GameState.GAME
+    -- Preserve the approach across LOADING, but never across logout/login.
+    if not canRead and event.newState ~= 40 then
+        portalCapture, portalCheckDeadline = nil, nil
+    end
     if not canRead then
         popup.clear()
         bankState.reset()
@@ -190,6 +229,8 @@ Event.GameStateChanged.Subscribe("supplyCheck.state", function(event)
 end)
 
 function PluginShutdown()
+    portalCapture = nil
+    portalCheckDeadline = nil
     refreshSettings = nil
     if destroySettings then pcall(destroySettings); destroySettings = nil end
     popup.clear()
