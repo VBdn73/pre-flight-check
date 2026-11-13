@@ -153,20 +153,17 @@ function view.build(host, rules, onChange, prettyui)
             _onScrollWheel = settingsScroll.wheelHandler(pages[6]),
             onChange = function(_, _, _, selected)
             local old = rules[key]
-            local oldChat = rules.presetChatNotifications
             if key == "lockCheckButton" and not rules.showCheckButton then
                 checkbox:SetSelected(key, rules[key], false)
                 return
             end
             if key == "presetChatNotifications" and not rules.checkOnPreset then
-                checkbox:SetSelected(key, false, false)
+                checkbox:SetSelected(key, rules[key], false)
                 return
             end
             rules[key] = selected
-            if key == "checkOnPreset" and not selected then rules.presetChatNotifications = false end
             if not settings.save(rules) then
                 rules[key] = old
-                rules.presetChatNotifications = oldChat
                 checkbox:SetSelected(key, old, false)
                 print("[pre-flight-check] Could not save check setting.")
             else

@@ -77,7 +77,9 @@ assert(not settings.load().excalibur, "explicitly disabled Excalibur warning rem
 assert(not settings.load().signOfLife, "explicitly disabled sign warning remains disabled")
 saved.checkOnPreset = false
 assert(not settings.load().checkOnPreset, "explicitly disabled preset check remains disabled")
-assert(not settings.load().presetChatNotifications, "chat notifications cannot load enabled without preset checks")
+assert(settings.load().presetChatNotifications, "chat notification choice survives disabled preset checks")
+assert(settings.save(settings.load()))
+assert(not saved.checkOnPreset and saved.presetChatNotifications, "disabled preset checks preserve saved chat choice")
 saved.checkOnPreset = nil
 assert(settings.load().checkOnPreset, "missing preset setting uses the default")
 saved.signOfLife = nil

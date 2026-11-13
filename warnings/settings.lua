@@ -80,7 +80,7 @@ local function fromSaved(saved)
     if type(saved) ~= "table" then saved = {} end
     local rules = {}
     rules.checkOnPreset = saved.checkOnPreset ~= false
-    rules.presetChatNotifications = rules.checkOnPreset and saved.presetChatNotifications == true
+    rules.presetChatNotifications = saved.presetChatNotifications == true
     rules.checkOnBankClose = saved.checkOnBankClose == true
     rules.checkOnPortalEntry = saved.checkOnPortalEntry == true
     rules.showCheckButton = saved.showCheckButton == true
@@ -144,7 +144,7 @@ end
 function settings.save(rules)
     if not settings.validDuration(rules.popupDuration) or not settings.validPopupRows(rules.popupRows) then return false end
     local data = { styles = {}, checkOnPreset = rules.checkOnPreset == true,
-        presetChatNotifications = rules.checkOnPreset == true and rules.presetChatNotifications == true,
+        presetChatNotifications = rules.presetChatNotifications == true,
         checkOnBankClose = rules.checkOnBankClose == true, signOfLife = rules.signOfLife == true,
         deathReclaim = rules.deathReclaim == true, itemDurability = rules.itemDurability == true,
         beastOfBurden = rules.beastOfBurden == true,
