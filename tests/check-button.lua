@@ -18,7 +18,14 @@ local function new(host)
     return control
 end
 ui = { Interfaces = { GetComponent = function() return parent end },
-    Layer = { new = new }, Button = { new = new }, Text = { new = new },
+    Layer = { new = new }, Button = { new = function(host)
+        local item = new(host)
+        item.isButton = true
+        return item
+    end }, Text = { new = function(host)
+        assert(not host.isButton, "native buttons cannot contain child controls")
+        return new(host)
+    end },
     AlignMode = { CENTRE = 1 }, Hook = { ONBUTTONPRESSED = "press", ONCLICK = "click",
         ONHOLD = "hold", ONRELEASE = "release", ONDRAGCOMPLETE = "complete" } }
 id = { Component = { TOPLEVEL_V2__PLUGIN_BUILD_LAYER_TOP = 1 },
@@ -29,18 +36,30 @@ button.update(false, check)
 assert(#components == 0)
 button.update(true, check)
 assert(#components == 4)
-local root, control, handle = components[1], components[2], components[4]
+local root, skin, handle, label = components[1], components[2], components[3], components[4]
+assert(skin.stylesheetID == id.StyleSheet.BUTTON_DEFAULT and handle.clickthrough == false,
+    "drag layer must receive input above the styled button")
+assert(label.parent == root and label.clickthrough and root.clickthrough,
+    "label must use a supported container without intercepting button input")
 assert(handle.size[1] == 36 and handle.size[2] == 36, "whole square button is draggable")
 handle.hooks.click(nil, 50, 14)
 assert(checks == 0, "wait for release before checking")
+assert(skin.size[1] == 36 and skin.size[2] == 36, "press must not expand the skin")
 handle.hooks.hold(nil, 71, 115) -- One-pixel jitter is still a click.
 handle.hooks.release()
 handle.hooks.complete()
 assert(checks == 1)
 handle.hooks.click(nil, 5, 5)
+assert(handle.clickthrough == false and handle.size[3] == 1 and handle.size[4] == 1,
+    "held button captures fast movement across the overlay")
+assert(label.xyGlobal.x == 0 and label.xyGlobal.y == 0,
+    "caption stays over the button while the capture layer expands")
 handle.hooks.hold(nil, 225, 255)
 handle.hooks.release()
 assert(saved.x == 220 and saved.y == 250 and checks == 1, "dragging must not run a check")
+assert(root.clickthrough and root.size[1] == 36 and root.size[2] == 36,
+    "release restores the click-through caption layer")
+assert(label.xyGlobal.x == 0 and label.xyGlobal.y == 0, "release restores caption offset")
 button.update(true, check)
 assert(#components == 4, "reuse controls")
 button.close()
@@ -51,7 +70,7 @@ parent.width, parent.height = 20, 20
 button.update(true, check)
 assert(components[5].xyGlobal.x == 0 and components[5].xyGlobal.y == 0)
 button.update(false, check)
-assert(components[5].destroyed and components[8].destroyed)
+assert(components[5].destroyed and components[7].destroyed)
 saved = { x = 0 / 0, y = 100 }
 parent.width, parent.height = 800, 600
 button.update(true, check)
@@ -67,7 +86,7 @@ end
 saved = { x = 100, y = 120 }
 local start = #components
 button.update(true, check)
-local scaledRoot, scaledHandle = components[start + 1], components[start + 4]
+local scaledRoot, scaledHandle = components[start + 1], components[start + 3]
 for _ = 1, 100 do button.update(true, check) end
 assert(scaledRoot.xyGlobal.x == 240 and scaledRoot.xyGlobal.y == 300, "updates must not cause global-coordinate drift")
 -- Raw mouse motion is converted once using interface scale.
@@ -76,7 +95,9 @@ local mouse = { x = 250, y = 310 }
 Mouse = { GetPosition = function() return mouse end }
 scaledHandle.hooks.click(nil, 5, 5)
 mouse = { x = 330, y = 370 }
-scaledHandle.hooks.hold(nil, 0, 0)
+button.update(true, check) -- Fast motion may skip hold events entirely.
+assert(scaledRoot.xyGlobal.x == 320 and scaledRoot.xyGlobal.y == 360,
+    "active drag follows raw mouse on updates without hold events")
 scaledHandle.hooks.release()
 assert(saved.x == 140 and saved.y == 150, "scaled dragging follows mouse deltas")
 for _ = 1, 100 do button.update(true, check) end

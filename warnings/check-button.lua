@@ -1,7 +1,8 @@
 -- Persistent, optional manual-check control on the game's overlay layer.
 local button = {}
-local root, handle, host, drag
+local root, handle, host, drag, skin
 local positionX, positionY
+local moveDrag
 local width, height = 36, 36
 local positionKey = "supplyWarnings.checkButtonPosition"
 
@@ -21,6 +22,7 @@ local function placeHandle()
     handle:SetPos(positionX, positionY)
     handle:SetSize(width, height)
     handle:MoveToFront()
+    root:MoveToFront() -- Click-through label layer stays above the native button.
 end
 
 local function mousePosition()
@@ -31,8 +33,10 @@ end
 
 function button.close()
     drag = nil
+    moveDrag = nil
     if handle then pcall(function() handle:Destroy() end) end
     if root then pcall(function() root:Destroy() end) end
+    skin = nil
     root, handle, host = nil, nil, nil
     positionX, positionY = nil, nil
 end
@@ -42,6 +46,12 @@ function button.update(enabled, onCheck)
     local parent = ui.Interfaces:GetComponent(id.Component.TOPLEVEL_V2__PLUGIN_BUILD_LAYER_TOP)
     if not parent then button.close(); return end
     if root and host == parent then
+        skin.rgba = drag and 0xAAAAAAFF or (handle.isMouseOver and 0xFFFFFFFF or 0xCCCCCCFF)
+        if drag and moveDrag and drag.raw then
+            -- Hold events can be sparse during fast motion. Follow the raw
+            -- cursor on every plugin update as well, using the same delta logic.
+            moveDrag(nil, drag.x, drag.y)
+        end
         if not drag then
             positionX, positionY = clamp(positionX, positionY)
             root:SetPos(positionX, positionY)
@@ -59,12 +69,19 @@ function button.update(enabled, onCheck)
         if not loaded or not valid(position) then position = { x = 20, y = 100 } end
         positionX, positionY = clamp(position.x, position.y)
         root:SetPos(positionX, positionY)
-        local control = ui.Button.new(root)
-        control:SetPos(0, 0); control:SetSize(width, height)
-        control.stylesheetID = id.StyleSheet.BUTTON_DEFAULT
-        control.clickthrough = true -- The overlay handles both clicks and drags.
+        skin = ui.Button.new(root)
+        skin:SetPos(0, 0)
+        skin:SetSize(width, height)
+        skin.stylesheetID = id.StyleSheet.BUTTON_DEFAULT
+        skin.clickthrough = true
+        skin.rgba = 0xCCCCCCFF
+        handle = ui.Layer.new(host)
+        handle.clickthrough = false
+        placeHandle()
+        local caption
         local function label(x, w, text)
             local item = ui.Text.new(root)
+            caption = item
             item:SetPos(x, 0); item:SetSize(w, height)
             item.font = id.Font.MUSEO_SANS_11PT_REGULAR
             item.alignHorizontal, item.alignVertical = ui.AlignMode.CENTRE, ui.AlignMode.CENTRE
@@ -72,23 +89,22 @@ function button.update(enabled, onCheck)
             item.content = text
         end
         label(0, width, "PFC")
-        handle = ui.Layer.new(host)
-        handle.clickthrough = false
-        placeHandle()
         handle:Subscribe(ui.Hook.ONCLICK, "supplyCheck.buttonDragStart", function(_, x, y)
             if type(x) ~= "number" or type(y) ~= "number" then return false end
             local raw = mousePosition()
             local scale = (game and game.options and game.options.InterfaceScale
                 and tonumber(game.options.InterfaceScale.setting) or 100) / 100
             if scale <= 0 then scale = 1 end
-            -- ONCLICK is button-local; ONHOLD becomes host-local after expansion.
             drag = { x = positionX + x, y = positionY + y, rootX = positionX,
                 rootY = positionY, raw = raw, scale = scale }
-            handle:SetPos(0, 0); handle:SetSize(0, 0, 1, 1)
+            -- Capture fast motion outside the button without stretching its skin.
+            handle:SetPos(0, 0)
+            handle:SetSize(0, 0, 1, 1)
             handle:MoveToFront()
+            skin.rgba = 0xAAAAAAFF
             return false
         end)
-        handle:Subscribe(ui.Hook.ONHOLD, "supplyCheck.buttonDragMove", function(_, x, y)
+        local function move(_, x, y)
             if not drag or type(x) ~= "number" or type(y) ~= "number" then return false end
             local raw = mousePosition()
             local dx, dy = x - drag.x, y - drag.y
@@ -98,8 +114,13 @@ function button.update(enabled, onCheck)
             drag.moved = true
             drag.lastX, drag.lastY = clamp(math.floor(drag.rootX + dx + 0.5), math.floor(drag.rootY + dy + 0.5))
             positionX, positionY = drag.lastX, drag.lastY
-            root:SetPos(drag.lastX, drag.lastY)
+            root:SetPos(positionX, positionY)
             return false
+        end
+        moveDrag = move
+        root:Subscribe(ui.Hook.ONHOLD, "supplyCheck.buttonDragCapture", move)
+        handle:Subscribe(ui.Hook.ONHOLD, "supplyCheck.buttonDragMove", function(_, x, y)
+            return move(nil, x, y)
         end)
         local function finish()
             local clicked = drag and not drag.moved
@@ -110,12 +131,19 @@ function button.update(enabled, onCheck)
                 if not saved or result ~= true then print("[pre-flight-check] Could not save check button position") end
             end
             drag = nil
+            root.clickthrough = true
+            root:SetPos(positionX, positionY)
+            root:SetSize(width, height)
+            caption:SetPos(0, 0)
+            skin.rgba = 0xCCCCCCFF
             placeHandle()
             if clicked then onCheck() end
             return false
         end
         handle:Subscribe(ui.Hook.ONRELEASE, "supplyCheck.buttonDragEnd", finish)
         handle:Subscribe(ui.Hook.ONDRAGCOMPLETE, "supplyCheck.buttonDragComplete", finish)
+        root:Subscribe(ui.Hook.ONRELEASE, "supplyCheck.buttonCaptureEnd", finish)
+        root:Subscribe(ui.Hook.ONDRAGCOMPLETE, "supplyCheck.buttonCaptureComplete", finish)
     end)
     if not ok then
         button.close()
