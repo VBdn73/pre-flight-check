@@ -15,6 +15,13 @@ kind, alert = parse("Perfect plus potion (1) could not be found. Perfect plus po
 assert(kind == "issue" and alert.name == "Perfect plus potion (1)" and alert.level == "low" and alert.status == "DOSE")
 kind, alert = parse("Item could not be found: Powder of penance", 109)
 assert(kind == "issue" and alert.name == "Powder of penance" and alert.level == "critical")
+local bobMessage = "Unable to load beast of burden preset as this follower can't hold any items."
+for _, chatType in ipairs({ 0, 4, 109 }) do
+    kind, alert = parse("<col=ff0000>" .. bobMessage .. "</col>", chatType)
+    assert(kind == "issue" and alert.name == "Beast of burden preset")
+    assert(alert.level == "critical" and alert.status == "FAILED" and alert.message == bobMessage)
+end
+assert(not parse(bobMessage, 2))
 -- Ignore unrelated chat and malformed charge warnings.
 assert(not parse("Item could not be found: Ectoplasm", 2))
 assert(not parse("Unrelated message"))

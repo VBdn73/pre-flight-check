@@ -87,6 +87,7 @@ local function fromSaved(saved)
     rules.powerburst = saved.powerburst ~= false
     rules.deathReclaim = saved.deathReclaim ~= false
     rules.itemDurability = saved.itemDurability == true
+    rules.beastOfBurden = saved.beastOfBurden ~= false
     rules.popupDuration = settings.validDuration(saved.popupDuration) and saved.popupDuration or 4
     rules.popupRows = settings.validPopupRows(saved.popupRows) and saved.popupRows or 8
     rules.lowColour = colourValue.normalize(saved.lowColour)
@@ -136,6 +137,7 @@ function settings.save(rules)
         presetChatNotifications = rules.checkOnPreset == true and rules.presetChatNotifications == true,
         checkOnBankClose = rules.checkOnBankClose == true, signOfLife = rules.signOfLife == true,
         deathReclaim = rules.deathReclaim == true, itemDurability = rules.itemDurability == true,
+        beastOfBurden = rules.beastOfBurden == true,
         excalibur = rules.excalibur == true,
         powerburst = rules.powerburst == true,
         popupDuration = rules.popupDuration, popupRows = rules.popupRows,

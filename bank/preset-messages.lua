@@ -12,6 +12,9 @@ function messages.parse(event)
     if text == "Your preset is being withdrawn. Please see below for any issues whilst trying to load it..." then
         return "start"
     end
+    if text == "Unable to load beast of burden preset as this follower can't hold any items." then
+        return "issue", { name = "Beast of burden preset", message = text, level = "critical", status = "FAILED", setting = "beastOfBurden" }
+    end
     local name = text:match("^Item could not be found: (.+)$")
     if name then return "issue", { name = name, message = text, level = "critical", status = "MISSING" } end
     name = text:match("^Item could not be found in the quantity required: (.+)$")

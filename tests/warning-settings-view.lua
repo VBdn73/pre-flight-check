@@ -11,6 +11,7 @@ local function control(kind, parent)
     function c:Setup() end
     function c:Destroy() self.destroyed = true end
     function c:SetAssociatedObject(itemId, ...)
+        assert(type(itemId) == "number", "SetAssociatedObject requires a numeric item ID")
         assert(select("#", ...) == 0, "SetAssociatedObject takes one argument")
         self.itemId = itemId
     end
@@ -173,7 +174,7 @@ assert(#necro.sections == 1 and #melee.sections == 0)
 assert(tabs.entries[6].text == "Misc" and misc.sections[1].name == "Bombs")
 assert(misc.sections[2].name == "Invention")
 assert(misc.sections[3].name == "God Books" and #misc.sections == 3)
-assert(misc.flowText.y > misc.sections[3].root.y and misc.flowText.height == 440)
+assert(misc.flowText.y > misc.sections[3].root.y and misc.flowText.height == 480)
 local miscRows
 for _, c in ipairs(controls) do
     if c.kind == "layer" and c.parent == misc.content then miscRows = c; break end
@@ -196,16 +197,24 @@ local style = magic.content
 local sign = find(miscRows, "check", -30, 7)
 local death = find(miscRows, "check", -30, 47)
 local durability = find(miscRows, "check", -30, 87)
+local bob = find(miscRows, "check", -30, 127)
 PluginPermissions = { chatAccess = 1 }
 local permission = false
 Plugin = { HasPermission = function() return permission end }
 assert(not rules.itemDurability)
+assert(rules.beastOfBurden)
+bob.hooks.press()
+assert(not rules.beastOfBurden)
 durability.hooks.press()
 assert(not rules.itemDurability)
 rules.presetChatNotifications = true
 durability.hooks.press()
 assert(not rules.itemDurability)
 permission = true
+bob.hooks.press()
+assert(rules.beastOfBurden and saved.beastOfBurden and require("warnings/settings").load().beastOfBurden)
+bob.hooks.press()
+assert(not rules.beastOfBurden and not saved.beastOfBurden)
 durability.hooks.press()
 assert(rules.itemDurability and saved.itemDurability and require("warnings/settings").load().itemDurability)
 durability.hooks.press()
@@ -218,39 +227,42 @@ assert(not rules.deathReclaim and not saved.deathReclaim)
 assert(not require("warnings/settings").load().deathReclaim)
 death.hooks.press()
 assert(rules.deathReclaim and saved.deathReclaim)
-assert(find(miscRows, "text", 48, 283).content == "Ushabti (empty)")
-assert(find(miscRows, "sprite", 8, 283).itemId == 40407)
-local flask = find(miscRows, "text", 48, 323)
+assert(find(miscRows, "text", 48, 323).content == "Ushabti (empty)")
+assert(find(miscRows, "sprite", 8, 323).itemId == 40407)
+local flask = find(miscRows, "text", 48, 363)
 assert(flask.content == "Blessed flask: warning unavailable")
-assert(find(miscRows, "sprite", 8, 323).itemId == 48680)
-local grace = find(miscRows, "text", 48, 363)
+assert(find(miscRows, "sprite", 8, 363).itemId == 48680)
+local grace = find(miscRows, "text", 48, 403)
 assert(grace.content == "Grace of the elves: warning unavailable")
-assert(find(miscRows, "sprite", 8, 363).itemId == 44548)
-assert(find(miscRows, "text", 48, 403).content == "Scrimshaw: warning unavailable")
-assert(find(miscRows, "sprite", 8, 403).itemId == 26295)
+assert(find(miscRows, "sprite", 8, 403).itemId == 44548)
+assert(find(miscRows, "text", 48, 443).content == "Scrimshaw: warning unavailable")
+assert(find(miscRows, "sprite", 8, 443).itemId == 26295)
 assert(find(miscRows, "text", 48, 83).content == "Item durability")
 assert(find(miscRows, "sprite", 8, 83).itemId == 2347)
-assert(miscRows.height == 440 and misc.sections[3].contentHeight == 840)
-assert(find(miscRows, "text", 48, 123).content == "Excalibur cooldown")
-assert(find(miscRows, "sprite", 8, 123).itemId == 14632)
-local excalibur = find(miscRows, "check", -30, 127)
+assert(miscRows.height == 480 and misc.sections[3].contentHeight == 840)
+assert(find(miscRows, "text", 48, 123).content == "Beast of burden preset")
+local bobIcon = find(miscRows, "sprite", 10, 123)
+assert(bobIcon.sprite == 13216 and bobIcon.width == 32 and bobIcon.height == 32)
+assert(find(miscRows, "text", 48, 163).content == "Excalibur cooldown")
+assert(find(miscRows, "sprite", 8, 163).itemId == 14632)
+local excalibur = find(miscRows, "check", -30, 167)
 assert(excalibur.value and rules.excalibur)
 excalibur.hooks.press()
 assert(not rules.excalibur and not saved.excalibur)
 assert(not require("warnings/settings").load().excalibur)
 excalibur.hooks.press()
 assert(rules.excalibur and saved.excalibur)
-assert(find(miscRows, "text", 48, 163).content == "Powerburst cooldown")
-assert(find(miscRows, "sprite", 8, 163).itemId == 49095)
-local powerburst = find(miscRows, "check", -30, 167)
+assert(find(miscRows, "text", 48, 203).content == "Powerburst cooldown")
+assert(find(miscRows, "sprite", 8, 203).itemId == 49095)
+local powerburst = find(miscRows, "check", -30, 207)
 assert(powerburst.value and rules.powerburst)
 powerburst.hooks.press()
 assert(not rules.powerburst and not saved.powerburst)
 assert(not require("warnings/settings").load().powerburst)
 powerburst.hooks.press()
 assert(rules.powerburst and saved.powerburst)
-assert(find(miscRows, "sprite", 8, 203).itemId == 22370)
-assert(find(miscRows, "sprite", 8, 243).itemId == 22371)
+assert(find(miscRows, "sprite", 8, 243).itemId == 22370)
+assert(find(miscRows, "sprite", 8, 283).itemId == 22371)
 assert(find(misc.sections[3].content, "text", 8, 8).content
     == "Only equipped books are checked; backpack timers are unavailable.")
 for i, name in ipairs({ "Scripture of Jas", "Scripture of Wen", "Scripture of Bik",
@@ -757,7 +769,7 @@ assert(tabs.destroyed)
 -- Definitions, rather than renderer branches, control row/dropdown order and metadata.
 local panels = require("warnings/settings-panels")
 local miscDefinitions = panels[5].settings
-miscDefinitions[1], miscDefinitions[9] = miscDefinitions[9], miscDefinitions[1]
+miscDefinitions[1], miscDefinitions[10] = miscDefinitions[10], miscDefinitions[1]
 local books = panels[5].dropdowns[3].settings
 books[1], books[2] = books[2], books[1]
 books[1].name, books[1].icon = "Custom book label", 123
@@ -767,11 +779,11 @@ refresh, destroy = require("warnings/settings-view").build(host, rules, function
 misc = tabs.pages[6]
 miscRows = find(misc.content, "layer", 14, misc.flowText.y)
 assert(find(miscRows, "text", 48, 3).content == "Blessed flask: warning unavailable")
-assert(find(miscRows, "text", 48, 323).content == "Sign of life cooldown")
+assert(find(miscRows, "text", 48, 363).content == "Sign of life cooldown")
 assert(find(misc.sections[3].content, "text", 48, 43).content == "Custom book label")
 assert(find(misc.sections[3].content, "sprite", 8, 43).itemId == 123)
 destroy()
-miscDefinitions[1], miscDefinitions[9] = miscDefinitions[9], miscDefinitions[1]
+miscDefinitions[1], miscDefinitions[10] = miscDefinitions[10], miscDefinitions[1]
 books[1].name, books[1].icon = nil, nil
 books[1], books[2] = books[2], books[1]
 print("Warning settings view tests passed.")

@@ -35,7 +35,12 @@ end
 local function icon(parent, x, y, itemId)
     local sprite = ui.Sprite.new(parent)
     sprite:SetPos(x, y); sprite:SetSize(36, 32)
-    sprite:SetAssociatedObject(itemId)
+    if type(itemId) == "table" then
+        sprite:SetPos(x + 2, y); sprite:SetSize(32, 32)
+        sprite.sprite = itemId.sprite
+    else
+        sprite:SetAssociatedObject(itemId)
+    end
     return sprite
 end
 
@@ -361,7 +366,7 @@ function view.build(host, rules, onChange, prettyui)
         end
         switch:Subscribe(ui.Hook.ONBUTTONPRESSED, function()
             local old = rules[key]
-            if key == "itemDurability" and not old then
+            if (key == "itemDurability" or key == "beastOfBurden") and not old then
                 local ok, permitted = pcall(function() return Plugin.HasPermission(PluginPermissions.chatAccess) end)
                 if not rules.checkOnPreset or not rules.presetChatNotifications or not ok or not permitted then
                     return true
@@ -746,6 +751,7 @@ function view.build(host, rules, onChange, prettyui)
                     old.powerburst, rules.powerburst = rules.powerburst, defaults.powerburst
                     old.deathReclaim, rules.deathReclaim = rules.deathReclaim, defaults.deathReclaim
                     old.itemDurability, rules.itemDurability = rules.itemDurability, defaults.itemDurability
+                    old.beastOfBurden, rules.beastOfBurden = rules.beastOfBurden, defaults.beastOfBurden
                 end
                 for index, rule in ipairs(rules) do
                     if settings.style(rule.itemId) == style then
@@ -760,6 +766,7 @@ function view.build(host, rules, onChange, prettyui)
                     rules.styles[styleNames[i]] = old.style
                     if i == 5 then
                         rules.signOfLife, rules.deathReclaim, rules.itemDurability = old.signOfLife, old.deathReclaim, old.itemDurability
+                        rules.beastOfBurden = old.beastOfBurden
                         rules.excalibur = old.excalibur
                         rules.powerburst = old.powerburst
                     end

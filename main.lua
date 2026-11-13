@@ -118,7 +118,8 @@ Event.ChatMessage.Subscribe("supplyCheck.presetMessages", function(event)
     local kind, alert = presetMessages.parse(event)
     if kind == "start" then
         chatAlerts, chatUntil, chatReady = {}, now + 5, now + presetSettleDelay
-    elseif (kind == "issue" or (kind == "charge" and rules.itemDurability)) and chatUntil and now < chatUntil then
+    elseif (kind == "issue" or (kind == "charge" and rules.itemDurability))
+        and (not alert.setting or rules[alert.setting]) and chatUntil and now < chatUntil then
         chatAlerts[#chatAlerts + 1] = alert
         chatReady = now + presetSettleDelay
     end

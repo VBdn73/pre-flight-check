@@ -29,6 +29,8 @@ local panels = {
         { key = "deathReclaim", name = "Death reclaim", icon = 39559 },
         { key = "itemDurability", name = "Item durability", icon = 2347,
             usage = "Requires preset checks, preset chat notifications, and chat access permission. Reports charge warnings from preset chat." },
+        { key = "beastOfBurden", name = "Beast of burden preset", icon = { sprite = 13216 },
+            usage = "Requires preset checks, preset chat notifications, and chat access permission. Warns when the follower cannot carry items for the beast of burden preset." },
         { key = "excalibur", name = "Excalibur cooldown", icon = 14632 },
         { key = "powerburst", name = "Powerburst cooldown", icon = 49095 },
         { itemId = 22370 }, { itemId = 22371 }, { itemId = 40407 },
