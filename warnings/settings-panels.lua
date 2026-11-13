@@ -46,6 +46,8 @@ panels.general = { toggles = {
     { key = "presetChatNotifications", name = "Preset chat notifications", indent = 15,
         usage = "Reads preset withdrawal messages for notifications.<br><br>Requires:<br>- Check on preset load<br>- Chat access permission" },
     { key = "checkOnBankClose", name = "Check on bank close" },
+    { key = "popupIconMode", name = "Compact notification icons",
+        usage = "Shows coloured warning icons with hover details in the main popup only. The ribbon is unchanged." },
 }, colours = {
     { key = "lowColour", name = "Low warning colour", default = "#FF9429" },
     { key = "criticalColour", name = "Critical warning colour", default = "#F24033" },
@@ -54,7 +56,7 @@ panels.general = { toggles = {
         usage = "How long notifications remain visible, from 1 to 3600 seconds",
         validate = settings.validDuration, invalid = "Invalid (1-3600)" },
     { key = "popupRows", name = "Visible notifications",
-        usage = "Maximum visible notifications in the popup, from 1 to 20",
+        usage = "Maximum visible notifications in the popup, from 1 to 20. In icon mode this limits tiles before scrolling (rounded up to a full row).",
         validate = settings.validPopupRows, invalid = "Invalid (1-20)" },
 } }
 

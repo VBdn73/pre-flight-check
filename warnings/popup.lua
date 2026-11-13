@@ -3,6 +3,8 @@ local popup = {}
 local root, expires, scroll, hoverTargets, drag, pinned, dragHandle
 local rowHeight = 36
 local positionKey = "supplyWarnings.popupPosition"
+local iconView = require("warnings/popup-icons")
+local tooltips = {}
 
 local function validPosition(value)
     return type(value) == "table" and type(value.x) == "number" and type(value.y) == "number"
@@ -10,9 +12,9 @@ local function validPosition(value)
         and math.abs(value.x) < 100000 and math.abs(value.y) < 100000
 end
 
-local function clampPosition(x, y, parent, height)
+local function clampPosition(x, y, parent, height, width)
     if type(parent.width) == "number" and parent.width > 0 then
-        x = math.max(0, math.min(x, math.max(0, parent.width - 340)))
+        x = math.max(0, math.min(x, math.max(0, parent.width - (width or 340))))
     end
     if type(parent.height) == "number" and parent.height > 0 then
         y = math.max(0, math.min(y, math.max(0, parent.height - height)))
@@ -98,6 +100,8 @@ function popup.colours(level, rules)
 end
 
 function popup.clear()
+    for _, tip in ipairs(tooltips) do pcall(function() tip:Destroy() end) end
+    tooltips = {}
     local old = root
     local oldScroll = scroll
     local oldHandle = dragHandle
@@ -112,9 +116,19 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
     if not parent then return false end
     popup.clear()
     local ok, err = pcall(function()
+        local iconMode = rules and rules.popupIconMode == true
+        -- GroupBox adds a visible inset to its children; allow for that at the right edge too.
+        local popupWidth = iconMode and 336 or 340
+        local listWidth = iconMode and 318 or 324
+        local headerWidth = iconMode and 213 or 225
+        if iconMode then assert(prettyui and prettyui.Tooltip and prettyui.Tooltip.attach, "PrettyUI Tooltip is required") end
         local fontOK, labelFont = pcall(function() return config.Font.FromID(id.Font.MUSEO_SANS_15PT_REGULAR) end)
         if not fontOK then labelFont = nil end
         local function layout(width)
+            if iconMode then
+                local _, total, visible = iconView.layout(#alerts, width, maxRows)
+                return {}, total, visible
+            end
             local rows, total, visible = {}, 0, 0
             for i, alert in ipairs(alerts) do
                 local lines = popup.wrapLabel(popup.formatAlert(alert), width - 104, labelFont)
@@ -125,7 +139,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
             end
             return rows, total, visible
         end
-        local rows, totalHeight, listHeight = layout(324)
+        local rows, totalHeight, listHeight = layout(listWidth)
         local heightLimit = math.huge
         if type(parent.height) == "number" and parent.height > 0 then
             heightLimit = math.max(1, parent.height - 45 - 42)
@@ -134,24 +148,24 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
         local needsScroll = totalHeight > listHeight
         if needsScroll then
             -- SimpleView reserves space for its scrollbar; recalculate with its actual width below.
-            rows, totalHeight, listHeight = layout(306)
+            rows, totalHeight, listHeight = layout(listWidth - 18)
             listHeight = math.min(listHeight, heightLimit)
         end
         root = ui.GroupBox.new(parent)
         root.stylesheetID = id.StyleSheet.DEFAULT
         root:SetHeaderLayout(0, 0, 0, 0, 0)
-        root:SetSize(340, 42 + listHeight)
+        root:SetSize(popupWidth, 42 + listHeight)
         local loaded, position = pcall(function() return PersistentDB:GetStructuredData(positionKey) end)
         if loaded and validPosition(position) then
-            local x, y = clampPosition(position.x, position.y, parent, 42 + listHeight)
+            local x, y = clampPosition(position.x, position.y, parent, 42 + listHeight, popupWidth)
             root:SetPos(x, y)
         else
-            root:SetPos(-170, 45, 0.5, 0)
+            root:SetPos(-popupWidth / 2, 45, 0.5, 0)
         end
         -- The root must receive mouse input for isMouseOver to detect hover.
         root.clickthrough = false
         local title = ui.Text.new(root)
-        title:SetPos(10, 6); title:SetSize(225, 24)
+        title:SetPos(10, 6); title:SetSize(headerWidth, 24)
         title.font = id.Font.MUSEO_SANS_15PT_REGULAR
         title.clickthrough = true
         title.content = "Pre flight check (" .. #alerts .. ")"
@@ -162,7 +176,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
             if origin and parentOrigin then
                 dragHandle:SetPos(origin.x - parentOrigin.x + 10, origin.y - parentOrigin.y + 6)
             end
-            dragHandle:SetSize(225, 24)
+            dragHandle:SetSize(headerWidth, 24)
             dragHandle:MoveToFront()
         end
         placeHandle()
@@ -205,7 +219,7 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
             end
             local nextX = math.floor(drag.rootX + dx + 0.5)
             local nextY = math.floor(drag.rootY + dy + 0.5)
-            nextX, nextY = clampPosition(nextX, nextY, parent, 42 + listHeight)
+            nextX, nextY = clampPosition(nextX, nextY, parent, 42 + listHeight, popupWidth)
             root:SetPos(nextX, nextY)
             drag.moved = nextX ~= drag.rootX or nextY ~= drag.rootY
             drag.lastX, drag.lastY = nextX, nextY
@@ -223,15 +237,15 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
         end
         dragHandle:Subscribe(ui.Hook.ONRELEASE, "supplyCheck.popupDragEnd", finishDrag)
         dragHandle:Subscribe(ui.Hook.ONDRAGCOMPLETE, "supplyCheck.popupDragComplete", finishDrag)
-        local listParent, rowWidth = root, 324
+        local listParent, rowWidth = root, listWidth
         if needsScroll then
             assert(prettyui and prettyui.SimpleView and prettyui.SimpleView.new, "PrettyUI SimpleView is required")
             scroll = prettyui.SimpleView.new(root, {
-                x = 5, y = 32, width = 324, height = listHeight, scrollStep = rowHeight,
+                x = 5, y = 32, width = listWidth, height = listHeight, scrollStep = iconMode and 46 or rowHeight,
             })
             scroll:SetContentHeight(totalHeight)
             listParent, rowWidth = scroll.content, scroll.contentWidth
-            if rowWidth ~= 306 then
+            if rowWidth ~= listWidth - 18 then
                 rows, totalHeight = layout(rowWidth)
                 scroll:SetContentHeight(totalHeight)
             end
@@ -243,6 +257,13 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
         end
         local rowY = scroll and 0 or 32
         for i, alert in ipairs(alerts) do
+            if iconMode then
+                local background, accent = popup.colours(alert.level, rules)
+                local columns = iconView.layout(#alerts, rowWidth, maxRows)
+                iconView.draw({ parent = listParent, overlay = parent, x = scroll and 0 or 5, y = rowY,
+                    background = background, accent = accent, prettyui = prettyui, tooltips = tooltips,
+                    hoverTargets = hoverTargets, scroll = scroll, formatAlert = popup.formatAlert }, alert, i, columns)
+            else
             local critical = alert.level == "critical"
             local backgroundColour, accentColour = popup.colours(alert.level, rules)
             local y, height = rowY, rows[i].height
@@ -281,12 +302,13 @@ function popup.show(alerts, now, duration, prettyui, maxRows, rules)
             severity.alignVertical = ui.AlignMode.CENTRE
             severity.clickthrough = true
             severity.content = alert.status or (alert.message and "" or (critical and "CRITICAL" or "LOW"))
+            end
         end
         local pin = ui.Button.new(root)
-        pin:SetPos(240, 4); pin:SetSize(90, 25)
+        pin:SetPos(popupWidth - 100, 4); pin:SetSize(90, 25)
         pin.stylesheetID = id.StyleSheet.BUTTON_DEFAULT
         local pinLabel = ui.Text.new(root)
-        pinLabel:SetPos(240, 4); pinLabel:SetSize(90, 25)
+        pinLabel:SetPos(popupWidth - 100, 4); pinLabel:SetSize(90, 25)
         pinLabel.font = id.Font.MUSEO_SANS_11PT_REGULAR
         pinLabel.alignHorizontal = ui.AlignMode.CENTRE
         pinLabel.alignVertical = ui.AlignMode.CENTRE

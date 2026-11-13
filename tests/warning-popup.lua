@@ -30,6 +30,7 @@ ui = { Interfaces = { GetComponent = function() return parent end },
     Rectangle = { new = function(host) return new("rectangle", host) end },
     Text = { new = function(host) return new("text", host) end } }
 id = { Component = { TOPLEVEL_V2__PLUGIN_BUILD_LAYER_TOP = 1 },
+    Sprite = { EXCLAMATION_MARK = 937 },
     StyleSheet = { DEFAULT = 1, BUTTON_DEFAULT = 2 }, Font = { MUSEO_SANS_15PT_REGULAR = 1, MUSEO_SANS_11PT_REGULAR = 2 } }
 Vector4 = { new = function(r, g, b, a) return { r, g, b, a } end }
 config = { Font = { FromID = function() return { GetStringWidth = function(_, text) return #text * 6 end } end } }
@@ -263,4 +264,58 @@ assert(popup.show({ { name = "Blood rune", count = 1, level = "low" } }, 530))
 local nextRoot = components[start + 9]
 popup.update(534)
 assert(nextRoot.destroyed, "replacement notifications are not pinned")
+-- Compact layout, icon sources, full details, hover, and cleanup.
+local icons = require("warnings/popup-icons")
+assert(icons.source({ itemId = 563 }) == 563)
+assert(icons.source({ name = "Excalibur" }) == 14632)
+assert(icons.source({ name = "Beast of burden preset" }).sprite == 13216)
+assert(icons.source({ name = "Unknown item" }) == nil)
+local columns, total, visible = icons.layout(20, 306, 8)
+assert(columns == 6 and total == 184 and visible == 92)
+assert(icons.layout(8, 318, 8) == 7, "seven tiles fit without reserving a trailing gap")
+assert(icons.description({ name = "Sword", status = "MISSING", message = "Cannot withdraw Sword" }, popup.formatAlert)
+    == "Cannot withdraw Sword\nMISSING")
+ui.Hook.ONMOUSEOVER = "over"
+ui.Sprite = { new = function(host)
+    local sprite = new("sprite", host)
+    function sprite:SetAssociatedObject(value) self.itemId = value end
+    return sprite
+end }
+local tips = {}
+local iconUI = { Tooltip = { attach = function(target, host, options)
+    local tip = { root = {}, width = 180, height = 50, options = options, target = target }
+    function tip:Destroy() self.destroyed = true end
+    function tip:Hide() self.hidden = true end
+    tips[#tips + 1] = tip
+    return tip
+end } }
+parent.width, parent.height = 800, 600
+start = #components
+assert(popup.show({ { itemId = 563, name = "Law rune", count = 0, level = "critical" },
+    { name = "Unknown item", status = "MISSING", level = "low" } }, 600, 4, iconUI, 8, { popupIconMode = true }))
+local compactRoot = components[start + 1]
+assert(compactRoot.size[2] == 88 and #tips == 2)
+assert(compactRoot.size[1] == 336, "compact popup accounts for the visible GroupBox inset")
+local compactSprite = components[start + 4]
+assert(compactSprite.kind == "sprite" and compactSprite.size[1] == 32)
+assert(compactSprite.pos[1] == tips[1].target.pos[1] + 6,
+    "32px icons include a 1px optical correction within 42px tiles")
+local fallback = components[start + 7]
+assert(fallback.kind == "text" and fallback.content == "!"
+    and fallback.alignHorizontal == ui.AlignMode.CENTRE and fallback.alignVertical == ui.AlignMode.CENTRE,
+    "unknown warnings use a centred warning glyph instead of the legacy sprite")
+assert(tips[1].options.text == "Law runes: 0<br>CRITICAL")
+assert(tips[2].options.text == "Unknown item<br>MISSING")
+tips[1].target.hooks.over()
+assert(tips[1].options.x >= 0 and tips[1].options.y >= 0)
+tips[1].target.isMouseOver = true
+popup.update(605)
+assert(not compactRoot.destroyed)
+tips[1].target.isMouseOver = false
+tips[1].root.isMouseOver = true
+popup.update(606)
+assert(not compactRoot.destroyed)
+tips[1].root.isMouseOver = false
+popup.update(607)
+assert(compactRoot.destroyed and tips[1].destroyed and tips[2].destroyed)
 print("Warning popup tests passed.")

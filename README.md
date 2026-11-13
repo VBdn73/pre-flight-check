@@ -17,6 +17,8 @@ Get warnings about low supplies and other preparation issues when loading a bank
 4. Load a preset or close the bank to check. Drag the popup heading to move it, choose **Keep open** while resupplying, or **Close** to dismiss it. The ribbon shows the most recent batch.
 
 To receive preset withdrawal messages, enable **Preset chat notifications** in General and grant optional chat access. For game-reported low durability messages, also enable **Item durability** under Misc → Other.
+
+Enable **General → Compact notification icons** to replace the main popup's text list with coloured warning icons and hover details. This is off by default and does not affect the ribbon. **Visible notifications** limits the icon tiles before scrolling, rounded up to a complete row. Warning colours, dragging, duration, and **Keep open / Close** work in either display mode. The display choice applies to the next notification.
 **Beast of burden preset** under Misc → Other reports preset failures when the follower cannot carry items. This warning is on by default and requires the same preset chat settings and permission.
 
 ## Limitations
